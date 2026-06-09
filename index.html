@@ -411,8 +411,18 @@ document.querySelectorAll('.overlay').forEach(o =>
 const DB_KEY  = 'liftlog_db_v1';
 const CFG_KEY = 'liftlog_cfg_v1';
 
-const getCfg  = () => { try { return JSON.parse(localStorage.getItem(CFG_KEY)) || {}; } catch { return {}; } };
-const setCfg  = c => localStorage.setItem(CFG_KEY, JSON.stringify(c));
+// Placeholders replaced by GitHub Actions at deploy time
+const _BAKED_KEY = '__JSONBIN_KEY__';
+const _BAKED_BIN = '__JSONBIN_BIN__';
+
+const getCfg = () => {
+  const stored = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
+  return {
+    key: stored.key || (_BAKED_KEY.startsWith('__') ? '' : _BAKED_KEY),
+    bin: stored.bin || (_BAKED_BIN.startsWith('__') ? '' : _BAKED_BIN)
+  };
+};
+const setCfg = c => localStorage.setItem(CFG_KEY, JSON.stringify(c));
 const loadDB  = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || { sessions: [] }; } catch { return { sessions: [] }; } };
 const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncBin(db); };
 

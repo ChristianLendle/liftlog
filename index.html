@@ -510,6 +510,18 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 </div>
 
 <script>
+(function() {
+  const PW = '__LIFTLOG_PW__';
+  if (sessionStorage.getItem('liftlog_auth') !== '1') {
+    const input = prompt('🔒 LiftLog — Passwort:');
+    if (input !== PW) {
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#888;font-family:sans-serif">Kein Zugriff.</div>';
+      throw new Error('Unauthorized');
+    }
+    sessionStorage.setItem('liftlog_auth', '1');
+  }
+})();
+
 // ─────────────────────────────────────────────────────
 //  TRAINING PLANS
 // ─────────────────────────────────────────────────────
@@ -1768,7 +1780,7 @@ window.addEventListener('resize', () => {
     cr.style.display = '';
   }
 });
-
+ 
 init();
 </script>
 </body>

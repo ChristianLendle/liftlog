@@ -1,0 +1,14 @@
+<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(20,20)">
+    <circle cx="0" cy="0" r="6" fill="none" stroke="#c8e600" stroke-width="2.2"/>
+    <circle cx="0" cy="0" r="2.5" fill="#c8e600"/>
+    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(0,0,0)"/>
+    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(45,0,0)"/>
+    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(90,0,0)"/>
+    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(135,0,0)"/>
+    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(180,0,0)"/>
+    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(225,0,0)"/>
+    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(270,0,0)"/>
+    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(315,0,0)"/>
+  </g>
+</svg>

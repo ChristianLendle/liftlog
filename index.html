@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#0a0a0a">
   <link rel="icon" type="image/png" href="favicon.png">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>LIFTLOG</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -30,6 +30,8 @@
   --push:       #b8cc2e;
   --pull:       #4a9eff;
   --cardio:     #ff6b35;
+  --up:         #b8cc2e;
+  --down:       #ff6b35;
   --other:      #666;
   --text:       #e0e0d8;
   --muted:      #444;
@@ -82,7 +84,7 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 .s-right { font-size: 0.67rem; color: var(--muted); text-align: right; flex-shrink: 0; }
 
 /* ─── PANEL ──────────────────────────────── */
-.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 20px; margin-bottom: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 20px; margin-bottom: 16px; min-width: 0; }
 
 /* ─── EXERCISE SEARCH ────────────────────── */
 .ex-search-wrap { position: relative; margin-bottom: 16px; }
@@ -116,20 +118,20 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 .btn-danger:hover { border-color: #cc3333 !important; background: rgba(204,51,51,.08) !important; }
 
 /* ─── MODAL ──────────────────────────────── */
-.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.84); z-index: 500; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; }
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.84); z-index: 500; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .overlay.open { display: flex; }
-.modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: 24px; width: 100%; max-width: 540px; margin: auto; }
+.modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: 24px; width: 100%; max-width: 540px; margin: auto; flex-shrink: 0; }
 .modal-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .modal-title { font-size: 0.7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
 .modal-x { background: none; border: none; color: var(--muted2); font-size: 1rem; cursor: pointer; padding: 0; line-height: 1; }
 .modal-x:hover { color: var(--text); }
 
 /* ─── FORM ───────────────────────────────── */
-.field { margin-bottom: 12px; }
+.field { margin-bottom: 12px; min-width: 0; }
 .field label { display: block; font-size: 0.58rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2); margin-bottom: 5px; }
 input, select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--text); border-radius: 5px; padding: 8px 11px; font-family: var(--font); font-size: 0.82rem; outline: none; transition: border-color .12s; }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-input[type="date"] { color-scheme: dark; }
+input[type="date"] { color-scheme: dark; min-width: 0; max-width: 100%; }
 select option { background: #1a1a1a; }
 textarea { font-family: 'Courier New', monospace; font-size: 0.7rem; resize: vertical; min-height: 160px; line-height: 1.6; }
 input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -274,7 +276,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 #pr-panel { grid-column: 1 / -1; margin-top: 0; }
 
 /* ─── HEATMAP ─────────────────────────────── */
-.heatmap-outer { display: flex; align-items: flex-start; gap: 6px; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.heatmap-outer { display: flex; align-items: flex-start; gap: 6px; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; -webkit-overflow-scrolling: touch; max-width: 100%; }
 .hm-day-labels { display: flex; flex-direction: column; gap: 3px; padding-top: 18px; flex-shrink: 0; }
 .hm-day-lbl { font-size: 9px; color: var(--muted); font-weight: 600; height: 13px; line-height: 13px; text-align: right; width: 16px; }
 .heatmap-cols-wrap { flex-shrink: 0; }
@@ -292,8 +294,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ─── BOTTOM NAV (mobile only) ────────────── */
 .bottom-nav { display: none; }
-.bottom-nav-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; color: var(--muted2); font-family: var(--font); font-size: 0.5rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; flex: 1; padding: 8px 4px 6px; -webkit-tap-highlight-color: transparent; transition: color .12s; }
-.bottom-nav-tab .bnav-icon { display: flex; align-items: center; justify-content: center; height: 22px; }
+.bottom-nav-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: none; border: none; color: var(--muted2); font-family: var(--font); font-size: 0.5rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; flex: 1; padding: 12px 4px 10px; min-height: 56px; -webkit-tap-highlight-color: transparent; transition: color .12s; }
+.bottom-nav-tab .bnav-icon { display: flex; align-items: center; justify-content: center; height: 28px; }
 .bottom-nav-tab.active { color: var(--accent); }
 .bottom-nav-tab:hover { color: var(--text); }
 
@@ -310,14 +312,14 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ─── RESPONSIVE ─────────────────────────── */
 @media (max-width: 680px) {
-  header { padding: 12px 14px 10px; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0; row-gap: 6px; }
-  .logo { font-size: 1.4rem; min-width: auto; flex: 1; order: 1; }
+  header { padding: 12px 14px 10px; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 14px; }
+  .logo { font-size: 1.65rem; min-width: auto; flex-shrink: 0; }
   .hd-div { display: none; }
-  .header-stats { display: flex; flex-direction: row; justify-content: space-between; flex: none; width: 100%; order: 3; }
+  .header-stats { display: flex; flex-direction: row; flex: 1; justify-content: space-between; gap: 0; }
   .stat { flex: 1; text-align: center; }
-  .stat-val { font-size: 1.05rem; }
-  .stat-lbl { font-size: 0.43rem; }
-  .header-actions { order: 2; justify-content: flex-end; }
+  .stat-val { font-size: 1.0rem; }
+  .stat-lbl { font-size: 0.41rem; }
+  .header-actions { display: none; }
   .layout { grid-template-columns: 1fr; }
   .col-left { border-right: none; padding: 14px; overflow-y: auto; }
   .col-right { max-height: none; padding: 14px; }
@@ -332,7 +334,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   .mobile-tab { flex: 1; padding: 11px 8px; font-size: 0.63rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted2); cursor: pointer; font-family: var(--font); transition: all .12s; }
   .mobile-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   .form-grid-3 { grid-template-columns: 1fr; }
-  .form-grid-4 { grid-template-columns: 1fr 1fr; }
+  .form-grid-4 { grid-template-columns: 1fr 1fr; gap: 8px; }
   .cardio-grid { grid-template-columns: 1fr 1fr; }
   .modal { padding: 18px 16px; }
   .sets-grid { grid-template-columns: 18px 1fr 1fr 24px; }
@@ -378,7 +380,6 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     <div class="stat"><span class="stat-val" id="s-sessions">0</span><span class="stat-lbl">Sessions</span></div>
     <div class="stat"><span class="stat-val" id="s-exercises">0</span><span class="stat-lbl">Übungen</span></div>
     <div class="stat"><span class="stat-val" id="s-volume">0</span><span class="stat-lbl">Tonnen Volumen</span></div>
-    <div class="stat"><span class="stat-val" id="s-week">—</span><span class="stat-lbl">Diese Woche</span></div>
   </div>
   <div class="header-actions"></div>
 </header>
@@ -786,7 +787,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 <!-- ═══ BOTTOM NAV (mobile) ══════════════════════════ -->
 <nav class="bottom-nav" id="bottom-nav">
   <button class="bottom-nav-tab active" id="bnav-dashboard" onclick="switchView('dashboard')">
-    <span class="bnav-icon"><svg viewBox="1 1 18 18" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <span class="bnav-icon"><svg viewBox="1 1 18 18" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <g transform="translate(20,20)">
     <rect x="-18" y="-18" width="15" height="15" rx="2" fill="none" stroke="#c8e600" stroke-width="2"/>
     <rect x="-15" y="-14" width="4" height="7" rx="1" fill="#c8e600"/>
@@ -795,7 +796,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 </svg></span>Dashboard
   </button>
   <button class="bottom-nav-tab" id="bnav-progress" onclick="switchView('progress')">
-    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <g transform="translate(20,20)">
     <line x1="-18" y1="14" x2="16" y2="14" stroke="#c8e600" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
     <line x1="-18" y1="14" x2="-18" y2="-18" stroke="#c8e600" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
@@ -805,7 +806,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 </svg></span>Fortschritt
   </button>
   <button class="bottom-nav-tab" id="bnav-body" onclick="switchView('body')">
-    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <g transform="translate(20,20)">
     <circle cx="0" cy="-13" r="4.5" fill="none" stroke="#c8e600" stroke-width="2"/>
     <line x1="0" y1="-8" x2="0" y2="5" stroke="#c8e600" stroke-width="2" stroke-linecap="round"/>
@@ -818,7 +819,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 </svg></span>Körper
   </button>
   <button class="bottom-nav-tab" id="bnav-sessions" onclick="switchView('sessions')">
-    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <g transform="translate(20,20)">
     <rect x="-13" y="-17" width="26" height="34" rx="3" fill="none" stroke="#c8e600" stroke-width="2"/>
     <rect x="-5" y="-21" width="10" height="7" rx="2" fill="none" stroke="#c8e600" stroke-width="2"/>
@@ -830,7 +831,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 </svg></span>Sessions
   </button>
   <button class="bottom-nav-tab" id="bnav-settings" onclick="switchView('settings')">
-    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <g transform="translate(20,20)">
     <circle cx="0" cy="0" r="6" fill="none" stroke="#c8e600" stroke-width="2.2"/>
     <circle cx="0" cy="0" r="2.5" fill="#c8e600"/>
@@ -933,7 +934,9 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         <div class="field" style="margin:0">
           <label>Kalorien</label>
           <input type="number" id="log-kcal" placeholder="260" min="0">
-      </div>
+        </div>
+      </div><!-- /cardio-grid -->
+    </div><!-- /log-cardio -->
 
     <!-- Strength Input -->
     <div id="log-strength" style="display:none">
@@ -949,9 +952,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         <button class="btn-fill" onclick="saveLog()">Training abschließen</button>
       </div>
     </div>
-  </div>
-  </div><!-- /modal m-log -->
-  </div><!-- /modal-inner m-log -->
+  </div><!-- /modal -->
 </div><!-- /overlay m-log -->
 
 <!-- ═══ MODAL: SESSION DETAIL ═════════════════════════ -->
@@ -2024,7 +2025,6 @@ function renderAll() {
   document.getElementById('s-sessions').textContent  = st.sessions;
   document.getElementById('s-exercises').textContent = st.exercises;
   document.getElementById('s-volume').textContent    = st.tonnage;
-  document.getElementById('s-week').textContent      = st.weekSessions + '×';
 
   // Dashboard tiles
   const dashMonth = document.getElementById('dash-month');
@@ -2517,9 +2517,8 @@ function shareStats() {
     const el = id => document.getElementById(id);
     const sessions = el('s-sessions') ? el('s-sessions').textContent : '?';
     const volume   = el('s-volume')   ? el('s-volume').textContent   : '?';
-    const streak   = el('s-week')     ? el('s-week').textContent     : '?';
     const text = `🏋️ LiftLog
-📅 ${sessions} Sessions · ⚖️ ${volume} Tonnen Volumen · 🔥 Streak: ${streak}`;
+📅 ${sessions} Sessions · ⚖️ ${volume} Tonnen Volumen`;
     if (navigator.share) {
       navigator.share({ title: 'LiftLog Stats', text });
     } else {
@@ -2791,6 +2790,18 @@ function toggleWtDataset(index) {
   if (!wtChart) return;
   const meta = wtChart.getDatasetMeta(index);
   meta.hidden = !meta.hidden;
+
+  const showKg  = !wtChart.getDatasetMeta(0).hidden;
+  const showKfa = wtChart.data.datasets.length > 1 && !wtChart.getDatasetMeta(1).hidden;
+
+  const yScale  = wtChart.options.scales.y;
+  const y2Scale = wtChart.options.scales.y2;
+  if (yScale)  yScale.display  = showKg;
+  if (y2Scale) {
+    y2Scale.display   = showKfa;
+    y2Scale.position  = showKg ? 'right' : 'left';
+  }
+
   wtChart.update();
   const el = document.getElementById('wt-leg-' + index);
   if (el) el.style.opacity = meta.hidden ? '0.35' : '1';

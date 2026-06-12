@@ -131,7 +131,7 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 .field label { display: block; font-size: 0.58rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2); margin-bottom: 5px; }
 input, select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--text); border-radius: 5px; padding: 8px 11px; font-family: var(--font); font-size: 0.82rem; outline: none; transition: border-color .12s; }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-input[type="date"] { color-scheme: dark; min-width: 0; max-width: 100%; }
+input[type="date"] { color-scheme: dark; width: 100%; min-width: 0; box-sizing: border-box; -webkit-appearance: none; appearance: none; }
 select option { background: #1a1a1a; }
 textarea { font-family: 'Courier New', monospace; font-size: 0.7rem; resize: vertical; min-height: 160px; line-height: 1.6; }
 input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -273,7 +273,6 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 /* Sessionverteilung: bigger doughnut */
 .dist-cv { width: 160px !important; height: 160px !important; flex-shrink: 0; }
 /* PR panel spans full grid width */
-#pr-panel { grid-column: 1 / -1; margin-top: 0; }
 
 /* ─── TRAINING CALENDAR ──────────────────── */
 .panel { overflow: hidden; }
@@ -338,7 +337,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   .form-grid-3 { grid-template-columns: 1fr; }
   .form-grid-4 { grid-template-columns: 1fr 1fr; gap: 8px; }
   .cardio-grid { grid-template-columns: 1fr 1fr; }
-  input[type="date"] { font-size: 0.72rem; padding: 8px 6px; }
+  input[type="date"] { font-size: 0.82rem; }
   .modal { overflow: hidden; }
   .modal { padding: 18px 16px; }
   .sets-grid { grid-template-columns: 18px 1fr 1fr 24px; }
@@ -354,11 +353,11 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 /* ── Personal Records ── */
-.pr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.pr-card { background: var(--surface2); border-radius: 10px; padding: 14px 16px; }
-.pr-ex-name { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pr-weight { font-size: 1.75rem; font-weight: 800; color: var(--accent); line-height: 1; }
-.pr-detail { font-size: .7rem; color: var(--muted2); margin-top: 5px; }
+.pr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.pr-card { background: var(--surface2); border-radius: 10px; padding: 12px 12px; min-width: 0; }
+.pr-ex-name { font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-weight { font-size: 1.4rem; font-weight: 800; color: var(--accent); line-height: 1; }
+.pr-detail { font-size: .65rem; color: var(--muted2); margin-top: 5px; }
 
 /* ── Export grid ── */
 .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
@@ -455,10 +454,14 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         </div>
       </div>
 
-      <!-- RECENT SESSIONS -->
-      <div class="panel">
-        <div class="sec-label">Zuletzt</div>
-        <div class="session-list" id="dash-session-list"></div>
+      <!-- PERSONAL RECORDS -->
+      <div class="panel" id="pr-panel">
+        <div class="sec-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+          Personal Records
+        </div>
+        <div class="pr-grid" id="pr-grid"></div>
+        <div id="pr-empty" class="chart-empty" style="display:none">Keine Sessions vorhanden</div>
       </div>
     </div>
   </div>
@@ -544,16 +547,6 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         <div class="dist-legend" id="dist-legend"></div>
       </div>
 
-
-    <!-- ⑤ Personal Records (full-width) -->
-    <div class="panel" id="pr-panel">
-      <div class="sec-label">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
-        Personal Records
-      </div>
-      <div class="pr-grid" id="pr-grid"></div>
-      <div id="pr-empty" class="chart-empty" style="display:none">Keine Sessions vorhanden</div>
-    </div>
 
     </div><!-- /progress-grid -->
   </div><!-- /view-inner -->
@@ -1965,9 +1958,10 @@ function initHeatmapFilter(sessions) {
   const monthSel = document.getElementById('hm-month-sel');
   if (!yearSel || !monthSel) return;
 
-  // Preserve user selection across renderAll calls
-  const prevYear  = yearSel.value  ? parseInt(yearSel.value)  : curYear;
-  const prevMonth = monthSel.value ? parseInt(monthSel.value) : curMonth;
+  // Preserve user selection across renderAll calls; on first load year select is empty
+  const isFirstLoad = yearSel.options.length === 0;
+  const prevYear  = !isFirstLoad ? parseInt(yearSel.value)  : curYear;
+  const prevMonth = !isFirstLoad ? parseInt(monthSel.value) : curMonth;
 
   // Collect all years with sessions + current year
   const years = new Set([curYear]);
@@ -2107,14 +2101,6 @@ function renderAll() {
         else            { sub.textContent = '= unverändert (30 Tage)'; sub.className = 'dash-tile-delta neutral'; }
       }
     }
-  }
-
-  // Dashboard recent sessions list (last 5)
-  const dashList = document.getElementById('dash-session-list');
-  if (dashList) {
-    const recent = [...db.sessions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-    if (recent.length) renderList(recent, [], dashList);
-    else dashList.innerHTML = '<div class="empty">Noch keine Sessions</div>';
   }
 
   initHeatmapFilter(db.sessions);

@@ -2959,7 +2959,7 @@ function calc1RM() {
 }
 
 
-// ─── JSONBIN QUOTA CHECK ─────────────────────────────────────────────────────
+// ─── JSONBIN CONNECTION CHECK ────────────────────────────────────────────────
 async function checkJsonbinQuota() {
   const el = document.getElementById('quota-result');
   const cfg = getCfg();
@@ -2967,62 +2967,30 @@ async function checkJsonbinQuota() {
     el.innerHTML = '<span style="color:var(--down)">⚠ Kein API Key konfiguriert.</span>';
     return;
   }
-  el.innerHTML = 'Lade…';
+  if (!cfg.bin || cfg.bin.startsWith('__')) {
+    el.innerHTML = '<span style="color:var(--down)">⚠ Keine Bin-ID konfiguriert.</span>';
+    return;
+  }
+  el.innerHTML = 'Verbindung wird geprüft…';
 
   try {
-    // Call /v3/l to get list of log dates AND capture response headers
-    const res = await fetch('https://api.jsonbin.io/v3/l', {
+    // Test the actual bin endpoint used for sync
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${cfg.bin}/latest`, {
       headers: { 'X-Master-Key': cfg.key }
     });
 
-    // Extract all headers — JSONBin may include quota info here
-    const headers = {};
-    res.headers.forEach((val, key) => { headers[key.toLowerCase()] = val; });
-
-    let html_out = '';
-
-    // Known quota/rate-limit header patterns
-    const quotaHeaders = [
-      ['x-request-limit',       'Request-Limit'],
-      ['x-remaining',           'Verbleibend'],
-      ['x-ratelimit-limit',     'Rate-Limit'],
-      ['x-ratelimit-remaining', 'Rate verbleibend'],
-      ['x-ratelimit-reset',     'Reset'],
-      ['x-quota-limit',         'Quota-Limit'],
-      ['x-quota-remaining',     'Quota verbleibend'],
-      ['x-requests-remaining',  'Requests verbleibend'],
-      ['x-requests-limit',      'Requests-Limit'],
-    ];
-
-    let foundAny = false;
-    for (const [hdr, label] of quotaHeaders) {
-      if (headers[hdr] !== undefined) {
-        foundAny = true;
-        html_out += `<div><b>${label}:</b> ${headers[hdr]}</div>`;
-      }
-    }
-
     if (res.ok) {
       const data = await res.json();
-      const logDates = data.logs || [];
-      if (!foundAny) {
-        html_out += '<div style="color:var(--muted2)">JSONBin gibt keine Quota-Header zurück.</div>';
-        html_out += '<div style="color:var(--muted2);margin-top:4px">Verbleibende Requests nur im <a href="https://jsonbin.io/app/api-keys" target="_blank" style="color:var(--accent)">JSONBin Dashboard</a> einsehbar.</div>';
-      }
-      if (logDates.length > 0) {
-        html_out += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">`;
-        html_out += `<b>Aktivitäts-Logs:</b> ${logDates.length} Tag${logDates.length !== 1 ? 'e' : ''} vorhanden`;
-        html_out += ` <span style="color:var(--muted2)">(zuletzt: ${logDates[logDates.length - 1]})</span></div>`;
-      } else {
-        html_out += `<div style="margin-top:8px;color:var(--muted2)">Keine Aktivitäts-Logs gefunden.</div>`;
-      }
-      html_out = '<span style="color:var(--up)">✓ Verbindung OK</span><br>' + html_out;
+      const sessionCount = data.record?.sessions?.length ?? 0;
+      el.innerHTML = `<span style="color:var(--up)">✓ Verbindung OK</span>`
+        + `<div style="margin-top:6px;color:var(--muted2)">${sessionCount} Session${sessionCount !== 1 ? 's' : ''} im Bin gespeichert.</div>`;
+    } else if (res.status === 401 || res.status === 403) {
+      el.innerHTML = `<span style="color:var(--down)">✗ HTTP ${res.status} — Key ungültig oder kein Zugriff auf diesen Bin.</span>`;
+    } else if (res.status === 404) {
+      el.innerHTML = `<span style="color:var(--down)">✗ HTTP 404 — Bin-ID nicht gefunden. Bitte prüfen ob der Bin auf jsonbin.io existiert.</span>`;
     } else {
-      html_out = `<span style="color:var(--down)">✗ HTTP ${res.status}</span>`;
-      if (!foundAny) html_out += ' — Key ungültig oder kein Zugriff.';
+      el.innerHTML = `<span style="color:var(--down)">✗ HTTP ${res.status}</span>`;
     }
-
-    el.innerHTML = html_out;
   } catch (e) {
     el.innerHTML = `<span style="color:var(--down)">✗ Fehler: ${e.message}</span>`;
   }

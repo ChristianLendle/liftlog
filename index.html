@@ -275,22 +275,24 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 /* PR panel spans full grid width */
 #pr-panel { grid-column: 1 / -1; margin-top: 0; }
 
-/* ─── HEATMAP ─────────────────────────────── */
-.heatmap-outer { display: flex; align-items: flex-start; gap: 6px; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; -webkit-overflow-scrolling: touch; max-width: 100%; }
-.hm-day-labels { display: flex; flex-direction: column; gap: 3px; padding-top: 18px; flex-shrink: 0; }
-.hm-day-lbl { font-size: 9px; color: var(--muted); font-weight: 600; height: 13px; line-height: 13px; text-align: right; width: 16px; }
-.heatmap-cols-wrap { flex-shrink: 0; }
-.hm-months-row { display: flex; gap: 3px; margin-bottom: 4px; }
-.hm-month-lbl { font-size: 9px; color: var(--muted); font-weight: 600; letter-spacing: .04em; min-width: 13px; text-align: left; overflow: visible; white-space: nowrap; }
-.heatmap-cols { display: flex; gap: 3px; }
-.hm-col { display: flex; flex-direction: column; gap: 3px; }
-.hm-cell { width: 13px; height: 13px; border-radius: 2px; background: #2a2a2a; flex-shrink: 0; }
-.hm-cell.l1 { background: #2e3d07; }
-.hm-cell.l2 { background: #6b8012; }
-.hm-cell.l3 { background: #96b31a; }
-.hm-cell.l4 { background: var(--accent); }
-.hm-legend  { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 0.63rem; color: var(--muted2); }
-.hm-legend-cells { display: flex; gap: 3px; align-items: center; }
+/* ─── TRAINING CALENDAR ──────────────────── */
+.panel { overflow: hidden; }
+.hm-filter { display: flex; gap: 8px; margin-bottom: 10px; }
+.hm-filter select { flex: 1; background: var(--surface2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 0.75rem; cursor: pointer; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-dow { font-size: 8px; color: var(--muted); font-weight: 700; text-align: center; padding: 3px 0 5px; letter-spacing: .05em; text-transform: uppercase; }
+.cal-day { aspect-ratio: 1; border-radius: 5px; display: flex; align-items: flex-end; justify-content: flex-end; padding: 3px 4px; font-size: 9px; font-weight: 700; color: var(--muted); background: #1e1e1e; cursor: default; box-sizing: border-box; }
+.cal-day.cal-empty { background: transparent; }
+.cal-day.cal-future { opacity: 0.2; }
+.cal-day.cal-today { outline: 2px solid var(--accent); outline-offset: -2px; color: var(--fg); }
+.cal-day.cal-trained { color: #0a0a0a; font-weight: 700; }
+.cal-day.cal-push    { background: var(--push); }
+.cal-day.cal-pull    { background: var(--pull); }
+.cal-day.cal-cardio  { background: var(--cardio); }
+.cal-day.cal-other   { background: var(--other); color: var(--fg); }
+.cal-legend { display: flex; gap: 10px; margin-top: 10px; font-size: 0.6rem; color: var(--muted2); flex-wrap: wrap; }
+.cal-leg-item { display: flex; align-items: center; gap: 4px; }
+.cal-leg-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 
 /* ─── BOTTOM NAV (mobile only) ────────────── */
 .bottom-nav { display: none; }
@@ -312,8 +314,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ─── RESPONSIVE ─────────────────────────── */
 @media (max-width: 680px) {
-  header { padding: 12px 14px 10px; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 14px; }
-  .logo { font-size: 1.65rem; min-width: auto; flex-shrink: 0; }
+  header { padding: 14px 14px 14px; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 14px; min-height: 60px; box-sizing: border-box; }
+  .logo { font-size: 1.9rem; min-width: auto; flex-shrink: 0; }
   .hd-div { display: none; }
   .header-stats { display: flex; flex-direction: row; flex: 1; justify-content: space-between; gap: 0; }
   .stat { flex: 1; text-align: center; }
@@ -325,17 +327,19 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   .col-right { max-height: none; padding: 14px; }
   .top-nav { display: none; }
   .top-nav-tab { padding: 10px 10px; font-size: 0.56rem; }
-  .view-inner { padding: 14px 14px 90px; }
+  .view-inner { padding: 14px 14px 110px; }
   .dash-grid { grid-template-columns: 1fr 1fr; }
   .view-inner > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
-  .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 90; padding-bottom: env(safe-area-inset-bottom, 0); }
-  .fab-wrap { bottom: 84px !important; }
+  .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 90; padding-bottom: max(env(safe-area-inset-bottom, 0px), 10px); }
+  .fab-wrap { bottom: 100px !important; }
   .mobile-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
   .mobile-tab { flex: 1; padding: 11px 8px; font-size: 0.63rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted2); cursor: pointer; font-family: var(--font); transition: all .12s; }
   .mobile-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   .form-grid-3 { grid-template-columns: 1fr; }
   .form-grid-4 { grid-template-columns: 1fr 1fr; gap: 8px; }
   .cardio-grid { grid-template-columns: 1fr 1fr; }
+  input[type="date"] { font-size: 0.72rem; padding: 8px 6px; }
+  .modal { overflow: hidden; }
   .modal { padding: 18px 16px; }
   .sets-grid { grid-template-columns: 18px 1fr 1fr 24px; }
   /* iOS zoom fix: font-size >= 16px prevents auto-zoom on input focus */
@@ -422,34 +426,32 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     </div>
 
     <div class="dash-lower-grid">
-      <!-- HEATMAP -->
+      <!-- TRAINING CALENDAR -->
       <div class="panel">
         <div class="sec-label">Trainingsfrequenz</div>
-        <div class="heatmap-outer">
-          <div class="hm-day-labels">
-            <div class="hm-day-lbl">Mo</div>
-            <div class="hm-day-lbl"></div>
-            <div class="hm-day-lbl">Mi</div>
-            <div class="hm-day-lbl"></div>
-            <div class="hm-day-lbl">Fr</div>
-            <div class="hm-day-lbl"></div>
-            <div class="hm-day-lbl">So</div>
-          </div>
-          <div class="heatmap-cols-wrap">
-            <div class="hm-months-row" id="hm-months"></div>
-            <div class="heatmap-cols" id="hm-grid"></div>
-          </div>
+        <div class="hm-filter">
+          <select id="hm-month-sel" onchange="onHeatmapFilterChange()">
+            <option value="1">Januar</option>
+            <option value="2">Februar</option>
+            <option value="3">März</option>
+            <option value="4">April</option>
+            <option value="5">Mai</option>
+            <option value="6">Juni</option>
+            <option value="7">Juli</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">Oktober</option>
+            <option value="11">November</option>
+            <option value="12">Dezember</option>
+          </select>
+          <select id="hm-year-sel" onchange="onHeatmapFilterChange()"></select>
         </div>
-        <div class="hm-legend">
-          <span>Weniger</span>
-          <div class="hm-legend-cells">
-            <div class="hm-cell"></div>
-            <div class="hm-cell l1"></div>
-            <div class="hm-cell l2"></div>
-            <div class="hm-cell l3"></div>
-            <div class="hm-cell l4"></div>
-          </div>
-          <span>Mehr</span>
+        <div class="cal-grid" id="hm-grid"></div>
+        <div class="cal-legend">
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--push)"></div>Push</div>
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--pull)"></div>Pull</div>
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--cardio)"></div>Cardio</div>
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--other)"></div>Sonstige</div>
         </div>
       </div>
 
@@ -1890,67 +1892,104 @@ function calcWeightDelta30() {
   return { diff: Math.round((latest.kg - ref.kg) * 10) / 10, latest: latest.kg };
 }
 
-// ── HEATMAP ──────────────────────────────────────────
-function buildHeatmap(sessions) {
-  const grid    = document.getElementById('hm-grid');
-  const monthEl = document.getElementById('hm-months');
-  if (!grid) return;
-  grid.innerHTML = ''; monthEl.innerHTML = '';
+// ── TRAINING CALENDAR ────────────────────────────────
+function catClass(session) {
+  if (!session) return '';
+  const c = session.category || '';
+  const t = session.type || '';
+  if (t === 'cardio' || /cardio/i.test(c)) return 'cal-cardio';
+  if (/push/i.test(c))  return 'cal-push';
+  if (/pull/i.test(c))  return 'cal-pull';
+  return 'cal-other';
+}
 
-  const WEEKS = 20;
-  // Build date→count map from real sessions
-  const countMap = {};
-  sessions.forEach(s => { countMap[s.date] = (countMap[s.date] || 0) + 1; });
+function buildHeatmap(sessions, year, month) {
+  const grid = document.getElementById('hm-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  // Build date → first session map (one training per day max)
+  const dayMap = {};
+  sessions.forEach(s => { if (!dayMap[s.date]) dayMap[s.date] = s; });
 
   const todayStr = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
-  const today    = new Date(todayStr + 'T12:00:00Z');
-  const dow      = (today.getUTCDay() + 6) % 7; // Mon=0
+  const mm = String(month).padStart(2, '0');
+  const monthPrefix = `${year}-${mm}`;
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
 
-  // Start on the Monday of (today - WEEKS weeks + current week)
-  const startDate = new Date(today);
-  startDate.setUTCDate(startDate.getUTCDate() - dow - (WEEKS - 1) * 7);
+  // Day-of-week headers: Mo Di Mi Do Fr Sa So
+  const DOW_LABELS = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  DOW_LABELS.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
 
-  const MONTHS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-  const monthsSeen = {};
-  const colEls = [];
+  // First day of month: which column? (Mon=0)
+  const firstDow = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7;
 
-  for (let w = 0; w < WEEKS; w++) {
-    const col = document.createElement('div');
-    col.className = 'hm-col';
-    for (let d = 0; d < 7; d++) {
-      const cellDate = new Date(startDate);
-      cellDate.setUTCDate(startDate.getUTCDate() + w * 7 + d);
-      const dateStr = cellDate.toISOString().slice(0, 10);
-      const isFuture = dateStr > todayStr;
-      const cell = document.createElement('div');
-      cell.className = 'hm-cell';
-      if (!isFuture) {
-        const cnt = countMap[dateStr] || 0;
-        if (cnt >= 3)      cell.classList.add('l4');
-        else if (cnt === 2) cell.classList.add('l3');
-        else if (cnt === 1) cell.classList.add('l2');
-        else                cell.classList.add('l1');
-      }
-      cell.title = dateStr + (countMap[dateStr] ? ` (${countMap[dateStr]}× trainiert)` : '');
-      col.appendChild(cell);
-      // Track first appearance of each month for labels
-      if (d === 0) {
-        const m = cellDate.getUTCMonth();
-        if (!monthsSeen[m]) { monthsSeen[m] = w; }
-      }
-    }
-    colEls.push(col);
+  // Empty cells before day 1
+  for (let i = 0; i < firstDow; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day cal-empty';
+    grid.appendChild(el);
   }
 
-  // Build month label row
-  for (let w = 0; w < WEEKS; w++) {
-    const lbl = document.createElement('div');
-    lbl.className = 'hm-month-lbl';
-    const mEntry = Object.entries(monthsSeen).find(([,wk]) => wk === w);
-    lbl.textContent = mEntry ? MONTHS[parseInt(mEntry[0])] : '';
-    monthEl.appendChild(lbl);
+  // Day cells
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr  = `${monthPrefix}-${String(day).padStart(2, '0')}`;
+    const isFuture = dateStr > todayStr;
+    const isToday  = dateStr === todayStr;
+    const session  = dayMap[dateStr];
+
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    el.textContent = day;
+
+    if (isFuture)      el.classList.add('cal-future');
+    else if (session)  { el.classList.add('cal-trained', catClass(session)); }
+    if (isToday)       el.classList.add('cal-today');
+
+    if (session) el.title = `${dateStr} — ${session.category || 'Training'}`;
+    grid.appendChild(el);
   }
-  colEls.forEach(c => grid.appendChild(c));
+}
+
+function initHeatmapFilter(sessions) {
+  const todayStr = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+  const curYear  = parseInt(todayStr.slice(0, 4));
+  const curMonth = parseInt(todayStr.slice(5, 7));
+
+  const yearSel  = document.getElementById('hm-year-sel');
+  const monthSel = document.getElementById('hm-month-sel');
+  if (!yearSel || !monthSel) return;
+
+  // Preserve user selection across renderAll calls
+  const prevYear  = yearSel.value  ? parseInt(yearSel.value)  : curYear;
+  const prevMonth = monthSel.value ? parseInt(monthSel.value) : curMonth;
+
+  // Collect all years with sessions + current year
+  const years = new Set([curYear]);
+  sessions.forEach(s => years.add(parseInt(s.date.slice(0, 4))));
+  const sortedYears = [...years].sort((a, b) => a - b);
+
+  yearSel.innerHTML = sortedYears
+    .map(y => `<option value="${y}">${y}</option>`)
+    .join('');
+
+  yearSel.value  = sortedYears.includes(prevYear) ? String(prevYear) : String(curYear);
+  monthSel.value = String(prevMonth);
+}
+
+function onHeatmapFilterChange() {
+  const yearSel  = document.getElementById('hm-year-sel');
+  const monthSel = document.getElementById('hm-month-sel');
+  if (!yearSel || !monthSel) return;
+  const year  = parseInt(yearSel.value);
+  const month = parseInt(monthSel.value);
+  const db = loadDB();
+  buildHeatmap(db.sessions, year, month);
 }
 
 function typeColor(s) {
@@ -2078,7 +2117,10 @@ function renderAll() {
     else dashList.innerHTML = '<div class="empty">Noch keine Sessions</div>';
   }
 
-  buildHeatmap(db.sessions);
+  initHeatmapFilter(db.sessions);
+  const _hmYear  = parseInt((document.getElementById('hm-year-sel')  || {}).value  || new Date().getFullYear());
+  const _hmMonth = parseInt((document.getElementById('hm-month-sel') || {}).value  || (new Date().getMonth() + 1));
+  buildHeatmap(db.sessions, _hmYear, _hmMonth);
   renderFilters(db.sessions);
   applyFilters();
   renderExSearch(db.sessions);

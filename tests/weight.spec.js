@@ -1,10 +1,9 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
-// Bypasses the password gate and clears leftover data before each test.
+// Clears leftover data before each test.
 async function setup(page, { seedWeight = null } = {}) {
   await page.addInitScript((entry) => {
-    sessionStorage.setItem('liftlog_auth', '1');
     localStorage.removeItem('liftlog_active_v1');
     localStorage.removeItem('liftlog_weight_v1');
     if (entry) {

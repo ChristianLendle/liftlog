@@ -1,10 +1,9 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
-// Bypasses password gate, clears active session and DB before each test.
+// Clears active session and DB before each test.
 async function setup(page) {
   await page.addInitScript(() => {
-    sessionStorage.setItem('liftlog_auth', '1');
     localStorage.removeItem('liftlog_active_v1');
     // Keep DB intact so we can verify saved sessions later
   });

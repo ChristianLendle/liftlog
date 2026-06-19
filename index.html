@@ -14,6 +14,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>LIFTLOG</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
@@ -367,7 +368,6 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .export-btn-lbl { font-size: .79rem; font-weight: 700; color: var(--text); }
 .export-btn-sub { font-size: .67rem; color: var(--muted2); margin-top: 3px; line-height: 1.4; }
 /* ── Sync lock badge ── */
-.sync-lock-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--surface2); border-radius: 20px; padding: 2px 10px; font-size: .66rem; font-weight: 700; color: var(--muted); margin-left: 10px; vertical-align: middle; }
 /* ── Settings panels spacing ── */
 #view-settings .panel { margin-bottom: 0; }
 #view-settings .view-inner > .panel + .panel { margin-top: 14px; }
@@ -691,28 +691,11 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
     <!-- ── Sync ── -->
     <div class="panel">
-      <div class="sec-label" style="display:flex;align-items:center">
-        Sync
-        <span class="sync-lock-badge" id="sync-lock-badge" style="display:none">🔒 Gesperrt</span>
-      </div>
-      <div class="field"><label>JSONBin API Key</label><input type="password" id="cfg-key" placeholder="$2b$10$…"></div>
-      <div class="field"><label>JSONBin Bin ID</label><input type="text" id="cfg-bin" placeholder="6…"></div>
-      <p style="font-size:.7rem;color:var(--muted2);margin-bottom:12px;line-height:1.7">
-        Konto auf <a href="https://jsonbin.io" target="_blank" style="color:var(--accent)">jsonbin.io</a> erstellen,
-        Bin anlegen → API Key + ID eintragen für Cross-Device Sync.
+      <div class="sec-label">Sync</div>
+      <p style="font-size:.72rem;color:var(--muted2);margin-bottom:14px;line-height:1.7">
+        Mit Konto anmelden um Trainingsdaten geräteübergreifend zu synchronisieren.
       </p>
-      <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <span style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">API-Kontingent</span>
-          <button class="btn" style="font-size:.72rem;padding:4px 10px" onclick="checkJsonbinQuota()">🔄 Prüfen</button>
-        </div>
-        <div id="quota-result" style="font-size:.75rem;color:var(--muted2);line-height:1.8">
-          Auf „Prüfen" klicken um Kontingent abzurufen.
-        </div>
-      </div>
-      <div id="sync-save-row" style="display:flex;justify-content:flex-end;gap:8px">
-        <button class="btn-fill" onclick="saveCfg_()">Speichern</button>
-      </div>
+      <div id="sync-panel-body">Wird geladen…</div>
     </div>
 
     <!-- ── Trainingspläne ── -->
@@ -1183,43 +1166,40 @@ const getWeightEntries  = () => JSON.parse(localStorage.getItem(WEIGHT_KEY) || '
 const saveWeightEntries = (entries) => localStorage.setItem(WEIGHT_KEY, JSON.stringify(entries));
 
 
-const _BAKED_KEY = '__JSONBIN_KEY__';
-const _BAKED_BIN = '__JSONBIN_BIN__';
+// ─── SUPABASE ─────────────────────────────────────────────────────────────────
+const _SB = supabase.createClient(
+  'https://tijeptnrwerfpjsfzqrt.supabase.co',
+  'sb_publishable_8-pGUpzwqco3bKWemcdAhg_y3Cd6IDU'
+);
 
 const getCfg = () => {
   const stored = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
-  return {
-    key:       stored.key || (_BAKED_KEY.startsWith('__') ? '' : _BAKED_KEY),
-    bin:       stored.bin || (_BAKED_BIN.startsWith('__') ? '' : _BAKED_BIN),
-    streakMin: stored.streakMin || 3
-  };
+  return { streakMin: stored.streakMin || 3 };
 };
 const setCfg  = c  => localStorage.setItem(CFG_KEY, JSON.stringify(c));
 const loadDB  = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || { sessions: [] }; } catch { return { sessions: [] }; } };
-const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncBin(db); };
+const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncSupabase(db); };
 
 const loadActive  = () => { try { return JSON.parse(localStorage.getItem(ACTIVE_KEY)); } catch { return null; } };
 const clearActive = () => { localStorage.removeItem(ACTIVE_KEY); updateStartBtn(); };
 
-async function syncBin(db) {
-  const { key, bin } = getCfg();
-  if (!key || !bin) return;
+async function syncSupabase(db) {
   try {
-    await fetch(`https://api.jsonbin.io/v3/b/${bin}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': key },
-      body: JSON.stringify(db)
-    });
+    const { data: { user } } = await _SB.auth.getUser();
+    if (!user) return;
+    await _SB.from('liftlog_data').upsert(
+      { user_id: user.id, data: db, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    );
   } catch {}
 }
 
-async function fetchBin() {
-  const { key, bin } = getCfg();
-  if (!key || !bin) return null;
+async function fetchSupabase() {
   try {
-    const r = await fetch(`https://api.jsonbin.io/v3/b/${bin}/latest`, { headers: { 'X-Master-Key': key } });
-    if (!r.ok) return null;
-    return (await r.json()).record;
+    const { data: { user } } = await _SB.auth.getUser();
+    if (!user) return null;
+    const { data } = await _SB.from('liftlog_data').select('data').eq('user_id', user.id).single();
+    return data?.data || null;
   } catch { return null; }
 }
 
@@ -2465,34 +2445,68 @@ function loadCfgUI() {
     populateLocationSelects();
     loadCatEditor();
     loadLocEditor();
-    // Sync fields
-    const keyEl = document.getElementById('cfg-key');
-    const binEl = document.getElementById('cfg-bin');
-    const syncLocked = !_BAKED_KEY.startsWith('__') && !_BAKED_BIN.startsWith('__');
-    const badge = document.getElementById('sync-lock-badge');
-    const saveRow = document.getElementById('sync-save-row');
-    if (syncLocked) {
-      if (keyEl) { keyEl.value = '••••••••••••••••'; keyEl.readOnly = true; keyEl.style.opacity = '.5'; }
-      if (binEl) { binEl.value = _BAKED_BIN; binEl.readOnly = true; binEl.style.opacity = '.5'; }
-      if (badge) badge.style.display = 'inline-flex';
-      if (saveRow) saveRow.style.display = 'none';
-    } else {
-      if (keyEl) { keyEl.value = cfg.key || ''; keyEl.readOnly = false; keyEl.style.opacity = ''; }
-      if (binEl) { binEl.value = cfg.bin || ''; binEl.readOnly = false; binEl.style.opacity = ''; }
-      if (badge) badge.style.display = 'none';
-      if (saveRow) saveRow.style.display = 'flex';
-    }
+    renderSyncPanel();
   } catch(e) {
     console.error('loadCfgUI error:', e);
   }
 }
 
-function saveCfg_() {
-  const key = document.getElementById('cfg-key').value.trim();
-  const bin = document.getElementById('cfg-bin').value.trim();
-  const cfg = getCfg();
-  setCfg({ ...cfg, key, bin });
-  toast('Gespeichert ✓');
+// ─── SUPABASE AUTH ────────────────────────────────────────────────────────────
+async function renderSyncPanel() {
+  const el = document.getElementById('sync-panel-body');
+  if (!el) return;
+  const { data: { user } } = await _SB.auth.getUser();
+  if (user) {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:12px">
+        <span style="font-size:.82rem;color:var(--up)">✓ Angemeldet als</span>
+        <span style="font-size:.82rem;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">${user.email}</span>
+      </div>
+      <button class="btn btn-danger" onclick="supabaseSignOut()">Abmelden</button>`;
+  } else {
+    el.innerHTML = `
+      <div class="field"><label>E-Mail</label><input type="email" id="sb-email" placeholder="deine@email.de" autocomplete="email"></div>
+      <div class="field"><label>Passwort</label><input type="password" id="sb-pw" placeholder="Mindestens 6 Zeichen" autocomplete="current-password"></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn-fill" onclick="supabaseSignIn()">Anmelden</button>
+        <button class="btn" onclick="supabaseSignUp()">Registrieren</button>
+      </div>
+      <div id="sb-msg" style="font-size:.74rem;margin-top:10px;color:var(--muted2)"></div>`;
+  }
+}
+
+async function supabaseSignIn() {
+  const email = document.getElementById('sb-email').value.trim();
+  const pw    = document.getElementById('sb-pw').value;
+  const msg   = document.getElementById('sb-msg');
+  msg.textContent = 'Anmelden…';
+  const { error } = await _SB.auth.signInWithPassword({ email, password: pw });
+  if (error) { msg.textContent = '✗ ' + error.message; return; }
+  renderSyncPanel();
+  const remote = await fetchSupabase();
+  if (remote?.sessions) {
+    const local = loadDB();
+    if (remote.sessions.length >= local.sessions.length) localStorage.setItem(DB_KEY, JSON.stringify(remote));
+    renderAll();
+  }
+  toast('Angemeldet ✓');
+}
+
+async function supabaseSignUp() {
+  const email = document.getElementById('sb-email').value.trim();
+  const pw    = document.getElementById('sb-pw').value;
+  const msg   = document.getElementById('sb-msg');
+  msg.textContent = 'Registrieren…';
+  const { error } = await _SB.auth.signUp({ email, password: pw });
+  if (error) { msg.textContent = '✗ ' + error.message; return; }
+  msg.style.color = 'var(--up)';
+  msg.textContent = '✓ Bestätigungsmail gesendet – bitte E-Mail prüfen!';
+}
+
+async function supabaseSignOut() {
+  await _SB.auth.signOut();
+  renderSyncPanel();
+  toast('Abgemeldet');
 }
 function exportJSON() {
   try {
@@ -2837,15 +2851,6 @@ function toggleWtDataset(index) {
 
 // ── Auth + Init ───────────────────────────────────────
 function initGate() {
-  const PW = '__LIFTLOG_PW__';
-  if (PW.startsWith('__')) { init(); return; } // local dev: skip password
-  if (sessionStorage.getItem('liftlog_auth') === '1') { init(); return; }
-  const input = prompt('🔒 LiftLog — Passwort:');
-  if (input !== PW) {
-    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#888;font-family:sans-serif">Kein Zugriff.</div>';
-    throw new Error('Unauthorized');
-  }
-  sessionStorage.setItem('liftlog_auth', '1');
   init();
 }
 
@@ -2853,13 +2858,14 @@ async function init() {
   populateCategorySelects();
   populateLocationSelects();
   switchView('dashboard');
-  const remote = await fetchBin();
+  const remote = await fetchSupabase();
   if (remote?.sessions) {
     const local = loadDB();
     if (remote.sessions.length >= local.sessions.length) localStorage.setItem(DB_KEY, JSON.stringify(remote));
   }
   renderAll();
   initBodyDates();
+  renderSyncPanel();
 }
 
 // ─── TOOLTIP (hover desktop / tap mobile) ────────────────────────────────────
@@ -2959,42 +2965,6 @@ function calc1RM() {
 }
 
 
-// ─── JSONBIN CONNECTION CHECK ────────────────────────────────────────────────
-async function checkJsonbinQuota() {
-  const el = document.getElementById('quota-result');
-  const cfg = getCfg();
-  if (!cfg.key || cfg.key.startsWith('__')) {
-    el.innerHTML = '<span style="color:var(--down)">⚠ Kein API Key konfiguriert.</span>';
-    return;
-  }
-  if (!cfg.bin || cfg.bin.startsWith('__')) {
-    el.innerHTML = '<span style="color:var(--down)">⚠ Keine Bin-ID konfiguriert.</span>';
-    return;
-  }
-  el.innerHTML = 'Verbindung wird geprüft…';
-
-  try {
-    // Test the actual bin endpoint used for sync
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${cfg.bin}/latest`, {
-      headers: { 'X-Master-Key': cfg.key }
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      const sessionCount = data.record?.sessions?.length ?? 0;
-      el.innerHTML = `<span style="color:var(--up)">✓ Verbindung OK</span>`
-        + `<div style="margin-top:6px;color:var(--muted2)">${sessionCount} Session${sessionCount !== 1 ? 's' : ''} im Bin gespeichert.</div>`;
-    } else if (res.status === 401 || res.status === 403) {
-      el.innerHTML = `<span style="color:var(--down)">✗ HTTP ${res.status} — Key ungültig oder kein Zugriff auf diesen Bin.</span>`;
-    } else if (res.status === 404) {
-      el.innerHTML = `<span style="color:var(--down)">✗ HTTP 404 — Bin-ID nicht gefunden. Bitte prüfen ob der Bin auf jsonbin.io existiert.</span>`;
-    } else {
-      el.innerHTML = `<span style="color:var(--down)">✗ HTTP ${res.status}</span>`;
-    }
-  } catch (e) {
-    el.innerHTML = `<span style="color:var(--down)">✗ Fehler: ${e.message}</span>`;
-  }
-}
 
 
 // ─── FORTSCHRITT DEFAULT STATE ────────────────────────────────────────────────

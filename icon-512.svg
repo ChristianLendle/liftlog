@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#F0F2F7"/>
+  <text x="53" y="277"
+    font-family="'Helvetica Neue',Helvetica,Arial,sans-serif"
+    font-weight="700" font-size="69" fill="#1C2B4A" letter-spacing="4">PRSON</text>
+  <circle cx="387" cy="256" r="37" fill="none" stroke="#2E4A7A" stroke-width="5"/>
+  <circle cx="387" cy="256" r="21" fill="none" stroke="#2E4A7A" stroke-width="2.5" opacity="0.3"/>
+  <text x="387" y="267"
+    font-family="'Helvetica Neue',Helvetica,Arial,sans-serif"
+    font-weight="700" font-size="24" fill="#2E4A7A"
+    text-anchor="middle" letter-spacing="2">AL</text>
+</svg>

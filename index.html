@@ -7,47 +7,46 @@
   <link rel="apple-touch-icon" href="icon-180.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="LIFTLOG">
-  <meta name="theme-color" content="#0a0a0a">
-  <link rel="icon" type="image/png" href="favicon.png">
+  <meta name="apple-mobile-web-app-title" content="PRSONAL">
+  <meta name="theme-color" content="#F0F2F7">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>LIFTLOG</title>
+<title>PRSONAL</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:         #0a0a0a;
-  --surface:    #111111;
-  --surface2:   #1a1a1a;
-  --border:     #232323;
-  --border2:    #333;
-  --accent:     #b8cc2e;
-  --accent-dim: rgba(184,204,46,.10);
-  --push:       #b8cc2e;
-  --pull:       #4a9eff;
-  --cardio:     #ff6b35;
-  --up:         #b8cc2e;
-  --down:       #ff6b35;
-  --other:      #666;
-  --text:       #e0e0d8;
-  --muted:      #444;
-  --muted2:     #888;
-  --radius:     7px;
-  --font:       'Space Grotesk', system-ui, sans-serif;
+  --bg:         #F0F2F7;
+  --surface:    #FFFFFF;
+  --surface2:   #F0F2F7;
+  --border:     #DDE2EE;
+  --border2:    #C8D0E0;
+  --accent:     #2E4A7A;
+  --accent-dim: rgba(46,74,122,0.08);
+  --push:       #2E4A7A;
+  --pull:       #4a7abf;
+  --cardio:     #D4860A;
+  --up:         #1E7A4A;
+  --down:       #cc3333;
+  --other:      #A8B4CC;
+  --text:       #1C2B4A;
+  --muted:      #6070A0;
+  --muted2:     #A8B4CC;
+  --radius:     8px;
+  --font:       'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
 
 /* ─── HEADER ─────────────────────────────── */
 header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0; flex-wrap: wrap; row-gap: 12px; }
-.logo { font-size: 1.85rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; min-width: 130px; }
-.logo .lift { color: var(--accent); }
-.logo .log  { color: var(--text); }
+.logo { display: flex; align-items: center; gap: 7px; line-height: 1; min-width: 160px; }
+.wm-prson { font-size: 1.45rem; font-weight: 700; letter-spacing: 0.08em; color: var(--text); line-height: 1; }
+.wm-disc { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--accent); flex-shrink: 0; }
+.wm-disc span { font-weight: 700; font-size: 9px; color: var(--accent); letter-spacing: 0.05em; }
 .hd-div { width: 1px; height: 34px; background: var(--border); margin: 0 28px; }
 .header-stats { display: flex; gap: 32px; flex: 1; }
 .stat { display: flex; flex-direction: column; gap: 3px; }
@@ -111,9 +110,9 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 /* ─── BUTTONS ────────────────────────────── */
 .btn { background: none; border: 1px solid var(--border); color: var(--muted2); border-radius: 5px; padding: 6px 12px; font-size: 0.68rem; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: all .12s; }
 .btn:hover { border-color: var(--accent); color: var(--accent); }
-.btn-fill { background: var(--accent); color: #0a0a0a; border: none; border-radius: 5px; padding: 8px 16px; font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: opacity .12s; }
+.btn-fill { background: var(--accent); color: #ffffff; border: none; border-radius: 5px; padding: 8px 16px; font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: opacity .12s; }
 .btn-fill:hover { opacity: .88; }
-.btn-start { background: var(--accent); color: #0a0a0a; border: none; border-radius: 5px; padding: 8px 18px; font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: opacity .12s; display: flex; align-items: center; gap: 6px; }
+.btn-start { background: var(--accent); color: #ffffff; border: none; border-radius: 5px; padding: 8px 18px; font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: opacity .12s; display: flex; align-items: center; gap: 6px; }
 .btn-start:hover { opacity: .88; }
 .btn-danger { border-color: transparent !important; color: #cc3333 !important; }
 .btn-danger:hover { border-color: #cc3333 !important; background: rgba(204,51,51,.08) !important; }
@@ -133,7 +132,7 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 input, select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--text); border-radius: 5px; padding: 8px 11px; font-family: var(--font); font-size: 0.82rem; outline: none; transition: border-color .12s; }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 input[type="date"] { color-scheme: dark; width: 100%; min-width: 0; box-sizing: border-box; -webkit-appearance: none; appearance: none; }
-select option { background: #1a1a1a; }
+select option { background: var(--surface); }
 textarea { font-family: 'Courier New', monospace; font-size: 0.7rem; resize: vertical; min-height: 160px; line-height: 1.6; }
 input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -199,17 +198,19 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .cat-row-name.disabled { color: var(--muted); text-decoration: line-through; }
 
 /* ─── FAB ────────────────────────────────── */
-.fab-wrap { position: fixed; bottom: 26px; right: 26px; z-index: 100; background: var(--accent); border-radius: 27px; box-shadow: 0 4px 22px rgba(184,204,46,.45); overflow: hidden; display: flex; flex-direction: column; align-items: stretch; }
+.fab-wrap { position: fixed; bottom: 26px; right: 26px; z-index: 100; background: var(--accent); border-radius: 27px; box-shadow: 0 4px 22px rgba(46,74,122,.35); overflow: hidden; display: flex; flex-direction: column; align-items: stretch; transition: box-shadow .3s; }
+.fab-active.fab-wrap { animation: fab-pulse 2s ease-in-out infinite; }
+@keyframes fab-pulse { 0%,100% { box-shadow: 0 4px 22px rgba(46,74,122,.35); } 50% { box-shadow: 0 4px 32px rgba(46,74,122,.7), 0 0 0 8px rgba(46,74,122,.15); } }
 .fab-items { display: none; flex-direction: column; }
 .fab-wrap.open .fab-items { display: flex; }
 .fab-wrap.open { border-radius: 16px; }
-.fab-item { display: flex; align-items: center; gap: 12px; padding: 15px 20px; color: #0a0a0a; font-family: var(--font); font-size: 0.75rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+.fab-item { display: flex; align-items: center; gap: 12px; padding: 15px 20px; color: #ffffff; font-family: var(--font); font-size: 0.75rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
 .fab-item:active { background: rgba(0,0,0,.1); }
 .fab-item-icon { font-size: 1.15rem; width: 22px; text-align: center; flex-shrink: 0; }
 .fab-sep { height: 1px; background: rgba(0,0,0,.15); }
-.fab { width: 54px; height: 54px; background: transparent; border: none; color: #0a0a0a; font-size: 1.6rem; font-weight: 300; cursor: pointer; display: flex; align-items: center; justify-content: center; align-self: flex-end; line-height: 1; font-family: var(--font); transition: transform .18s; position: relative; -webkit-tap-highlight-color: transparent; }
+.fab { width: 54px; height: 54px; background: transparent; border: none; color: #ffffff; font-size: 1.6rem; font-weight: 300; cursor: pointer; display: flex; align-items: center; justify-content: center; align-self: flex-end; line-height: 1; font-family: var(--font); transition: transform .18s; position: relative; -webkit-tap-highlight-color: transparent; }
 .fab-wrap.open .fab { transform: rotate(45deg); }
-.fab-badge { position: absolute; top: 9px; right: 9px; width: 9px; height: 9px; border-radius: 50%; background: #0a0a0a; border: 2px solid var(--accent); animation: pulse 1.5s infinite; display: none; }
+.fab-badge { position: absolute; top: 9px; right: 9px; width: 9px; height: 9px; border-radius: 50%; background: #ffffff; border: 2px solid var(--accent); animation: pulse 1.5s infinite; display: none; }
 .fab-active .fab-badge { display: block; }
 
 /* ─── TOP NAV ────────────────────────────── */
@@ -232,8 +233,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .dash-tile-delta.up      { color: var(--accent); }
 .dash-tile-delta.down    { color: #ff6b35; }
 .dash-tile-delta.neutral { color: var(--muted2); }
-.dash-tile.streak-tile   { border-color: rgba(255,107,53,.35); }
-.dash-tile.streak-tile .dash-tile-val { color: #ff6b35; }
+.dash-tile.streak-tile   { border-color: rgba(212,134,10,.25); }
+.dash-tile.streak-tile .dash-tile-val { color: var(--cardio); }
 
 
 /* ─── DASHBOARD LOWER GRID ─────────────────── */
@@ -246,7 +247,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); color: var(--muted2); font-size: 0.6rem; font-weight: 700; cursor: pointer; flex-shrink: 0; font-style: normal; user-select: none; -webkit-tap-highlight-color: transparent; }
 .info-btn:hover { border-color: var(--accent); color: var(--accent); }
 .tooltip-wrap { position: relative; display: inline-flex; align-items: center; }
-.tooltip-box { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); background: #1e1e1e; border: 1px solid var(--border); border-radius: 8px; padding: 10px 13px; font-size: 0.72rem; color: var(--text); line-height: 1.55; width: 240px; z-index: 200; pointer-events: none; opacity: 0; transition: opacity .15s; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
+.tooltip-box { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; font-size: 0.78rem; font-weight: 400; color: var(--muted); line-height: 1.65; letter-spacing: 0; text-transform: none; font-family: var(--font); width: 260px; z-index: 200; pointer-events: none; opacity: 0; transition: opacity .15s; box-shadow: 0 8px 28px rgba(46,74,122,.12); }
 .tooltip-wrap.open .tooltip-box,
 .tooltip-wrap:hover .tooltip-box { opacity: 1; pointer-events: auto; }
 @media (max-width: 600px) {
@@ -278,18 +279,18 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 /* ─── TRAINING CALENDAR ──────────────────── */
 .panel { overflow: hidden; }
 .hm-filter { display: flex; gap: 8px; margin-bottom: 10px; }
-.hm-filter select { flex: 1; background: var(--surface2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 0.75rem; cursor: pointer; }
+.hm-filter select { flex: 1; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 0.75rem; cursor: pointer; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
 .cal-dow { font-size: 8px; color: var(--muted); font-weight: 700; text-align: center; padding: 3px 0 5px; letter-spacing: .05em; text-transform: uppercase; }
-.cal-day { aspect-ratio: 1; border-radius: 5px; display: flex; align-items: flex-end; justify-content: flex-end; padding: 3px 4px; font-size: 9px; font-weight: 700; color: var(--muted); background: #1e1e1e; cursor: default; box-sizing: border-box; }
+.cal-day { aspect-ratio: 1; border-radius: 5px; display: flex; align-items: flex-end; justify-content: flex-end; padding: 3px 4px; font-size: 9px; font-weight: 700; color: var(--muted); background: var(--border); cursor: default; box-sizing: border-box; }
 .cal-day.cal-empty { background: transparent; }
 .cal-day.cal-future { opacity: 0.2; }
-.cal-day.cal-today { outline: 2px solid var(--accent); outline-offset: -2px; color: var(--fg); }
-.cal-day.cal-trained { color: #0a0a0a; font-weight: 700; }
+.cal-day.cal-today { outline: 2px solid var(--accent); outline-offset: -2px; color: var(--text); }
+.cal-day.cal-trained { color: #ffffff; font-weight: 700; }
 .cal-day.cal-push    { background: var(--push); }
 .cal-day.cal-pull    { background: var(--pull); }
 .cal-day.cal-cardio  { background: var(--cardio); }
-.cal-day.cal-other   { background: var(--other); color: var(--fg); }
+.cal-day.cal-other   { background: var(--other); color: var(--text); }
 .cal-legend { display: flex; gap: 10px; margin-top: 10px; font-size: 0.6rem; color: var(--muted2); flex-wrap: wrap; }
 .cal-leg-item { display: flex; align-items: center; gap: 4px; }
 .cal-leg-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
@@ -309,7 +310,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ─── MISC ───────────────────────────────── */
 .empty { color: var(--muted); font-size: 0.74rem; text-align: center; padding: 26px 0; line-height: 2; }
-#toast { position: fixed; bottom: 92px; right: 26px; background: var(--accent); color: #0a0a0a; padding: 8px 15px; border-radius: 5px; font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; transform: translateY(50px); opacity: 0; transition: all .18s; z-index: 999; pointer-events: none; }
+#toast { position: fixed; bottom: 92px; right: 26px; background: var(--accent); color: #ffffff; padding: 8px 15px; border-radius: 5px; font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; transform: translateY(50px); opacity: 0; transition: all .18s; z-index: 999; pointer-events: none; }
 #toast.show { transform: translateY(0); opacity: 1; }
 
 /* ─── RESPONSIVE ─────────────────────────── */
@@ -373,11 +374,42 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 #view-settings .view-inner > .panel + .panel { margin-top: 14px; }
 </style>
 </head>
-<body>
+<body onload="initGate()">
+
+<!-- ═══ LOGIN GATE ════════════════════════════════════ -->
+<div id="login-gate" style="position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:360px">
+    <!-- Wordmark -->
+    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:36px">
+      <span style="font-size:1.6rem;font-weight:700;letter-spacing:0.08em;color:var(--text)">PRSON</span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0">
+        <span style="font-weight:700;font-size:10px;color:var(--accent);letter-spacing:0.05em">AL</span>
+      </span>
+    </div>
+    <!-- Card -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:20px">Anmelden</div>
+      <div class="field"><label>E-Mail</label><input type="email" id="gate-email" placeholder="deine@email.de" autocomplete="email"></div>
+      <div class="field"><label>Passwort</label><input type="password" id="gate-pw" placeholder="Passwort" autocomplete="current-password"></div>
+      <div id="gate-msg" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
+      <button class="btn-fill" style="width:100%;padding:12px;font-size:.78rem;margin-bottom:10px" onclick="gateSignIn()">Anmelden</button>
+      <button class="btn" style="width:100%;padding:12px;font-size:.78rem" onclick="gateSignUp()">Neu registrieren</button>
+    </div>
+    <div style="text-align:center;margin-top:20px;font-size:.65rem;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase">Dein persönliches Trainings-Tracking</div>
+  </div>
+</div>
 
 <!-- ═══ HEADER ════════════════════════════════════════ -->
 <header>
-  <div class="logo"><span class="lift">LIFT</span><span class="log">LOG</span></div>
+  <div class="logo">
+    <svg width="28" height="28" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="48" cy="48" r="36" fill="none" stroke="#2E4A7A" stroke-width="6"/>
+      <circle cx="48" cy="48" r="23" fill="none" stroke="#2E4A7A" stroke-width="2" opacity="0.35"/>
+      <circle cx="48" cy="48" r="10" fill="none" stroke="#2E4A7A" stroke-width="1.5" opacity="0.15"/>
+      <circle cx="48" cy="48" r="4" fill="#2E4A7A"/>
+    </svg>
+    <span class="wm-prson">PRSON</span><div class="wm-disc"><span>AL</span></div>
+  </div>
   <div class="hd-div"></div>
   <div class="header-stats">
     <div class="stat"><span class="stat-val" id="s-sessions">0</span><span class="stat-lbl">Sessions</span></div>
@@ -499,12 +531,12 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <div class="panel">
         <div class="sec-label">
           1RM Rechner
-          <span style="background:var(--accent);color:#000;border-radius:4px;font-size:.58rem;font-weight:800;padding:2px 5px;letter-spacing:.06em">EPLEY</span>
+          <span style="background:var(--accent);color:#fff;border-radius:4px;font-size:.58rem;font-weight:800;padding:2px 5px;letter-spacing:.06em">EPLEY</span>
           <span class="tooltip-wrap" id="rm-tooltip-wrap">
             <span class="info-btn" onclick="toggleTooltip(event,'rm-tooltip-wrap')">i</span>
             <span class="tooltip-box">
-              Das <b>1-Wiederholungsmaximum (1RM)</b> ist das maximale Gewicht, das du einmalig heben kannst.<br><br>
-              Formel: <b>1RM = Gewicht × (1 + Reps ÷ 30)</b><br><br>
+              Das <b style="color:var(--text);font-weight:600">1-Wiederholungsmaximum (1RM)</b> ist das maximale Gewicht, das du einmalig heben kannst.<br><br>
+              Formel: <b style="color:var(--accent);font-weight:600">1RM = Gewicht × (1 + Reps ÷ 30)</b><br><br>
               Gib einen beliebigen Satz ein — die Tabelle zeigt dir Trainingsbereiche für Kraft, Hypertrophie und Ausdauer.
             </span>
           </span>
@@ -750,12 +782,15 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       </div>
     </div>
 
-    <!-- ── Gefahrenzone ── -->
-    <div class="panel" style="border:1px solid rgba(204,51,51,.25)">
-      <div class="sec-label" style="color:#cc4444;border-bottom-color:rgba(204,51,51,.3)">Gefahrenzone</div>
+    <!-- ── Danger Zone ── -->
+    <div class="panel" style="border:1px solid rgba(204,51,51,.4);background:rgba(204,51,51,.05)">
+      <div class="sec-label" style="color:#cc4444;border-bottom-color:rgba(204,51,51,.25)">⚠ Danger Zone</div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
-        <div style="font-size:.78rem;color:var(--muted2);line-height:1.5">Alle Trainingsdaten unwiderruflich löschen</div>
-        <button class="btn btn-danger" onclick="clearAll()">Alle Daten löschen</button>
+        <div>
+          <div style="font-size:.82rem;font-weight:600;color:#cc4444;margin-bottom:3px">Alle Daten löschen</div>
+          <div style="font-size:.74rem;color:var(--muted2);line-height:1.5">Diese Aktion löscht alle Trainingsdaten<br>unwiderruflich von diesem Gerät.</div>
+        </div>
+        <button class="btn" style="border-color:#cc4444;color:#cc4444;white-space:nowrap;flex-shrink:0" onclick="showClearConfirm()">Daten löschen</button>
       </div>
     </div>
 
@@ -765,63 +800,49 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 <!-- ═══ BOTTOM NAV (mobile) ══════════════════════════ -->
 <nav class="bottom-nav" id="bottom-nav">
   <button class="bottom-nav-tab active" id="bnav-dashboard" onclick="switchView('dashboard')">
-    <span class="bnav-icon"><svg viewBox="1 1 18 18" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <g transform="translate(20,20)">
-    <rect x="-18" y="-18" width="15" height="15" rx="2" fill="none" stroke="#c8e600" stroke-width="2"/>
-    <rect x="-15" y="-14" width="4" height="7" rx="1" fill="#c8e600"/>
-    <rect x="-9" y="-11" width="4" height="4" rx="1" fill="#c8e600" opacity="0.6"/>
-  </g>
+    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect x="4" y="4" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="4" y="22" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.4"/>
+  <rect x="22" y="4" width="14" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.4"/>
+  <rect x="22" y="16" width="14" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.4"/>
+  <rect x="6" y="6" width="5" height="8" rx="1" fill="currentColor"/>
+  <rect x="13" y="9" width="3" height="5" rx="1" fill="currentColor" opacity="0.5"/>
 </svg></span>Dashboard
   </button>
   <button class="bottom-nav-tab" id="bnav-progress" onclick="switchView('progress')">
     <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <g transform="translate(20,20)">
-    <line x1="-18" y1="14" x2="16" y2="14" stroke="#c8e600" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-    <line x1="-18" y1="14" x2="-18" y2="-18" stroke="#c8e600" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-    <polyline points="-14,10 -6,2 2,-4 10,-12" fill="none" stroke="#c8e600" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <polyline points="4,-12 10,-12 10,-6" fill="none" stroke="#c8e600" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
+  <path d="M5,30 C9,27 13,17 20,13 C27,9 31,15 35,9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+  <line x1="4" y1="36" x2="36" y2="36" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
 </svg></span>Fortschritt
   </button>
   <button class="bottom-nav-tab" id="bnav-body" onclick="switchView('body')">
     <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <g transform="translate(20,20)">
-    <circle cx="0" cy="-13" r="4.5" fill="none" stroke="#c8e600" stroke-width="2"/>
-    <line x1="0" y1="-8" x2="0" y2="5" stroke="#c8e600" stroke-width="2" stroke-linecap="round"/>
-    <line x1="-11" y1="-3" x2="11" y2="-3" stroke="#c8e600" stroke-width="2" stroke-linecap="round"/>
-    <rect x="-15" y="-6" width="3.5" height="6" rx="1" fill="#c8e600"/>
-    <rect x="11.5" y="-6" width="3.5" height="6" rx="1" fill="#c8e600"/>
-    <line x1="0" y1="5" x2="-7" y2="17" stroke="#c8e600" stroke-width="2" stroke-linecap="round"/>
-    <line x1="0" y1="5" x2="7" y2="17" stroke="#c8e600" stroke-width="2" stroke-linecap="round"/>
-  </g>
+  <path d="M20,32 C20,32 6,22 6,14 C6,10 9,7 13,7 C15.5,7 17.5,8.5 20,10.5 C22.5,8.5 24.5,7 27,7 C31,7 34,10 34,14 C34,22 20,32 20,32 Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <polyline points="9,19 12.5,19 14.5,14 16.5,23 19.5,16 21.5,19 31,19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
 </svg></span>Körper
   </button>
   <button class="bottom-nav-tab" id="bnav-sessions" onclick="switchView('sessions')">
     <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <g transform="translate(20,20)">
-    <rect x="-13" y="-17" width="26" height="34" rx="3" fill="none" stroke="#c8e600" stroke-width="2"/>
-    <rect x="-5" y="-21" width="10" height="7" rx="2" fill="none" stroke="#c8e600" stroke-width="2"/>
-    <line x1="-7" y1="-8" x2="7" y2="-8" stroke="#c8e600" stroke-width="1.8" stroke-linecap="round"/>
-    <line x1="-7" y1="-2" x2="7" y2="-2" stroke="#c8e600" stroke-width="1.8" stroke-linecap="round"/>
-    <line x1="-7" y1="4" x2="2" y2="4" stroke="#c8e600" stroke-width="1.8" stroke-linecap="round"/>
-    <polyline points="3,2 5.5,6 10,0" fill="none" stroke="#c8e600" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
+  <rect x="8" y="6" width="24" height="30" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="15" y="2" width="10" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <line x1="13" y1="17" x2="27" y2="17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="13" y1="22" x2="27" y2="22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="13" y1="27" x2="20" y2="27" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <polyline points="21,25 24,29 29,22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg></span>Sessions
   </button>
   <button class="bottom-nav-tab" id="bnav-settings" onclick="switchView('settings')">
     <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <g transform="translate(20,20)">
-    <circle cx="0" cy="0" r="6" fill="none" stroke="#c8e600" stroke-width="2.2"/>
-    <circle cx="0" cy="0" r="2.5" fill="#c8e600"/>
-    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(0,0,0)"/>
-    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(45,0,0)"/>
-    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(90,0,0)"/>
-    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(135,0,0)"/>
-    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(180,0,0)"/>
-    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(225,0,0)"/>
-    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(270,0,0)"/>
-    <rect x="-2" y="-18" width="4" height="6" rx="1" fill="#c8e600" transform="rotate(315,0,0)"/>
-  </g>
+  <circle cx="20" cy="20" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <circle cx="20" cy="20" r="2" fill="currentColor"/>
+  <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(0,20,20)"/>
+  <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(45,20,20)"/>
+  <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(90,20,20)"/>
+  <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(135,20,20)"/>
+  <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(180,20,20)"/>
+  <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(225,20,20)"/>
+  <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(270,20,20)"/>
+  <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(315,20,20)"/>
 </svg></span>Einst.
   </button>
 </nav>
@@ -968,7 +989,31 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   </div>
 </div>
 
+<!-- ═══ MODAL: BESTÄTIGUNG LÖSCHEN ═══════════════════ -->
+<div class="overlay" id="m-clear">
+  <div class="modal" style="max-width:320px;text-align:center">
+    <div style="font-size:2rem;margin-bottom:12px">⚠️</div>
+    <div class="modal-title" style="margin-bottom:10px;color:#cc4444;font-size:.8rem">Daten löschen</div>
+    <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin:0 0 22px">
+      Bist du sicher, deine Daten<br>
+      <b style="color:var(--text)">unwiderruflich zu löschen?</b>
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn-fill" style="background:#cc4444;border-color:#cc4444;width:100%;padding:12px;font-size:.78rem" onclick="confirmClearAll()">Ja, alles löschen</button>
+      <button class="btn" style="width:100%;padding:12px;font-size:.78rem" onclick="closeM('m-clear')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
 <script>
+// ─────────────────────────────────────────────────────
+//  CHART.JS GLOBAL DEFAULTS
+// ─────────────────────────────────────────────────────
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.font.family = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+  Chart.defaults.color = '#6070A0';
+}
+
 // ─────────────────────────────────────────────────────
 //  TRAINING PLANS
 // ─────────────────────────────────────────────────────
@@ -1103,7 +1148,7 @@ function toast(msg, err = false) {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.style.background = err ? '#cc2222' : 'var(--accent)';
-  el.style.color = err ? '#fff' : '#0a0a0a';
+  el.style.color = err ? '#fff' : '#ffffff';
   el.classList.add('show');
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove('show'), 2400);
@@ -2210,8 +2255,8 @@ function selectExByName(name) {
   if (progChart) progChart.destroy();
   progChart = new Chart(ctx, {
     type: 'line',
-    data: { labels: pts.map(p => p.label), datasets: [{ label: name, data: pts.map(p => p.val), borderColor: '#b8cc2e', backgroundColor: 'rgba(184,204,46,.07)', pointBackgroundColor: '#b8cc2e', pointBorderColor: '#0a0a0a', pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7, tension: 0.35, fill: true }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1, titleColor: '#b8cc2e', bodyColor: '#e0e0d8', callbacks: { label: c => (Math.round(c.parsed.y * 100) / 100) + ' kg' } } }, scales: { x: { ticks: { color: '#444', font: { size: 11, family: 'Space Grotesk' } }, grid: { color: 'rgba(255,255,255,.03)' }, border: { color: 'rgba(255,255,255,.04)' } }, y: { ticks: { color: '#444', font: { size: 11 }, stepSize: 0.5, callback: v => (Math.round(v * 100) / 100) + ' kg' }, grid: { color: 'rgba(255,255,255,.03)' }, border: { color: 'rgba(255,255,255,.04)' } } } }
+    data: { labels: pts.map(p => p.label), datasets: [{ label: name, data: pts.map(p => p.val), borderColor: '#2E4A7A', backgroundColor: 'rgba(46,74,122,.07)', pointBackgroundColor: '#2E4A7A', pointBorderColor: '#ffffff', pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7, tension: 0.35, fill: true }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: '#ffffff', borderColor: '#DDE2EE', borderWidth: 1, titleColor: '#2E4A7A', bodyColor: '#1A2035', callbacks: { label: c => (Math.round(c.parsed.y * 100) / 100) + ' kg' } } }, scales: { x: { ticks: { color: '#6070A0', font: { size: 11, family: 'Helvetica Neue' } }, grid: { color: 'rgba(0,0,0,.05)' }, border: { color: 'rgba(0,0,0,.08)' } }, y: { ticks: { color: '#6070A0', font: { size: 11 }, stepSize: 0.5, callback: v => (Math.round(v * 100) / 100) + ' kg' }, grid: { color: 'rgba(0,0,0,.05)' }, border: { color: 'rgba(0,0,0,.08)' } } } }
   });
 }
 
@@ -2251,21 +2296,21 @@ function renderDurChart() {
     data: {
       labels: pts.map(p => p.label),
       datasets: [
-        { label: 'Dauer (min)', data: pts.map(p => p.val), backgroundColor: 'rgba(184,204,46,.22)', borderColor: '#b8cc2e', borderWidth: 1.5, borderRadius: 3 },
-        { label: `Ø ${avg} min`, data: pts.map(() => avg), type: 'line', borderColor: 'rgba(255,255,255,.28)', borderDash: [5,4], borderWidth: 1.5, pointRadius: 0, fill: false }
+        { label: 'Dauer (min)', data: pts.map(p => p.val), backgroundColor: 'rgba(46,74,122,.18)', borderColor: '#2E4A7A', borderWidth: 1.5, borderRadius: 3 },
+        { label: `Ø ${avg} min`, data: pts.map(() => avg), type: 'line', borderColor: 'rgba(46,74,122,.4)', borderDash: [5,4], borderWidth: 1.5, pointRadius: 0, fill: false }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: true, labels: { color: '#555', font: { size: 10, family: 'Space Grotesk' }, boxWidth: 12 } },
-        tooltip: { backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1, titleColor: '#b8cc2e', bodyColor: '#e0e0d8',
+        legend: { display: true, labels: { color: '#6070A0', font: { size: 10, family: 'Helvetica Neue' }, boxWidth: 12 } },
+        tooltip: { backgroundColor: '#ffffff', borderColor: '#DDE2EE', borderWidth: 1, titleColor: '#2E4A7A', bodyColor: '#1A2035',
           callbacks: { label: c => c.dataset.label.startsWith('Ø') ? c.dataset.label : `${c.dataset.label}: ${c.parsed.y} min` }
         }
       },
       scales: {
-        x: { ticks: { color: '#444', font: { size: 10, family: 'Space Grotesk' }, maxRotation: 45 }, grid: { color: 'rgba(255,255,255,.03)' }, border: { color: 'rgba(255,255,255,.04)' } },
-        y: { beginAtZero: true, ticks: { color: '#444', font: { size: 11 }, callback: v => v + ' min' }, grid: { color: 'rgba(255,255,255,.03)' }, border: { color: 'rgba(255,255,255,.04)' } }
+        x: { ticks: { color: '#6070A0', font: { size: 10, family: 'Helvetica Neue' }, maxRotation: 45 }, grid: { color: 'rgba(0,0,0,.05)' }, border: { color: 'rgba(0,0,0,.08)' } },
+        y: { beginAtZero: true, ticks: { color: '#6070A0', font: { size: 11 }, callback: v => v + ' min' }, grid: { color: 'rgba(0,0,0,.05)' }, border: { color: 'rgba(0,0,0,.08)' } }
       }
     }
   });
@@ -2280,12 +2325,12 @@ function renderDist(sessions) {
     else if (/leg|bein/i.test(s.category)) counts.Legs++;
     else counts.Andere++;
   }
-  const colors = ['#b8cc2e','#4a9eff','#ff6b35','#ff9f40','#444'];
+  const colors = ['#2E4A7A','#4a7abf','#3d7a6e','#D4860A','#A8B4CC'];
   const labels = Object.keys(counts);
   const data   = Object.values(counts);
   const ctx    = document.getElementById('dist-chart').getContext('2d');
   if (distChart) distChart.destroy();
-  distChart = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#0a0a0a', borderWidth: 3, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1, titleColor: '#b8cc2e', bodyColor: '#e0e0d8' } } } });
+  distChart = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#ffffff', borderWidth: 3, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false }, tooltip: { backgroundColor: '#ffffff', borderColor: '#DDE2EE', borderWidth: 1, titleColor: '#2E4A7A', bodyColor: '#1A2035' } } } });
   document.getElementById('dist-legend').innerHTML = labels.map((l,i) => `<div class="dist-row"><div class="dist-chip" style="background:${colors[i]}"></div><span class="dist-name">${l}</span><span class="dist-count">${data[i]}</span></div>`).join('');
 }
 
@@ -2493,8 +2538,7 @@ async function supabaseSignUp() {
 
 async function supabaseSignOut() {
   await _SB.auth.signOut();
-  renderSyncPanel();
-  toast('Abgemeldet');
+  showLoginGate();
 }
 function exportJSON() {
   try {
@@ -2680,8 +2724,11 @@ function savePlanEditor() {
   toast('Plan gespeichert ✓');
 }
 
-function clearAll() {
-  if (!confirm('Wirklich ALLE Daten löschen? Dies kann nicht rückgängig gemacht werden.')) return;
+function showClearConfirm() {
+  document.getElementById('m-clear').classList.add('open');
+}
+function confirmClearAll() {
+  closeM('m-clear');
   localStorage.clear();
   location.reload();
 }
@@ -2764,17 +2811,17 @@ function renderWeightChart() {
   renderWeightDelta(entries);
 
   const datasets = [
-    { label: 'Gewicht (kg)', data: kgData, borderColor: '#b8cc2e', backgroundColor: 'rgba(184,204,46,.07)', pointBackgroundColor: '#b8cc2e', pointRadius: 4, tension: 0.35, fill: true, yAxisID: hasKfa ? 'y' : 'y' }
+    { label: 'Gewicht (kg)', data: kgData, borderColor: '#2E4A7A', backgroundColor: 'rgba(46,74,122,.07)', pointBackgroundColor: '#2E4A7A', pointRadius: 4, tension: 0.35, fill: true, yAxisID: hasKfa ? 'y' : 'y' }
   ];
   if (hasKfa) {
-    datasets.push({ label: 'KFA (%)', data: kfaData, borderColor: '#4a9eff', backgroundColor: 'rgba(74,158,255,.05)', pointBackgroundColor: '#4a9eff', pointRadius: 4, tension: 0.35, fill: false, yAxisID: 'y2', spanGaps: true });
+    datasets.push({ label: 'KFA (%)', data: kfaData, borderColor: '#4a7abf', backgroundColor: 'rgba(74,122,191,.05)', pointBackgroundColor: '#4a7abf', pointRadius: 4, tension: 0.35, fill: false, yAxisID: 'y2', spanGaps: true });
   }
 
   const scales = {
-    x: { ticks: { color: '#888', font: { family: "'Space Grotesk', sans-serif", size: 11 } }, grid: { color: '#1a1a1a' } },
-    y: { position: 'left', ticks: { color: '#b8cc2e', font: { family: "'Space Grotesk', sans-serif", size: 11 } }, grid: { color: '#1a1a1a' } }
+    x: { ticks: { color: '#6070A0', font: { family: 'Helvetica Neue', size: 11 } }, grid: { color: 'rgba(0,0,0,.05)' } },
+    y: { position: 'left', ticks: { color: '#2E4A7A', font: { family: 'Helvetica Neue', size: 11 } }, grid: { color: 'rgba(0,0,0,.05)' } }
   };
-  if (hasKfa) scales.y2 = { position: 'right', ticks: { color: '#4a9eff', font: { family: "'Space Grotesk', sans-serif", size: 11 }, callback: v => v + '%' }, grid: { display: false } };
+  if (hasKfa) scales.y2 = { position: 'right', ticks: { color: '#4a7abf', font: { family: 'Helvetica Neue', size: 11 }, callback: v => v + '%' }, grid: { display: false } };
 
   const ctx = document.getElementById('wt-chart').getContext('2d');
   if (wtChart) wtChart.destroy();
@@ -2806,7 +2853,7 @@ function renderWeightDelta(entries) {
 function renderWeightLegend(datasets) {
   const el = document.getElementById('wt-legend');
   if (!el) return;
-  const colors = ['#b8cc2e', '#4a9eff'];
+  const colors = ['#2E4A7A', '#4a7abf'];
   el.innerHTML = datasets.map((ds, i) => `
     <div onclick="toggleWtDataset(${i})" id="wt-leg-${i}"
       style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;-webkit-user-select:none">
@@ -2838,11 +2885,61 @@ function toggleWtDataset(index) {
 }
 
 // ── Auth + Init ───────────────────────────────────────
+function showLoginGate() {
+  document.getElementById('login-gate').style.display = 'flex';
+}
+function hideLoginGate() {
+  document.getElementById('login-gate').style.display = 'none';
+}
+
+function gateValidate() {
+  const email = document.getElementById('gate-email').value.trim();
+  const pw    = document.getElementById('gate-pw').value;
+  const msg   = document.getElementById('gate-msg');
+  if (!email || !/\S+@\S+\.\S+/.test(email)) {
+    msg.textContent = '✗ Bitte gültige E-Mail eingeben.'; msg.style.color = '#cc4444'; return null;
+  }
+  if (pw.length < 8) {
+    msg.textContent = '✗ Passwort muss mindestens 8 Zeichen haben.'; msg.style.color = '#cc4444'; return null;
+  }
+  return { email, pw };
+}
+
+async function gateSignIn() {
+  const vals = gateValidate(); if (!vals) return;
+  const msg = document.getElementById('gate-msg');
+  msg.textContent = 'Anmelden…'; msg.style.color = 'var(--muted2)';
+  const { error } = await _SB.auth.signInWithPassword({ email: vals.email, password: vals.pw });
+  if (error) {
+    msg.textContent = '✗ E-Mail oder Passwort ungültig.';
+    msg.style.color = '#cc4444'; return;
+  }
+  hideLoginGate();
+  await loadApp();
+}
+
+async function gateSignUp() {
+  const vals = gateValidate(); if (!vals) return;
+  const msg = document.getElementById('gate-msg');
+  msg.textContent = 'Registrieren…'; msg.style.color = 'var(--muted2)';
+  const { error } = await _SB.auth.signUp({ email: vals.email, password: vals.pw });
+  if (error) { msg.textContent = '✗ ' + error.message; msg.style.color = '#cc4444'; return; }
+  msg.textContent = '✓ Bestätigungsmail gesendet – bitte E-Mail prüfen.';
+  msg.style.color = 'var(--up)';
+}
+
 function initGate() {
   init();
 }
 
 async function init() {
+  const { data: { user } } = await _SB.auth.getUser();
+  if (!user) { showLoginGate(); return; }
+  hideLoginGate();
+  await loadApp();
+}
+
+async function loadApp() {
   populateCategorySelects();
   populateLocationSelects();
   switchView('dashboard');
@@ -2855,6 +2952,11 @@ async function init() {
   initBodyDates();
   renderSyncPanel();
 }
+
+// Redirect to login gate when session expires
+_SB.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') showLoginGate();
+});
 
 // ─── TOOLTIP (hover desktop / tap mobile) ────────────────────────────────────
 function toggleTooltip(e, id) {

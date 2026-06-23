@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gym App — Branding Board</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #080808;
+    font-family: 'Inter', sans-serif;
+    color: #fff;
+    min-height: 100vh;
+    padding: 40px 32px 60px;
+  }
+
+  .board-header {
+    margin-bottom: 48px;
+    border-bottom: 1px solid #1c1c1c;
+    padding-bottom: 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .board-title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #444;
+    margin-bottom: 6px;
+  }
+
+  .board-subtitle {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+
+  .board-count {
+    font-size: 11px;
+    color: #333;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+  }
+
+  /* ── Phone mockup shell ── */
+  .phone {
+    background: #111;
+    border-radius: 28px;
+    border: 1px solid #222;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 9/17;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .phone:hover {
+    transform: translateY(-4px);
+    border-color: #333;
+  }
+
+  .phone-notch {
+    width: 60px;
+    height: 8px;
+    background: #0a0a0a;
+    border-radius: 0 0 6px 6px;
+    margin: 0 auto 0;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+  }
+
+  .phone-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 12px 8px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── Shared screen parts ── */
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    margin-top: 4px;
+  }
+
+  .app-logo {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .app-logo .sub {
+    font-weight: 300;
+    opacity: 0.4;
+  }
+
+  .app-logo .dot {
+    font-size: 18px;
+  }
+
+  .top-stats {
+    display: flex;
+    gap: 10px;
+  }
+
+  .top-stat {
+    text-align: center;
+  }
+
+  .top-stat .val {
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    display: block;
+  }
+
+  .top-stat .lbl {
+    font-size: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #555;
+    display: block;
+    margin-top: 1px;
+  }
+
+  .cards-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .card {
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #1a1a1a;
+  }
+
+  .card .c-val {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    display: block;
+  }
+
+  .card .c-lbl {
+    font-size: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #555;
+    display: block;
+    margin-top: 3px;
+  }
+
+  .card .c-sub {
+    font-size: 7px;
+    color: #444;
+    margin-top: 4px;
+    display: block;
+  }
+
+  .cal-block {
+    background: #1a1a1a;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    flex: 1;
+  }
+
+  .cal-label {
+    font-size: 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #555;
+    margin-bottom: 6px;
+  }
+
+  .cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .cal-day-header {
+    font-size: 5px;
+    text-transform: uppercase;
+    color: #333;
+    text-align: center;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+  }
+
+  .day {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    background: #141414;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 6px;
+    color: #333;
+  }
+
+  .day.today {
+    border: 1px solid;
+    color: #fff;
+    font-weight: 700;
+    background: transparent;
+  }
+
+  .day.active {
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .day.empty { background: transparent; }
+
+  .bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    border-top: 1px solid #1c1c1c;
+    padding-top: 6px;
+    margin-top: 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .nav-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: #222;
+  }
+
+  .nav-lbl {
+    font-size: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #444;
+  }
+
+  .nav-item.active .nav-lbl { color: #fff; }
+
+  /* ── Label below phone ── */
+  .concept-label {
+    margin-top: 12px;
+    text-align: center;
+  }
+
+  .concept-num {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #333;
+    margin-bottom: 3px;
+  }
+
+  .concept-name-label {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+
+  .concept-color-dot {
+    width: 20px;
+    height: 4px;
+    border-radius: 2px;
+    margin: 6px auto 4px;
+  }
+
+  .concept-tagline-label {
+    font-size: 9px;
+    color: #444;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Accent overrides per concept ── */
+  /* Each concept gets a unique bg tint on the screen */
+
+</style>
+</head>
+<body>
+
+<div class="board-header">
+  <div>
+    <div class="board-title">Gym App Rebranding</div>
+    <div class="board-subtitle">10 Konzepte</div>
+  </div>
+  <div class="board-count">2026 · Alle Entwürfe</div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const concepts = [
+  {
+    num: "01",
+    name: "FORGED",
+    nameParts: [{text:"FORGED", bold:true},{text:".", cls:"dot"}],
+    tagline: "Track every rep. Build what lasts.",
+    accent: "#5B7FFF",
+    accentSoft: "rgba(91,127,255,0.12)",
+    bg: "#0d0d18",
+    cardBg: "#131326",
+    activeDay: "#5B7FFF",
+    font: "'Inter', sans-serif",
+    logoHtml: `<span style="font-weight:900;color:#fff;letter-spacing:-0.03em">FORGED</span><span style="color:#5B7FFF;font-size:16px">.</span>`,
+  },
+  {
+    num: "02",
+    name: "GRNDWORK",
+    tagline: "Do the work. Every day.",
+    accent: "#ffffff",
+    accentSoft: "rgba(255,255,255,0.06)",
+    bg: "#0a0a0a",
+    cardBg: "#141414",
+    activeDay: "#fff",
+    font: "'DM Mono', monospace",
+    logoHtml: `<span style="font-weight:700;color:#fff;letter-spacing:0.05em;font-family:'DM Mono',monospace">GRND</span><span style="font-weight:400;color:#444;letter-spacing:0.05em;font-family:'DM Mono',monospace">WORK</span>`,
+  },
+  {
+    num: "03",
+    name: "APEX",
+    tagline: "Your peak, tracked.",
+    accent: "#D4A843",
+    accentSoft: "rgba(212,168,67,0.1)",
+    bg: "#0c0b09",
+    cardBg: "#161410",
+    activeDay: "#D4A843",
+    font: "'Space Grotesk', sans-serif",
+    logoHtml: `<span style="font-weight:800;color:#fff;letter-spacing:-0.02em;font-family:'Space Grotesk',sans-serif">APEX</span><span style="font-weight:300;color:#444;font-family:'Space Grotesk',sans-serif"> LOG</span>`,
+  },
+  {
+    num: "04",
+    name: "STARK",
+    tagline: "Simple. Strong. Consistent.",
+    accent: "#4CAF6E",
+    accentSoft: "rgba(76,175,110,0.1)",
+    bg: "#090e09",
+    cardBg: "#101510",
+    activeDay: "#4CAF6E",
+    font: "'Inter', sans-serif",
+    logoHtml: `<span style="font-weight:900;color:#fff;letter-spacing:-0.02em">STARK</span><span style="color:#4CAF6E;font-size:16px">.</span>`,
+  },
+  {
+    num: "05",
+    name: "LADE",
+    tagline: "Lade dich auf.",
+    accent: "#4DA6C8",
+    accentSoft: "rgba(77,166,200,0.1)",
+    bg: "#090d10",
+    cardBg: "#0f1418",
+    activeDay: "#4DA6C8",
+    font: "'Space Grotesk', sans-serif",
+    logoHtml: `<span style="font-weight:900;color:#fff;letter-spacing:0.06em;font-family:'Space Grotesk',sans-serif">LADE</span><span style="color:#4DA6C8;font-weight:300">.</span>`,
+  },
+  {
+    num: "06",
+    name: "VOLUM",
+    tagline: "Volume is the answer.",
+    accent: "#7B6FD4",
+    accentSoft: "rgba(123,111,212,0.1)",
+    bg: "#0b0a12",
+    cardBg: "#12101e",
+    activeDay: "#7B6FD4",
+    font: "'Inter', sans-serif",
+    logoHtml: `<span style="font-weight:900;color:#fff;letter-spacing:-0.03em">VOLUM</span>`,
+  },
+  {
+    num: "07",
+    name: "KOVA",
+    tagline: "Built, not born.",
+    accent: "#8C95A6",
+    accentSoft: "rgba(140,149,166,0.1)",
+    bg: "#0a0b0c",
+    cardBg: "#131415",
+    activeDay: "#8C95A6",
+    font: "'Space Grotesk', sans-serif",
+    logoHtml: `<span style="font-weight:800;color:#fff;letter-spacing:0.12em;font-family:'Space Grotesk',sans-serif">KOVA</span>`,
+  },
+  {
+    num: "08",
+    name: "BLOC",
+    tagline: "Block by block.",
+    accent: "#2E8B7A",
+    accentSoft: "rgba(46,139,122,0.1)",
+    bg: "#090d0c",
+    cardBg: "#0d1311",
+    activeDay: "#2E8B7A",
+    font: "'Inter', sans-serif",
+    logoHtml: `<span style="font-weight:900;color:#fff;letter-spacing:0.04em">BL</span><span style="color:#2E8B7A;font-weight:900;letter-spacing:0.04em">OC</span>`,
+  },
+  {
+    num: "09",
+    name: "ATLAS",
+    tagline: "Carry the weight.",
+    accent: "#B87333",
+    accentSoft: "rgba(184,115,51,0.1)",
+    bg: "#0c0a08",
+    cardBg: "#161210",
+    activeDay: "#B87333",
+    font: "'Space Grotesk', sans-serif",
+    logoHtml: `<span style="font-weight:800;color:#fff;letter-spacing:-0.01em;font-family:'Space Grotesk',sans-serif">ATLAS</span><span style="font-weight:300;color:#444;font-family:'Space Grotesk',sans-serif"> LOG</span>`,
+  },
+  {
+    num: "10",
+    name: "KERN",
+    tagline: "Train to the core.",
+    accent: "#5E8A6E",
+    accentSoft: "rgba(94,138,110,0.08)",
+    bg: "#090b09",
+    cardBg: "#0f120f",
+    activeDay: "#5E8A6E",
+    font: "'Inter', sans-serif",
+    logoHtml: `<span style="font-weight:900;color:#fff;letter-spacing:0.08em">KERN</span>`,
+  },
+];
+
+// Calendar data
+const calHeaders = ["MO","DI","MI","DO","FR","SA","SO"];
+const calDays = [
+  // week 1 (empty Mon-Thu then 1-3)
+  {n:"",empty:true},{n:"",empty:true},{n:"",empty:true},{n:"",empty:true},{n:"1"},{n:"2"},{n:"3"},
+  // week 2
+  {n:"4"},{n:"5"},{n:"6"},{n:"7"},{n:"8",active:true},{n:"9"},{n:"10"},
+  // week 3
+  {n:"11"},{n:"12"},{n:"13"},{n:"14"},{n:"15"},{n:"16"},{n:"17"},
+  // week 4
+  {n:"18"},{n:"19",today:true},{n:"20"},{n:"21"},{n:"22"},{n:"23"},{n:"24"},
+];
+
+function buildPhone(c) {
+  const calCells = calHeaders.map(h =>
+    `<div class="cal-day-header">${h}</div>`
+  ).join("") + calDays.map(d => {
+    if(d.empty) return `<div class="day empty"></div>`;
+    let cls = "day";
+    let style = "";
+    if(d.today) { cls += " today"; style = `style="border-color:${c.accent};color:${c.accent}"` }
+    else if(d.active) { cls += " active"; style = `style="background:${c.accent};color:#000"` }
+    return `<div class="${cls}" ${style}>${d.n}</div>`;
+  }).join("");
+
+  return `
+  <div class="phone" style="background:${c.bg}">
+    <div class="phone-notch"></div>
+    <div class="phone-screen" style="background:${c.bg};font-family:${c.font}">
+
+      <div class="app-topbar">
+        <div class="app-logo">${c.logoHtml}</div>
+        <div class="top-stats">
+          <div class="top-stat">
+            <span class="val" style="color:${c.accent}">12</span>
+            <span class="lbl">Sessions</span>
+          </div>
+          <div class="top-stat">
+            <span class="val">4</span>
+            <span class="lbl">Übungen</span>
+          </div>
+          <div class="top-stat">
+            <span class="val">8.2</span>
+            <span class="lbl">Tonnen</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cards-row">
+        <div class="card" style="background:${c.cardBg}">
+          <span class="c-val" style="color:${c.accent}">4</span>
+          <span class="c-lbl">Sessions / Monat</span>
+          <span class="c-sub" style="color:${c.accent}88">↑ +1 letzter Monat</span>
+        </div>
+        <div class="card" style="background:${c.cardBg}">
+          <span class="c-val" style="color:#fff">3×</span>
+          <span class="c-lbl">Diese Woche</span>
+          <span class="c-sub">seit Montag</span>
+        </div>
+      </div>
+
+      <div class="cards-row">
+        <div class="card" style="background:${c.cardBg}">
+          <span class="c-val" style="color:#fff">82<span style="font-size:9px;color:#444">kg</span></span>
+          <span class="c-lbl">Gewicht (30T)</span>
+          <span class="c-sub">−0.4 kg</span>
+        </div>
+        <div class="card" style="background:${c.cardBg};border:1px solid ${c.accent}33">
+          <span class="c-val" style="color:${c.accent}">🔥 5</span>
+          <span class="c-lbl">Wochen-Streak</span>
+          <span class="c-sub" style="color:${c.accent}88">Persönlicher Rekord</span>
+        </div>
+      </div>
+
+      <div class="cal-block" style="background:${c.cardBg}">
+        <div class="cal-label">Trainingsfrequenz — Juni 2026</div>
+        <div class="cal-days">${calCells}</div>
+      </div>
+
+      <div class="bottom-nav">
+        ${["Dashboard","Fortschritt","Körper","Sessions","Einst."].map((n,i) => `
+          <div class="nav-item ${i===0?'active':''}">
+            <div class="nav-icon" style="${i===0?`background:${c.accent};`:``}"></div>
+            <div class="nav-lbl" style="${i===0?`color:${c.accent}`:``}">${n}</div>
+          </div>
+        `).join("")}
+      </div>
+
+    </div>
+  </div>
+  <div class="concept-label">
+    <div class="concept-num">Konzept ${c.num}</div>
+    <div class="concept-name-label">${c.name}</div>
+    <div class="concept-color-dot" style="background:${c.accent}"></div>
+    <div class="concept-tagline-label">${c.tagline}</div>
+  </div>
+  `;
+}
+
+const grid = document.getElementById("grid");
+concepts.forEach(c => {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = buildPhone(c);
+  grid.appendChild(wrapper);
+});
+</script>
+</body>
+</html>

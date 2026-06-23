@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>LIFTLOG — Feature Mockup</title>
+<style>
+  :root {
+    --bg: #0a0a0a; --surface: #111; --surface2: #1a1a1a; --border: #222;
+    --accent: #b8cc2e; --muted: #555; --muted2: #777; --text: #eee;
+    --radius: 10px; --up: #4caf50; --down: #f44336;
+    --push: #b8cc2e; --pull: #4a9eff; --legs: #ff6b6b; --cardio: #ff9f40;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; }
+
+  /* TOP NAV */
+  .top-nav { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; position: sticky; top: 0; z-index: 50; overflow-x: auto; }
+  .top-nav-tab { flex-shrink: 0; background: none; border: none; color: var(--muted); cursor: pointer; padding: 14px 14px 12px; font-size: 0.62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; border-bottom: 2px solid transparent; }
+  .top-nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: block; }
+  .view-inner { max-width: 900px; margin: 0 auto; padding: 20px 16px 100px; }
+
+  /* PANELS */
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+  .sec-label { font-size: 0.6rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+
+  /* STAT TILES */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  @media (max-width: 600px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .tile-val { font-size: 1.6rem; font-weight: 800; line-height: 1.1; margin-bottom: 4px; }
+  .tile-lbl { font-size: 0.63rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+  .tile-delta { font-size: 0.7rem; font-weight: 600; }
+  .tile-delta.up { color: var(--up); }
+  .tile-delta.down { color: var(--down); }
+  .tile-delta.neutral { color: var(--muted2); }
+
+  /* LOWER GRID */
+  .lower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 600px) { .lower-grid { grid-template-columns: 1fr; } }
+
+  /* HEATMAP */
+  .heatmap-outer { display: flex; align-items: flex-start; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  .hm-day-labels { display: flex; flex-direction: column; gap: 3px; padding-top: 18px; flex-shrink: 0; }
+  .hm-day-lbl { font-size: 9px; color: var(--muted); font-weight: 600; height: 13px; line-height: 13px; text-align: right; width: 16px; }
+  .heatmap-cols-wrap { flex-shrink: 0; }
+  .hm-months-row { display: flex; gap: 3px; margin-bottom: 4px; }
+  .hm-month-lbl { font-size: 9px; color: var(--muted); font-weight: 600; min-width: 13px; text-align: left; white-space: nowrap; }
+  .heatmap-cols { display: flex; gap: 3px; }
+  .hm-col { display: flex; flex-direction: column; gap: 3px; }
+  .hm-cell { width: 13px; height: 13px; border-radius: 2px; background: #2a2a2a; flex-shrink: 0; }
+  .hm-cell.l1 { background: #2e3d07; }
+  .hm-cell.l2 { background: #6b8012; }
+  .hm-cell.l3 { background: #96b31a; }
+  .hm-cell.l4 { background: var(--accent); }
+  .hm-legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 0.63rem; color: var(--muted2); }
+  .hm-legend-cells { display: flex; gap: 3px; }
+
+  /* SESSION LIST */
+  .s-card { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .s-card:last-child { border-bottom: none; }
+  .s-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .s-left { flex: 1; min-width: 0; }
+  .s-date { font-size: 0.8rem; font-weight: 700; }
+  .s-sub { font-size: 0.7rem; color: var(--muted2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .s-right { font-size: 0.72rem; color: var(--muted); text-align: right; flex-shrink: 0; }
+
+  /* PR CARDS */
+  .pr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pr-card { background: var(--surface2); border-radius: 8px; padding: 10px 12px; }
+  .pr-name { font-size: 0.7rem; color: var(--muted2); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pr-val { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
+  .pr-sub { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+
+  /* CHART PLACEHOLDER */
+  .chart-ph { background: var(--surface2); border-radius: 8px; height: 160px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.72rem; letter-spacing: .06em; }
+
+  /* 1RM CALCULATOR */
+  .calc-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; margin-bottom: 12px; }
+  .calc-row input, .calc-row select { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 0.85rem; width: 100%; }
+  .calc-result { background: var(--surface2); border-radius: 8px; padding: 14px; text-align: center; }
+  .calc-result-val { font-size: 2rem; font-weight: 800; color: var(--accent); }
+  .calc-result-lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+
+  /* REST TIMER */
+  .timer-display { font-size: 3rem; font-weight: 800; text-align: center; letter-spacing: .04em; padding: 20px 0 12px; }
+  .timer-bar { height: 4px; background: var(--surface2); border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
+  .timer-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 60%; transition: width .5s linear; }
+  .timer-btns { display: flex; gap: 8px; justify-content: center; }
+  .timer-preset { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px 14px; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+  .timer-preset.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  /* SESSION NOTES */
+  .notes-area { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 12px; font-size: 0.82rem; line-height: 1.6; resize: vertical; min-height: 80px; width: 100%; font-family: inherit; }
+
+  /* EXPORT */
+  .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .export-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); padding: 16px 14px; text-align: center; cursor: pointer; }
+  .export-btn-icon { font-size: 1.4rem; margin-bottom: 6px; }
+  .export-btn-lbl { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+  .export-btn-sub { font-size: 0.65rem; color: var(--muted2); margin-top: 3px; }
+
+  /* WEIGHT CHART */
+  .wt-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .wt-stat { text-align: center; }
+  .wt-stat-val { font-size: 1.3rem; font-weight: 800; }
+  .wt-stat-lbl { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+  /* BOTTOM NAV */
+  .bottom-nav { display: none; }
+  @media (max-width: 768px) {
+    .bottom-nav {
+      display: flex; position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 8px 0 max(8px, env(safe-area-inset-bottom)); z-index: 90;
+    }
+  }
+  .bnav-tab { flex: 1; background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px 0; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+  .bnav-tab.active { color: var(--accent); }
+  .bnav-icon { font-size: 1.1rem; line-height: 1; }
+
+  /* BUTTONS */
+  .btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 9px 16px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  .btn-fill { background: var(--accent); border: none; border-radius: 8px; color: #000; padding: 9px 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+  .badge { display: inline-block; background: var(--accent); color: #000; border-radius: 4px; font-size: 0.6rem; font-weight: 800; padding: 2px 6px; letter-spacing: .06em; vertical-align: middle; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <button class="top-nav-tab active" onclick="show('dashboard')">Dashboard</button>
+  <button class="top-nav-tab" onclick="show('progress')">Fortschritt</button>
+  <button class="top-nav-tab" onclick="show('body')">Körper</button>
+  <button class="top-nav-tab" onclick="show('sessions')">Sessions</button>
+  <button class="top-nav-tab" onclick="show('settings')">Einstellungen</button>
+</nav>
+
+<!-- ── DASHBOARD ──────────────────────────────────────── -->
+<div id="v-dashboard" class="view active">
+  <div class="view-inner">
+
+    <!-- Stat tiles -->
+    <div class="tiles">
+      <div class="tile">
+        <div class="tile-val">14</div>
+        <div class="tile-lbl">Sessions / Monat</div>
+        <div class="tile-delta up">↑ +2 vs. Vormonat</div>
+      </div>
+      <div class="tile">
+        <div class="tile-val">3×</div>
+        <div class="tile-lbl">Diese Woche</div>
+        <div class="tile-delta neutral">seit Montag</div>
+      </div>
+      <div class="tile">
+        <div class="tile-val">82.4 kg</div>
+        <div class="tile-lbl">Gewicht (30 Tage)</div>
+        <div class="tile-delta up">↓ −1.2 kg</div>
+      </div>
+      <div class="tile">
+        <div class="tile-val" style="color:#ff6b35">6 🔥</div>
+        <div class="tile-lbl">Wochen-Streak</div>
+        <div class="tile-delta neutral">6 Wochen · min. 3/Wo</div>
+      </div>
+    </div>
+
+    <!-- Heatmap + Recent Sessions -->
+    <div class="lower-grid">
+      <div class="panel">
+        <div class="sec-label">Trainingsfrequenz</div>
+        <div class="heatmap-outer">
+          <div class="hm-day-labels">
+            <div class="hm-day-lbl">Mo</div><div class="hm-day-lbl"></div>
+            <div class="hm-day-lbl">Mi</div><div class="hm-day-lbl"></div>
+            <div class="hm-day-lbl">Fr</div><div class="hm-day-lbl"></div>
+            <div class="hm-day-lbl">So</div>
+          </div>
+          <div class="heatmap-cols-wrap">
+            <div class="hm-months-row" id="hm-months"></div>
+            <div class="heatmap-cols" id="hm-grid"></div>
+          </div>
+        </div>
+        <div class="hm-legend">
+          <span>Weniger</span>
+          <div class="hm-legend-cells">
+            <div class="hm-cell"></div>
+            <div class="hm-cell l1"></div>
+            <div class="hm-cell l2"></div>
+            <div class="hm-cell l3"></div>
+            <div class="hm-cell l4"></div>
+          </div>
+          <span>Mehr</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="sec-label">Zuletzt</div>
+        <div class="s-card"><div class="s-dot" style="background:var(--push)"></div><div class="s-left"><div class="s-date">09.06.26</div><div class="s-sub">Push · Sportpark Haidhof</div></div><div class="s-right">8 Übungen</div></div>
+        <div class="s-card"><div class="s-dot" style="background:var(--pull)"></div><div class="s-left"><div class="s-date">07.06.26</div><div class="s-sub">Pull · Modern Coach</div></div><div class="s-right">6 Übungen</div></div>
+        <div class="s-card"><div class="s-dot" style="background:var(--legs)"></div><div class="s-left"><div class="s-date">05.06.26</div><div class="s-sub">Legs · Sportpark Haidhof</div></div><div class="s-right">7 Übungen</div></div>
+        <div class="s-card"><div class="s-dot" style="background:var(--push)"></div><div class="s-left"><div class="s-date">03.06.26</div><div class="s-sub">Push · Sportpark Haidhof</div></div><div class="s-right">8 Übungen</div></div>
+        <div class="s-card"><div class="s-dot" style="background:var(--cardio)"></div><div class="s-left"><div class="s-date">01.06.26</div><div class="s-sub">Cardio</div></div><div class="s-right">5.2 km · 28 min</div></div>
+      </div>
+    </div>
+
+    <!-- PRs -->
+    <div class="panel">
+      <div class="sec-label">Personal Records <span class="badge">NEU</span></div>
+      <div class="pr-grid">
+        <div class="pr-card"><div class="pr-name">Bankdrücken</div><div class="pr-val">102.5 kg</div><div class="pr-sub">× 3 · 14.05.26</div></div>
+        <div class="pr-card"><div class="pr-name">Kniebeuge</div><div class="pr-val">140 kg</div><div class="pr-sub">× 1 · 03.06.26</div></div>
+        <div class="pr-card"><div class="pr-name">Kreuzheben</div><div class="pr-val">180 kg</div><div class="pr-sub">× 1 · 28.05.26</div></div>
+        <div class="pr-card"><div class="pr-name">Schulterdrücken</div><div class="pr-val">72.5 kg</div><div class="pr-sub">× 5 · 09.06.26</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── FORTSCHRITT ─────────────────────────────────────── -->
+<div id="v-progress" class="view">
+  <div class="view-inner">
+
+    <div class="panel">
+      <div class="sec-label">Trainingsvolumen</div>
+      <div class="chart-ph">Chart.js Volumen-Verlauf (Tonnen/Woche)</div>
+    </div>
+
+    <div class="panel">
+      <div class="sec-label">Trainingsdauer</div>
+      <div class="chart-ph">Chart.js Dauer-Verlauf (Minuten)</div>
+    </div>
+
+    <!-- 1RM Rechner -->
+    <div class="panel">
+      <div class="sec-label">1RM Rechner <span class="badge">NEU</span></div>
+      <div class="calc-row">
+        <div>
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">Übung</div>
+          <select><option>Bankdrücken</option><option>Kniebeuge</option><option>Kreuzheben</option></select>
+        </div>
+        <div>
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">Gewicht (kg)</div>
+          <input type="number" value="100" placeholder="kg">
+        </div>
+        <div>
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">Wiederholungen</div>
+          <input type="number" value="3" placeholder="Reps">
+        </div>
+        <button class="btn-fill" style="height:40px">≈</button>
+      </div>
+      <div class="calc-result">
+        <div class="calc-result-val">108 kg</div>
+        <div class="calc-result-lbl">Geschätztes 1RM (Epley-Formel)</div>
+        <div style="display:flex;justify-content:center;gap:20px;margin-top:10px;font-size:.7rem;color:var(--muted)">
+          <span>90% → <b>97 kg</b></span>
+          <span>85% → <b>92 kg</b></span>
+          <span>80% → <b>86 kg</b></span>
+          <span>75% → <b>81 kg</b></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Übungsverteilung -->
+    <div class="panel">
+      <div class="sec-label">Übungsverteilung</div>
+      <div class="chart-ph">Doughnut-Chart Push / Pull / Legs / Cardio</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── KÖRPER ──────────────────────────────────────────── -->
+<div id="v-body" class="view">
+  <div class="view-inner">
+
+    <div class="panel">
+      <div class="wt-row">
+        <div class="wt-stat"><div class="wt-stat-val">82.4</div><div class="wt-stat-lbl">Aktuell (kg)</div></div>
+        <div class="wt-stat"><div class="wt-stat-val" style="color:var(--up)">−1.2</div><div class="wt-stat-lbl">30-Tage-Delta</div></div>
+        <div class="wt-stat"><div class="wt-stat-val">15.2%</div><div class="wt-stat-lbl">KFA</div></div>
+        <div class="wt-stat"><div class="wt-stat-val">69.7</div><div class="wt-stat-lbl">LBM (kg)</div></div>
+      </div>
+      <div class="chart-ph">Chart.js Gewicht-Verlauf</div>
+    </div>
+
+    <div class="panel">
+      <div class="sec-label">Eintrag hinzufügen</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div>
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">Datum</div>
+          <input type="date" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;width:100%">
+        </div>
+        <div>
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">Gewicht (kg)</div>
+          <input type="number" placeholder="82.5" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;width:100%">
+        </div>
+        <div>
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">KFA % (opt.)</div>
+          <input type="number" placeholder="15.0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;width:100%">
+        </div>
+      </div>
+      <div style="text-align:right"><button class="btn-fill">Speichern</button></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── SESSIONS ────────────────────────────────────────── -->
+<div id="v-sessions" class="view">
+  <div class="view-inner">
+
+    <!-- Filter row -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px">
+      <button class="btn" style="flex-shrink:0;font-size:.72rem;background:var(--accent);color:#000;border-color:var(--accent)">Alle</button>
+      <button class="btn" style="flex-shrink:0;font-size:.72rem">Push</button>
+      <button class="btn" style="flex-shrink:0;font-size:.72rem">Pull</button>
+      <button class="btn" style="flex-shrink:0;font-size:.72rem">Legs</button>
+      <button class="btn" style="flex-shrink:0;font-size:.72rem">Cardio</button>
+    </div>
+
+    <!-- Session cards -->
+    <div class="panel" style="padding:0">
+      <div style="padding:14px 16px">
+        <div class="s-card" style="padding:12px 0">
+          <div class="s-dot" style="background:var(--push);width:10px;height:10px"></div>
+          <div class="s-left">
+            <div class="s-date">09.06.26 · Push</div>
+            <div class="s-sub">Sportpark Haidhof · 65 min · 8 Übungen</div>
+            <div style="font-size:.68rem;color:var(--muted);margin-top:4px;font-style:italic">„Starke Session, Bankdrücken 3×5 @ 100kg"</div>
+          </div>
+          <div class="s-right">4.2 t</div>
+        </div>
+        <div class="s-card" style="padding:12px 0">
+          <div class="s-dot" style="background:var(--pull);width:10px;height:10px"></div>
+          <div class="s-left">
+            <div class="s-date">07.06.26 · Pull</div>
+            <div class="s-sub">Modern Coach · 55 min · 6 Übungen</div>
+          </div>
+          <div class="s-right">3.8 t</div>
+        </div>
+        <div class="s-card" style="padding:12px 0;border-bottom:none">
+          <div class="s-dot" style="background:var(--legs);width:10px;height:10px"></div>
+          <div class="s-left">
+            <div class="s-date">05.06.26 · Legs</div>
+            <div class="s-sub">Sportpark Haidhof · 70 min · 7 Übungen</div>
+          </div>
+          <div class="s-right">6.1 t</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rest Timer -->
+    <div class="panel">
+      <div class="sec-label">Pause-Timer <span class="badge">NEU</span></div>
+      <div class="timer-display">1:30</div>
+      <div class="timer-bar"><div class="timer-fill"></div></div>
+      <div class="timer-btns">
+        <button class="timer-preset">1 min</button>
+        <button class="timer-preset active">1:30</button>
+        <button class="timer-preset">2 min</button>
+        <button class="timer-preset">3 min</button>
+        <button class="timer-preset">5 min</button>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
+        <button class="btn">Zurücksetzen</button>
+        <button class="btn-fill" style="min-width:100px">▶ Start</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── EINSTELLUNGEN ───────────────────────────────────── -->
+<div id="v-settings" class="view">
+  <div class="view-inner">
+
+    <!-- Allgemein -->
+    <div class="panel">
+      <div class="sec-label">Allgemein</div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">Streak-Minimum (Sessions/Woche)</div>
+        <select style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-size:.85rem">
+          <option>1 Session / Woche</option>
+          <option>2 Sessions / Woche</option>
+          <option selected>3 Sessions / Woche</option>
+          <option>4 Sessions / Woche</option>
+          <option>5 Sessions / Woche</option>
+        </select>
+      </div>
+      <button class="btn-fill">Speichern</button>
+    </div>
+
+    <!-- Export -->
+    <div class="panel">
+      <div class="sec-label">Export <span class="badge">NEU</span></div>
+      <div class="export-grid">
+        <div class="export-btn">
+          <div class="export-btn-icon">📊</div>
+          <div class="export-btn-lbl">CSV Export</div>
+          <div class="export-btn-sub">Alle Sessions als Tabelle</div>
+        </div>
+        <div class="export-btn">
+          <div class="export-btn-icon">📋</div>
+          <div class="export-btn-lbl">JSON Export</div>
+          <div class="export-btn-sub">Vollständiges Backup</div>
+        </div>
+        <div class="export-btn">
+          <div class="export-btn-icon">🖨</div>
+          <div class="export-btn-lbl">PDF Report</div>
+          <div class="export-btn-sub">Monatsbericht drucken</div>
+        </div>
+        <div class="export-btn">
+          <div class="export-btn-icon">📤</div>
+          <div class="export-btn-lbl">Share</div>
+          <div class="export-btn-sub">Statistik teilen</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Notes -->
+    <div class="panel">
+      <div class="sec-label">Session-Notizen <span class="badge">NEU</span></div>
+      <p style="font-size:.72rem;color:var(--muted2);margin-bottom:10px;line-height:1.6">
+        Du kannst jeder Session eine kurze Notiz hinzufügen — z.B. Energielevel, besondere PRs oder Anmerkungen.
+      </p>
+      <textarea class="notes-area" placeholder="„Starke Session heute — Bankdrücken endlich 100 kg für 5 Reps!"">"Starke Session heute — Bankdrücken endlich 100 kg für 5 Reps!"</textarea>
+    </div>
+
+    <!-- Sync -->
+    <div class="panel">
+      <div class="sec-label">Sync (JSONBin.io)</div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">API Key</div>
+        <input type="password" placeholder="$2b$10$…" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;width:100%">
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">Bin ID</div>
+        <input type="text" placeholder="6…" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;width:100%">
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700">API-Kontingent</span>
+          <button class="btn" style="font-size:.72rem;padding:4px 10px">🔄 Prüfen</button>
+        </div>
+        <div style="font-size:.75rem;color:var(--up)">✓ Verbindung OK</div>
+        <div style="font-size:.75rem;color:var(--muted2);margin-top:4px">Aktivitäts-Logs: 24 Tage (zuletzt: 10-06-2026)</div>
+        <div style="font-size:.73rem;color:var(--muted2);margin-top:4px">Verbleibende Requests: nur im <a href="https://jsonbin.io/app/api-keys" target="_blank" style="color:var(--accent)">JSONBin Dashboard</a> sichtbar</div>
+      </div>
+      <button class="btn-fill">Speichern</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="bnav-tab active" onclick="show('dashboard')"><span class="bnav-icon">⊞</span>Dashboard</button>
+  <button class="bnav-tab" onclick="show('progress')"><span class="bnav-icon">📈</span>Fortschritt</button>
+  <button class="bnav-tab" onclick="show('body')"><span class="bnav-icon">⚖</span>Körper</button>
+  <button class="bnav-tab" onclick="show('sessions')"><span class="bnav-icon">📋</span>Sessions</button>
+  <button class="bnav-tab" onclick="show('settings')"><span class="bnav-icon">⚙️</span>Einst.</button>
+</nav>
+
+<script>
+// ── Navigation ──────────────────────────────────────────
+const VIEWS = ['dashboard','progress','body','sessions','settings'];
+function show(name) {
+  VIEWS.forEach(v => {
+    const el = document.getElementById('v-' + v);
+    if (el) el.classList.toggle('active', v === name);
+  });
+  document.querySelectorAll('.top-nav-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', VIEWS[i] === name);
+  });
+  document.querySelectorAll('.bnav-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', VIEWS[i] === name);
+  });
+  if (name === 'dashboard') buildHeatmap();
+}
+
+// ── Heatmap (with sample data) ───────────────────────────
+function buildHeatmap() {
+  const grid = document.getElementById('hm-grid');
+  const monthEl = document.getElementById('hm-months');
+  if (!grid) return;
+  grid.innerHTML = ''; monthEl.innerHTML = '';
+
+  const WEEKS = 20;
+  const MONTHS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+  // Simulated training data: ~3-4×/week pattern
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0,10);
+  const sampleData = {};
+  for (let i = 0; i < 140; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0,10);
+    const r = Math.random();
+    if (r > 0.6) sampleData[ds] = r > 0.85 ? 2 : 1;
+  }
+
+  const dow = (today.getDay() + 6) % 7;
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - dow - (WEEKS-1)*7);
+
+  const monthsSeen = {};
+  const colEls = [];
+
+  for (let w = 0; w < WEEKS; w++) {
+    const col = document.createElement('div');
+    col.className = 'hm-col';
+    for (let d = 0; d < 7; d++) {
+      const cd = new Date(startDate);
+      cd.setDate(startDate.getDate() + w*7 + d);
+      const ds = cd.toISOString().slice(0,10);
+      const isFuture = ds > todayStr;
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell';
+      if (!isFuture) {
+        const cnt = sampleData[ds] || 0;
+        if (cnt >= 3)     cell.classList.add('l4');
+        else if (cnt >=2) cell.classList.add('l3');
+        else if (cnt >=1) cell.classList.add('l2');
+        else              cell.classList.add('l1');
+      }
+      cell.title = ds;
+      col.appendChild(cell);
+      if (d === 0 && !monthsSeen[cd.getMonth()]) monthsSeen[cd.getMonth()] = w;
+    }
+    colEls.push(col);
+  }
+
+  for (let w = 0; w < WEEKS; w++) {
+    const lbl = document.createElement('div');
+    lbl.className = 'hm-month-lbl';
+    const e = Object.entries(monthsSeen).find(([,wk]) => wk === w);
+    lbl.textContent = e ? MONTHS[parseInt(e[0])] : '';
+    monthEl.appendChild(lbl);
+  }
+  colEls.forEach(c => grid.appendChild(c));
+}
+
+buildHeatmap();
+</script>
+</body>
+</html>

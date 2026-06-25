@@ -372,31 +372,168 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 /* ── Settings panels spacing ── */
 #view-settings .panel { margin-bottom: 0; }
 #view-settings .view-inner > .panel + .panel { margin-top: 14px; }
+
+/* ─── AUTH GATE SCREENS ──────────────────── */
+.reg-step { width:28px;height:28px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:var(--muted2);flex-shrink:0;transition:all .18s; }
+.reg-step.active { background:var(--accent);border-color:var(--accent);color:#fff; }
+.reg-step.done { background:var(--surface2);border-color:var(--accent);color:var(--accent); }
+.reg-step-line { height:2px;width:44px;background:var(--border);flex-shrink:0;transition:background .18s; }
+.reg-step-line.done { background:var(--accent); }
+
+/* ─── SETTINGS PROFILE ───────────────────── */
+.settings-avatar-circle { width:72px;height:72px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center; }
+.settings-avatar-circle img { width:100%;height:100%;object-fit:cover; }
+@media (max-width:600px) { .training-grid { grid-template-columns: 1fr !important; } }
+.pw-rule { color: var(--muted2); transition: color .15s; }
+.pw-rule.ok { color: var(--up); }
 </style>
 </head>
 <body onload="initGate()">
 
 <!-- ═══ LOGIN GATE ════════════════════════════════════ -->
-<div id="login-gate" style="position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
-  <div style="width:100%;max-width:360px">
-    <!-- Wordmark -->
-    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:36px">
+<div id="login-gate" style="position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto">
+
+  <!-- ── Screen A: Landing ── -->
+  <div id="gate-a" style="width:100%;max-width:360px">
+    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:40px">
       <span style="font-size:1.6rem;font-weight:700;letter-spacing:0.08em;color:var(--text)">PRSON</span>
-      <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0">
-        <span style="font-weight:700;font-size:10px;color:var(--accent);letter-spacing:0.05em">AL</span>
-      </span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0"><span style="font-weight:700;font-size:10px;color:var(--accent);letter-spacing:0.05em">AL</span></span>
     </div>
-    <!-- Card -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:20px">Anmelden</div>
-      <div class="field"><label>E-Mail</label><input type="email" id="gate-email" placeholder="deine@email.de" autocomplete="email"></div>
-      <div class="field"><label>Passwort</label><input type="password" id="gate-pw" placeholder="Passwort" autocomplete="current-password"></div>
-      <div id="gate-msg" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
-      <button class="btn-fill" style="width:100%;padding:12px;font-size:.78rem;margin-bottom:10px" onclick="gateSignIn()">Anmelden</button>
-      <button class="btn" style="width:100%;padding:12px;font-size:.78rem" onclick="gateSignUp()">Neu registrieren</button>
+      <div style="font-size:.84rem;font-weight:600;color:var(--text);text-align:center;margin-bottom:6px">Dein persönliches Trainings-Tracking</div>
+      <div style="font-size:.72rem;color:var(--muted2);text-align:center;margin-bottom:28px;line-height:1.6">Verfolge Fortschritt, tracke Gewichte und analysiere deine Leistung.</div>
+      <button class="btn-fill" style="width:100%;padding:12px;font-size:.78rem;margin-bottom:10px" onclick="gateShowB()">Anmelden</button>
+      <button class="btn" style="width:100%;padding:12px;font-size:.78rem" onclick="gateShowC()">Neu registrieren</button>
     </div>
-    <div style="text-align:center;margin-top:20px;font-size:.65rem;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase">Dein persönliches Trainings-Tracking</div>
   </div>
+
+  <!-- ── Screen B: Sign In ── -->
+  <div id="gate-b" style="display:none;width:100%;max-width:360px">
+    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:40px">
+      <span style="font-size:1.6rem;font-weight:700;letter-spacing:0.08em;color:var(--text)">PRSON</span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0"><span style="font-weight:700;font-size:10px;color:var(--accent);letter-spacing:0.05em">AL</span></span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <button onclick="gateShowA()" style="background:none;border:none;cursor:pointer;color:var(--muted2);padding:4px;line-height:0;display:flex;align-items:center;border-radius:6px;transition:color .15s" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--muted2)'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent)">Anmelden</div>
+      </div>
+      <div class="field"><label>E-Mail</label><input type="email" id="gate-email" placeholder="deine@email.de" autocomplete="email" onkeydown="if(event.key==='Enter')gateSignIn()"></div>
+      <div class="field"><label>Passwort</label><input type="password" id="gate-pw" placeholder="Passwort" autocomplete="current-password" onkeydown="if(event.key==='Enter')gateSignIn()"></div>
+      <div id="gate-msg" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
+      <button class="btn-fill" style="width:100%;padding:12px;font-size:.78rem;margin-bottom:12px" onclick="gateSignIn()">Anmelden</button>
+      <div style="text-align:center">
+        <button onclick="gateForgotPw()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.68rem;font-family:var(--font);letter-spacing:.04em;text-decoration:underline">Passwort vergessen?</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screen C: Register (3 steps) ── -->
+  <div id="gate-c" style="display:none;width:100%;max-width:400px">
+    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:28px">
+      <span style="font-size:1.6rem;font-weight:700;letter-spacing:0.08em;color:var(--text)">PRSON</span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0"><span style="font-weight:700;font-size:10px;color:var(--accent);letter-spacing:0.05em">AL</span></span>
+    </div>
+    <!-- Progress indicator -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:22px">
+      <div class="reg-step active" id="reg-step-dot-1">1</div>
+      <div class="reg-step-line" id="reg-step-line-1"></div>
+      <div class="reg-step" id="reg-step-dot-2">2</div>
+      <div class="reg-step-line" id="reg-step-line-2"></div>
+      <div class="reg-step" id="reg-step-dot-3">3</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px">
+
+      <!-- Step 1: Auth credentials -->
+      <div id="reg-step-1">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+          <button onclick="gateShowA()" style="background:none;border:none;cursor:pointer;color:var(--muted2);padding:4px;line-height:0;display:flex;align-items:center;border-radius:6px;transition:color .15s" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--muted2)'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent)">Konto erstellen · Schritt 1</div>
+        </div>
+        <div class="field"><label>E-Mail</label><input type="email" id="reg-email" placeholder="deine@email.de" autocomplete="email"></div>
+        <div class="field">
+          <label>Passwort</label>
+          <div style="position:relative">
+            <input type="password" id="reg-pw" placeholder="Passwort eingeben" autocomplete="new-password" oninput="regPwCheck(this.value)" style="padding-right:44px;width:100%">
+            <button type="button" id="reg-pw-eye" onclick="togglePwVis('reg-pw','reg-pw-eye')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted2);padding:4px;line-height:0;display:flex;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <div id="reg-pw-rules" style="margin:-8px 0 14px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:.68rem;line-height:1.9">
+          <div id="rule-len"  class="pw-rule">✗ Mindestens 10 Zeichen</div>
+          <div id="rule-low"  class="pw-rule">✗ Mindestens 1 Kleinbuchstabe</div>
+          <div id="rule-up"   class="pw-rule">✗ Mindestens 1 Großbuchstabe</div>
+          <div id="rule-num"  class="pw-rule">✗ Mindestens 1 Zahl</div>
+          <div id="rule-spec" class="pw-rule">✗ Mindestens 1 Sonderzeichen (!@#$%…)</div>
+        </div>
+        <div class="field" style="margin-bottom:6px">
+          <label>Passwort bestätigen</label>
+          <div style="position:relative">
+            <input type="password" id="reg-pw2" placeholder="Passwort wiederholen" autocomplete="new-password" style="padding-right:44px;width:100%">
+            <button type="button" id="reg-pw2-eye" onclick="togglePwVis('reg-pw2','reg-pw2-eye')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted2);padding:4px;line-height:0;display:flex;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <div id="reg-msg-1" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
+        <button class="btn-fill" style="width:100%;padding:12px;font-size:.78rem;display:flex;align-items:center;justify-content:center;gap:6px" onclick="regStep1Next()">Weiter <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+
+      <!-- Step 2: Profile info -->
+      <div id="reg-step-2" style="display:none">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:20px">Profil · Schritt 2</div>
+        <div class="field">
+          <label>Username <span style="color:#cc4444;font-weight:400">*</span></label>
+          <input type="text" id="reg-username" placeholder="z.B. christian_lifts" autocomplete="username" oninput="checkUsernameAvail(this.value)">
+          <div id="reg-username-msg" style="font-size:.7rem;margin-top:4px;min-height:16px"></div>
+        </div>
+        <div class="field"><label>Anzeigename <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="text" id="reg-displayname" placeholder="Christian Lendle" autocomplete="name"></div>
+        <div class="field" style="margin-bottom:6px">
+          <label>Profilbild <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
+            <div id="reg-avatar-preview" style="width:52px;height:52px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            </div>
+            <label style="cursor:pointer">
+              <span class="btn" style="display:inline-block;cursor:pointer;font-size:.65rem">Bild auswählen</span>
+              <input type="file" id="reg-avatar" accept="image/*" style="display:none" onchange="previewRegAvatar(this)">
+            </label>
+          </div>
+        </div>
+        <div id="reg-msg-2" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" style="flex:1;padding:11px;font-size:.75rem;display:flex;align-items:center;justify-content:center;gap:6px" onclick="regGotoStep(1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Zurück</button>
+          <button class="btn-fill" style="flex:2;padding:12px;font-size:.78rem;display:flex;align-items:center;justify-content:center;gap:6px" onclick="regStep2Next()">Weiter <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Step 3: Goals (optional) -->
+      <div id="reg-step-3" style="display:none">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:4px">Ziele &amp; Alltag · Schritt 3</div>
+        <div style="font-size:.68rem;color:var(--muted2);margin-bottom:8px">Alles optional — kann jederzeit geändert werden.</div>
+        <div style="font-size:.68rem;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:16px;line-height:1.5">
+          Diese Angaben helfen <strong style="color:var(--accent)">Gym Brah</strong>, deinem persönlichen Assistenten, dich gezielter zu unterstützen und Fragen genauer zu beantworten.
+        </div>
+        <div class="field"><label>Trainingsziele</label><input type="text" id="reg-goals" placeholder="z.B. Muskelaufbau, Kraft steigern"></div>
+        <div class="field"><label>Hobbys / Sport</label><input type="text" id="reg-hobbies" placeholder="z.B. Klettern, Radfahren"></div>
+        <div class="field"><label>Alltag / Job</label><input type="text" id="reg-lifestyle" placeholder="z.B. Bürojob, viel sitzen"></div>
+        <div class="field"><label>Körpergröße (cm)</label><input type="number" id="reg-height" placeholder="z.B. 180" min="100" max="250"></div>
+        <div class="field" style="margin-bottom:6px"><label>Fitness-Level</label>
+          <select id="reg-fitness-level">
+            <option value="">— wählen —</option>
+            <option value="Einsteiger">Einsteiger</option>
+            <option value="Aktiv">Aktiv</option>
+            <option value="Fit">Fit</option>
+            <option value="Sehr Fit">Sehr Fit</option>
+          </select>
+        </div>
+        <div id="reg-msg-3" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" style="flex:1;padding:11px;font-size:.75rem;display:flex;align-items:center;justify-content:center;gap:6px" onclick="regGotoStep(2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Zurück</button>
+          <button class="btn-fill" style="flex:2;padding:12px;font-size:.78rem" onclick="regSubmit()">Registrieren</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 <!-- ═══ HEADER ════════════════════════════════════════ -->
@@ -638,9 +775,9 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     <div id="sess-pagination" style="display:none;margin-top:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:6px">
-          <button class="btn" id="sess-prev" onclick="sessChangePage(-1)">← Zurück</button>
+          <button class="btn" id="sess-prev" onclick="sessChangePage(-1)" style="display:flex;align-items:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Zurück</button>
           <span id="sess-page-info" style="font-size:.75rem;color:var(--muted);padding:0 6px"></span>
-          <button class="btn" id="sess-next" onclick="sessChangePage(1)">Weiter →</button>
+          <button class="btn" id="sess-next" onclick="sessChangePage(1)" style="display:flex;align-items:center;gap:5px">Weiter <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:.72rem;color:var(--muted)">Pro Seite:</span>
@@ -658,6 +795,30 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 <!-- ═══ VIEW: SETTINGS ═══════════════════════════════ -->
 <div id="view-settings" class="view">
   <div class="view-inner" style="max-width:640px">
+
+    <!-- ── Profil ── -->
+    <div class="panel">
+      <div class="sec-label">Profil</div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+        <div class="settings-avatar-circle" id="settings-avatar">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+        <div>
+          <div id="settings-display-name" style="font-size:.9rem;font-weight:700;color:var(--text);line-height:1.3">—</div>
+          <div id="settings-username" style="font-size:.72rem;color:var(--muted2);margin-top:2px">@—</div>
+        </div>
+      </div>
+      <button class="btn" onclick="openProfileEditModal()">Profil bearbeiten</button>
+    </div>
+
+    <!-- ── Account ── -->
+    <div class="panel">
+      <div class="sec-label">Account</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="openEmailChangeModal()">E-Mail ändern</button>
+        <button class="btn" onclick="openPasswordChangeModal()">Passwort ändern</button>
+      </div>
+    </div>
 
     <!-- ── Allgemein ── -->
     <div class="panel">
@@ -730,29 +891,48 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <div id="sync-panel-body">Wird geladen…</div>
     </div>
 
-    <!-- ── Trainingspläne ── -->
+    <!-- ── Training (Trainingspläne + Standorte) ── -->
     <div class="panel">
-      <div class="sec-label">Trainingspläne</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-        <div class="field" style="margin:0">
-          <label>Kategorie</label>
-          <select id="plan-cat" onchange="loadPlanEditor()">
-            <option value="">— auswählen —</option>
-          </select>
+      <div class="sec-label">Training</div>
+      <div class="training-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+
+        <!-- Trainingspläne -->
+        <div>
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">Trainingspläne</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+            <div class="field" style="margin:0">
+              <label>Kategorie</label>
+              <select id="plan-cat" onchange="loadPlanEditor()">
+                <option value="">— auswählen —</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0">
+              <label>Standort</label>
+              <select id="plan-loc" onchange="loadPlanEditor()">
+                <option value="">— auswählen —</option>
+                <option value="haidhof">Sportpark Haidhof</option>
+                <option value="modern-coach">Modern Coach</option>
+              </select>
+            </div>
+          </div>
+          <div id="plan-ex-list" style="min-height:40px"></div>
+          <button class="log-add-ex" id="plan-add-btn" onclick="addPlanEx()" style="display:none">＋ Übung hinzufügen</button>
+          <div style="display:flex;justify-content:flex-end;margin-top:10px">
+            <button class="btn-fill" id="plan-save-btn" onclick="savePlanEditor()" style="display:none">Plan speichern</button>
+          </div>
         </div>
-        <div class="field" style="margin:0">
-          <label>Standort</label>
-          <select id="plan-loc" onchange="loadPlanEditor()">
-            <option value="">— auswählen —</option>
-            <option value="haidhof">Sportpark Haidhof</option>
-            <option value="modern-coach">Modern Coach</option>
-          </select>
+
+        <!-- Standorte -->
+        <div>
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">Standorte</div>
+          <p style="font-size:.7rem;color:var(--muted2);margin-bottom:10px;line-height:1.6">Deaktivierte Standorte werden im Training nicht angezeigt.</p>
+          <div id="loc-list"></div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <input type="text" id="new-loc-label" placeholder="z.B. Fitnessstudio Mitte" style="flex:1" onkeydown="if(event.key==='Enter')addLocation()">
+            <button class="btn-fill" onclick="addLocation()">+</button>
+          </div>
         </div>
-      </div>
-      <div id="plan-ex-list" style="min-height:40px"></div>
-      <button class="log-add-ex" id="plan-add-btn" onclick="addPlanEx()" style="display:none">＋ Übung hinzufügen</button>
-      <div style="display:flex;justify-content:flex-end;margin-top:12px">
-        <button class="btn-fill" id="plan-save-btn" onclick="savePlanEditor()" style="display:none">Plan speichern</button>
+
       </div>
     </div>
 
@@ -766,19 +946,6 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <div style="display:flex;gap:8px;margin-top:12px">
         <input type="text" id="new-cat-input" placeholder="Neue Kategorie…" style="flex:1" onkeydown="if(event.key==='Enter')addCategory()">
         <button class="btn-fill" onclick="addCategory()">Hinzufügen</button>
-      </div>
-    </div>
-
-    <!-- ── Standorte ── -->
-    <div class="panel">
-      <div class="sec-label">Standorte</div>
-      <p style="font-size:.72rem;color:var(--muted2);margin-bottom:12px;line-height:1.6">
-        Deaktivierte Standorte werden im Training nicht angezeigt.
-      </p>
-      <div id="loc-list"></div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <input type="text" id="new-loc-label" placeholder="Name (z.B. Fitnessstudio Mitte)" style="flex:1" onkeydown="if(event.key==='Enter')addLocation()">
-        <button class="btn-fill" onclick="addLocation()">Hinzufügen</button>
       </div>
     </div>
 
@@ -1001,6 +1168,82 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     <div style="display:flex;flex-direction:column;gap:10px">
       <button class="btn-fill" style="background:#cc4444;border-color:#cc4444;width:100%;padding:12px;font-size:.78rem" onclick="confirmClearAll()">Ja, alles löschen</button>
       <button class="btn" style="width:100%;padding:12px;font-size:.78rem" onclick="closeM('m-clear')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: PROFIL BEARBEITEN ══════════════════════ -->
+<div class="overlay" id="m-profile-edit">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hd">
+      <div class="modal-title">Profil bearbeiten</div>
+      <button class="modal-x" onclick="closeM('m-profile-edit')">✕</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+      <div class="settings-avatar-circle" id="profile-edit-avatar-preview">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </div>
+      <label style="cursor:pointer">
+        <span class="btn" style="display:inline-block;cursor:pointer">Bild ändern</span>
+        <input type="file" id="profile-edit-avatar-file" accept="image/*" style="display:none" onchange="previewEditAvatar(this)">
+      </label>
+    </div>
+    <div class="field">
+      <label>Username <span style="color:#cc4444;font-weight:400">*</span></label>
+      <input type="text" id="profile-edit-username" placeholder="z.B. christian_lifts" oninput="checkUsernameEditAvail(this.value)">
+      <div id="profile-edit-username-msg" style="font-size:.7rem;margin-top:4px;min-height:16px"></div>
+    </div>
+    <div class="field"><label>Anzeigename</label><input type="text" id="profile-edit-displayname" placeholder="Christian Lendle"></div>
+    <div class="field"><label>Trainingsziele</label><input type="text" id="profile-edit-goals" placeholder="z.B. Muskelaufbau, Kraft steigern"></div>
+    <div class="field"><label>Hobbys / Sport</label><input type="text" id="profile-edit-hobbies" placeholder="z.B. Klettern, Radfahren"></div>
+    <div class="field"><label>Alltag / Job</label><input type="text" id="profile-edit-lifestyle" placeholder="z.B. Bürojob, viel sitzen"></div>
+    <div class="field"><label>Körpergröße (cm)</label><input type="number" id="profile-edit-height" placeholder="z.B. 180" min="100" max="250"></div>
+    <div class="field"><label>Fitness-Level</label>
+      <select id="profile-edit-fitness-level">
+        <option value="">— wählen —</option>
+        <option value="Einsteiger">Einsteiger</option>
+        <option value="Aktiv">Aktiv</option>
+        <option value="Fit">Fit</option>
+        <option value="Sehr Fit">Sehr Fit</option>
+      </select>
+    </div>
+    <div id="profile-edit-msg" style="font-size:.74rem;min-height:18px;margin-bottom:8px;color:#cc4444"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeM('m-profile-edit')">Abbrechen</button>
+      <button class="btn-fill" onclick="saveProfileEdit()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: E-MAIL ÄNDERN ══════════════════════════ -->
+<div class="overlay" id="m-email-change">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-hd">
+      <div class="modal-title">E-Mail ändern</div>
+      <button class="modal-x" onclick="closeM('m-email-change')">✕</button>
+    </div>
+    <div class="field"><label>Neue E-Mail-Adresse</label><input type="email" id="email-change-new" placeholder="neue@email.de" autocomplete="email"></div>
+    <div id="email-change-msg" style="font-size:.74rem;min-height:18px;margin-bottom:8px;color:#cc4444"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeM('m-email-change')">Abbrechen</button>
+      <button class="btn-fill" onclick="saveEmailChange()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: PASSWORT ÄNDERN ═════════════════════════ -->
+<div class="overlay" id="m-password-change">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-hd">
+      <div class="modal-title">Passwort ändern</div>
+      <button class="modal-x" onclick="closeM('m-password-change')">✕</button>
+    </div>
+    <div class="field"><label>Neues Passwort</label><input type="password" id="pw-change-new" placeholder="Mindestens 8 Zeichen" autocomplete="new-password"></div>
+    <div class="field"><label>Passwort bestätigen</label><input type="password" id="pw-change-confirm" placeholder="Passwort wiederholen" autocomplete="new-password"></div>
+    <div id="pw-change-msg" style="font-size:.74rem;min-height:18px;margin-bottom:8px;color:#cc4444"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeM('m-password-change')">Abbrechen</button>
+      <button class="btn-fill" onclick="savePasswordChange()">Speichern</button>
     </div>
   </div>
 </div>
@@ -2470,15 +2713,14 @@ function saveGeneralSettings() {
 function loadCfgUI() {
   try {
     const cfg = getCfg();
-    // Streak
     const sel = document.getElementById('cfg-streak-min');
     if (sel) sel.value = cfg.streakMin || 3;
-    // Populate dynamic lists
     populateCategorySelects();
     populateLocationSelects();
     loadCatEditor();
     loadLocEditor();
     renderSyncPanel();
+    renderProfileSection();
   } catch(e) {
     console.error('loadCfgUI error:', e);
   }
@@ -2885,47 +3127,238 @@ function toggleWtDataset(index) {
 }
 
 // ── Auth + Init ───────────────────────────────────────
+let _PROFILE = null;
+
 function showLoginGate() {
-  document.getElementById('login-gate').style.display = 'flex';
+  const gate = document.getElementById('login-gate');
+  gate.style.display = 'flex';
+  gateShowA();
 }
 function hideLoginGate() {
   document.getElementById('login-gate').style.display = 'none';
 }
 
-function gateValidate() {
+// Gate screen navigation
+function gateShowA() {
+  document.getElementById('gate-a').style.display = '';
+  document.getElementById('gate-b').style.display = 'none';
+  document.getElementById('gate-c').style.display = 'none';
+}
+function gateShowB() {
+  document.getElementById('gate-a').style.display = 'none';
+  document.getElementById('gate-b').style.display = '';
+  document.getElementById('gate-c').style.display = 'none';
+  const msg = document.getElementById('gate-msg');
+  if (msg) msg.textContent = '';
+}
+function gateShowC() {
+  document.getElementById('gate-a').style.display = 'none';
+  document.getElementById('gate-b').style.display = 'none';
+  document.getElementById('gate-c').style.display = '';
+  regGotoStep(1);
+}
+
+// Register step navigation
+let _regStep = 1;
+function regGotoStep(n) {
+  _regStep = n;
+  [1, 2, 3].forEach(i => {
+    const panel = document.getElementById('reg-step-' + i);
+    const dot   = document.getElementById('reg-step-dot-' + i);
+    const line  = document.getElementById('reg-step-line-' + i);
+    if (panel) panel.style.display = i === n ? '' : 'none';
+    if (dot)   dot.className = 'reg-step' + (i < n ? ' done' : '') + (i === n ? ' active' : '');
+    if (line)  line.className = 'reg-step-line' + (i < n ? ' done' : '');
+  });
+}
+
+const _EYE_OPEN   = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+const _EYE_CLOSED = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function togglePwVis(inputId, btnId) {
+  const inp = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (inp.type === 'password') { inp.type = 'text';     btn.innerHTML = _EYE_CLOSED; }
+  else                         { inp.type = 'password'; btn.innerHTML = _EYE_OPEN; }
+}
+
+const _PW_RULES = [
+  { id: 'rule-len',  test: v => v.length >= 10,                              text: 'Mindestens 10 Zeichen' },
+  { id: 'rule-low',  test: v => /[a-z]/.test(v),                             text: 'Mindestens 1 Kleinbuchstabe' },
+  { id: 'rule-up',   test: v => /[A-Z]/.test(v),                             text: 'Mindestens 1 Großbuchstabe' },
+  { id: 'rule-num',  test: v => /[0-9]/.test(v),                             text: 'Mindestens 1 Zahl' },
+  { id: 'rule-spec', test: v => /[!@#$%^&*()\\_+\-=\[\]{};':"\\|<>?,./`~]/.test(v), text: 'Mindestens 1 Sonderzeichen (!@#$%…)' },
+];
+
+function regPwCheck(val) {
+  _PW_RULES.forEach(({ id, test, text }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const ok = test(val);
+    el.classList.toggle('ok', ok);
+    el.textContent = (ok ? '✓ ' : '✗ ') + text;
+  });
+}
+
+function validatePw(pw) {
+  for (const { test, text } of _PW_RULES) {
+    if (!test(pw)) return '✗ Anforderung nicht erfüllt: ' + text + '.';
+  }
+  return null;
+}
+
+function regStep1Next() {
+  const email = document.getElementById('reg-email').value.trim();
+  const pw    = document.getElementById('reg-pw').value;
+  const pw2   = document.getElementById('reg-pw2').value;
+  const msg   = document.getElementById('reg-msg-1');
+  msg.textContent = '';
+  if (!email || !/\S+@\S+\.\S+/.test(email)) { msg.textContent = '✗ Bitte gültige E-Mail eingeben.'; return; }
+  const pwErr = validatePw(pw);
+  if (pwErr) { msg.textContent = pwErr; return; }
+  if (pw !== pw2) { msg.textContent = '✗ Passwörter stimmen nicht überein.'; return; }
+  regGotoStep(2);
+}
+
+let _usernameCheckTimer = null;
+async function checkUsernameAvail(val) {
+  const msg = document.getElementById('reg-username-msg');
+  if (!msg) return;
+  const v = val.trim().toLowerCase();
+  if (!v) { msg.textContent = ''; return; }
+  if (!/^[a-z0-9_]{3,30}$/.test(v)) {
+    msg.textContent = '✗ Nur Kleinbuchstaben, Zahlen, Underscore (3–30 Zeichen).';
+    msg.style.color = '#cc4444'; return;
+  }
+  msg.textContent = '… prüfe Verfügbarkeit'; msg.style.color = 'var(--muted2)';
+  clearTimeout(_usernameCheckTimer);
+  _usernameCheckTimer = setTimeout(async () => {
+    const { data } = await _SB.from('profiles').select('username').eq('username', v).maybeSingle();
+    if (data) { msg.textContent = '✗ Username bereits vergeben.'; msg.style.color = '#cc4444'; }
+    else      { msg.textContent = '✓ Username verfügbar.';        msg.style.color = 'var(--up)'; }
+  }, 500);
+}
+
+let _usernameEditTimer = null;
+async function checkUsernameEditAvail(val) {
+  const msg = document.getElementById('profile-edit-username-msg');
+  if (!msg) return;
+  const v = val.trim().toLowerCase();
+  if (!v) { msg.textContent = ''; return; }
+  if (_PROFILE && v === _PROFILE.username) { msg.textContent = ''; return; }
+  if (!/^[a-z0-9_]{3,30}$/.test(v)) {
+    msg.textContent = '✗ Nur Kleinbuchstaben, Zahlen, Underscore (3–30 Zeichen).';
+    msg.style.color = '#cc4444'; return;
+  }
+  msg.textContent = '… prüfe Verfügbarkeit'; msg.style.color = 'var(--muted2)';
+  clearTimeout(_usernameEditTimer);
+  _usernameEditTimer = setTimeout(async () => {
+    const { data } = await _SB.from('profiles').select('username').eq('username', v).maybeSingle();
+    if (data) { msg.textContent = '✗ Username bereits vergeben.'; msg.style.color = '#cc4444'; }
+    else      { msg.textContent = '✓ Username verfügbar.';        msg.style.color = 'var(--up)'; }
+  }, 500);
+}
+
+function previewRegAvatar(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('reg-avatar-preview');
+    if (prev) prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewEditAvatar(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('profile-edit-avatar-preview');
+    if (prev) prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function regStep2Next() {
+  const username = document.getElementById('reg-username').value.trim().toLowerCase();
+  const msg = document.getElementById('reg-msg-2');
+  msg.textContent = '';
+  if (!username) { msg.textContent = '✗ Username ist erforderlich.'; return; }
+  if (!/^[a-z0-9_]{3,30}$/.test(username)) { msg.textContent = '✗ Ungültiger Username.'; return; }
+  msg.textContent = '… prüfe Username'; msg.style.color = 'var(--muted2)';
+  const { data } = await _SB.from('profiles').select('username').eq('username', username).maybeSingle();
+  if (data) { msg.textContent = '✗ Username bereits vergeben.'; msg.style.color = '#cc4444'; return; }
+  msg.textContent = '';
+  regGotoStep(3);
+}
+
+async function regSubmit() {
+  const msg = document.getElementById('reg-msg-3');
+  msg.textContent = 'Konto erstellen…'; msg.style.color = 'var(--muted2)';
+  const email       = document.getElementById('reg-email').value.trim();
+  const pw          = document.getElementById('reg-pw').value;
+  const username    = document.getElementById('reg-username').value.trim().toLowerCase();
+  const displayName = document.getElementById('reg-displayname').value.trim();
+  const goals       = document.getElementById('reg-goals').value.trim();
+  const hobbies     = document.getElementById('reg-hobbies').value.trim();
+  const lifestyle   = document.getElementById('reg-lifestyle').value.trim();
+  const heightCm    = document.getElementById('reg-height').value.trim();
+  const fitnessLvl  = document.getElementById('reg-fitness-level').value;
+  const avatarFile  = document.getElementById('reg-avatar').files[0];
+  const { data: signUpData, error: signUpErr } = await _SB.auth.signUp({ email, password: pw });
+  if (signUpErr) { msg.textContent = '✗ ' + signUpErr.message; msg.style.color = '#cc4444'; return; }
+  const userId = signUpData.user?.id;
+  if (!userId) {
+    msg.textContent = '✓ Bestätigungsmail gesendet – bitte E-Mail prüfen.';
+    msg.style.color = 'var(--up)'; return;
+  }
+  let avatarUrl = null;
+  if (avatarFile) {
+    try {
+      const ext = avatarFile.name.split('.').pop() || 'jpg';
+      await _SB.storage.from('avatars').upload(`${userId}/avatar.${ext}`, avatarFile, { upsert: true, contentType: avatarFile.type });
+      const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(`${userId}/avatar.${ext}`);
+      avatarUrl = urlData?.publicUrl || null;
+    } catch {}
+  }
+  const profileData = { id: userId, username, display_name: displayName || null, avatar_url: avatarUrl,
+    goals: goals || null, hobbies: hobbies || null, lifestyle: lifestyle || null,
+    height_cm: heightCm ? parseInt(heightCm, 10) : null, fitness_level: fitnessLvl || null };
+  await _SB.from('profiles').upsert(profileData);
+  if (signUpData.session) {
+    hideLoginGate();
+    await loadApp();
+  } else {
+    msg.textContent = '✓ Konto erstellt! Bitte E-Mail bestätigen und dann anmelden.';
+    msg.style.color = 'var(--up)';
+  }
+}
+
+async function gateForgotPw() {
+  const email = document.getElementById('gate-email').value.trim();
+  const msg   = document.getElementById('gate-msg');
+  if (!email || !/\S+@\S+\.\S+/.test(email)) {
+    msg.textContent = '✗ Bitte zuerst E-Mail eingeben.'; msg.style.color = '#cc4444'; return;
+  }
+  msg.textContent = 'Sende Reset-Link…'; msg.style.color = 'var(--muted2)';
+  const { error } = await _SB.auth.resetPasswordForEmail(email);
+  if (error) { msg.textContent = '✗ ' + error.message; msg.style.color = '#cc4444'; return; }
+  msg.textContent = '✓ Reset-Link gesendet – bitte E-Mail prüfen.'; msg.style.color = 'var(--up)';
+}
+
+async function gateSignIn() {
   const email = document.getElementById('gate-email').value.trim();
   const pw    = document.getElementById('gate-pw').value;
   const msg   = document.getElementById('gate-msg');
   if (!email || !/\S+@\S+\.\S+/.test(email)) {
-    msg.textContent = '✗ Bitte gültige E-Mail eingeben.'; msg.style.color = '#cc4444'; return null;
+    msg.textContent = '✗ Bitte gültige E-Mail eingeben.'; msg.style.color = '#cc4444'; return;
   }
-  if (pw.length < 8) {
-    msg.textContent = '✗ Passwort muss mindestens 8 Zeichen haben.'; msg.style.color = '#cc4444'; return null;
-  }
-  return { email, pw };
-}
-
-async function gateSignIn() {
-  const vals = gateValidate(); if (!vals) return;
-  const msg = document.getElementById('gate-msg');
+  if (!pw) { msg.textContent = '✗ Bitte Passwort eingeben.'; msg.style.color = '#cc4444'; return; }
   msg.textContent = 'Anmelden…'; msg.style.color = 'var(--muted2)';
-  const { error } = await _SB.auth.signInWithPassword({ email: vals.email, password: vals.pw });
-  if (error) {
-    msg.textContent = '✗ E-Mail oder Passwort ungültig.';
-    msg.style.color = '#cc4444'; return;
-  }
+  const { error } = await _SB.auth.signInWithPassword({ email, password: pw });
+  if (error) { msg.textContent = '✗ E-Mail oder Passwort ungültig.'; msg.style.color = '#cc4444'; return; }
   hideLoginGate();
   await loadApp();
-}
-
-async function gateSignUp() {
-  const vals = gateValidate(); if (!vals) return;
-  const msg = document.getElementById('gate-msg');
-  msg.textContent = 'Registrieren…'; msg.style.color = 'var(--muted2)';
-  const { error } = await _SB.auth.signUp({ email: vals.email, password: vals.pw });
-  if (error) { msg.textContent = '✗ ' + error.message; msg.style.color = '#cc4444'; return; }
-  msg.textContent = '✓ Bestätigungsmail gesendet – bitte E-Mail prüfen.';
-  msg.style.color = 'var(--up)';
 }
 
 function initGate() {
@@ -2939,10 +3372,32 @@ async function init() {
   await loadApp();
 }
 
+async function loadProfile() {
+  try {
+    const { data: { user } } = await _SB.auth.getUser();
+    if (!user) return;
+    const { data } = await _SB.from('profiles').select('*').eq('id', user.id).single();
+    _PROFILE = data || null;
+  } catch {}
+}
+
+function renderProfileSection() {
+  const dn = document.getElementById('settings-display-name');
+  const un = document.getElementById('settings-username');
+  const av = document.getElementById('settings-avatar');
+  if (!_PROFILE) return;
+  if (dn) dn.textContent = _PROFILE.display_name || _PROFILE.username || '—';
+  if (un) un.textContent = '@' + (_PROFILE.username || '—');
+  if (av && _PROFILE.avatar_url) {
+    av.innerHTML = `<img src="${_PROFILE.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
+  }
+}
+
 async function loadApp() {
   populateCategorySelects();
   populateLocationSelects();
   switchView('dashboard');
+  await loadProfile();
   const remote = await fetchSupabase();
   if (remote?.sessions) {
     const local = loadDB();
@@ -2951,6 +3406,110 @@ async function loadApp() {
   renderAll();
   initBodyDates();
   renderSyncPanel();
+  renderProfileSection();
+}
+
+// ── Profile edit ──────────────────────────────────────
+function openProfileEditModal() {
+  if (!_PROFILE) return;
+  document.getElementById('profile-edit-username').value           = _PROFILE.username || '';
+  document.getElementById('profile-edit-displayname').value        = _PROFILE.display_name || '';
+  document.getElementById('profile-edit-goals').value              = _PROFILE.goals || '';
+  document.getElementById('profile-edit-hobbies').value            = _PROFILE.hobbies || '';
+  document.getElementById('profile-edit-lifestyle').value          = _PROFILE.lifestyle || '';
+  document.getElementById('profile-edit-height').value             = _PROFILE.height_cm || '';
+  document.getElementById('profile-edit-fitness-level').value      = _PROFILE.fitness_level || '';
+  document.getElementById('profile-edit-msg').textContent          = '';
+  document.getElementById('profile-edit-username-msg').textContent = '';
+  document.getElementById('profile-edit-avatar-file').value        = '';
+  const prev = document.getElementById('profile-edit-avatar-preview');
+  if (prev) prev.innerHTML = _PROFILE.avatar_url
+    ? `<img src="${_PROFILE.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+    : '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+  openM('m-profile-edit');
+}
+
+async function saveProfileEdit() {
+  const msg = document.getElementById('profile-edit-msg');
+  msg.textContent = 'Speichern…'; msg.style.color = 'var(--muted2)';
+  const { data: { user } } = await _SB.auth.getUser();
+  if (!user) { msg.textContent = '✗ Nicht angemeldet.'; msg.style.color = '#cc4444'; return; }
+  const username    = document.getElementById('profile-edit-username').value.trim().toLowerCase();
+  const displayName = document.getElementById('profile-edit-displayname').value.trim();
+  const goals       = document.getElementById('profile-edit-goals').value.trim();
+  const hobbies     = document.getElementById('profile-edit-hobbies').value.trim();
+  const lifestyle   = document.getElementById('profile-edit-lifestyle').value.trim();
+  const heightCm    = document.getElementById('profile-edit-height').value.trim();
+  const fitnessLvl  = document.getElementById('profile-edit-fitness-level').value;
+  const avatarFile  = document.getElementById('profile-edit-avatar-file').files[0];
+  if (!username || !/^[a-z0-9_]{3,30}$/.test(username)) {
+    msg.textContent = '✗ Ungültiger Username.'; msg.style.color = '#cc4444'; return;
+  }
+  if (_PROFILE && username !== _PROFILE.username) {
+    const { data } = await _SB.from('profiles').select('username').eq('username', username).maybeSingle();
+    if (data) { msg.textContent = '✗ Username bereits vergeben.'; msg.style.color = '#cc4444'; return; }
+  }
+  let avatarUrl = _PROFILE?.avatar_url || null;
+  if (avatarFile) {
+    try {
+      const ext = avatarFile.name.split('.').pop() || 'jpg';
+      await _SB.storage.from('avatars').upload(`${user.id}/avatar.${ext}`, avatarFile, { upsert: true, contentType: avatarFile.type });
+      const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(`${user.id}/avatar.${ext}`);
+      avatarUrl = urlData?.publicUrl || avatarUrl;
+    } catch {}
+  }
+  const updates = { id: user.id, username, display_name: displayName || null, avatar_url: avatarUrl,
+    goals: goals || null, hobbies: hobbies || null, lifestyle: lifestyle || null,
+    height_cm: heightCm ? parseInt(heightCm, 10) : null, fitness_level: fitnessLvl || null };
+  const { error } = await _SB.from('profiles').upsert(updates);
+  if (error) { msg.textContent = '✗ ' + error.message; msg.style.color = '#cc4444'; return; }
+  _PROFILE = { ..._PROFILE, ...updates };
+  renderProfileSection();
+  msg.textContent = '✓ Gespeichert'; msg.style.color = 'var(--up)';
+  setTimeout(() => closeM('m-profile-edit'), 700);
+  toast('Profil aktualisiert ✓');
+}
+
+// ── Account changes ───────────────────────────────────
+function openEmailChangeModal() {
+  document.getElementById('email-change-new').value      = '';
+  document.getElementById('email-change-msg').textContent = '';
+  openM('m-email-change');
+}
+
+async function saveEmailChange() {
+  const newEmail = document.getElementById('email-change-new').value.trim();
+  const msg      = document.getElementById('email-change-msg');
+  if (!newEmail || !/\S+@\S+\.\S+/.test(newEmail)) {
+    msg.textContent = '✗ Bitte gültige E-Mail eingeben.'; msg.style.color = '#cc4444'; return;
+  }
+  msg.textContent = 'Speichern…'; msg.style.color = 'var(--muted2)';
+  const { error } = await _SB.auth.updateUser({ email: newEmail });
+  if (error) { msg.textContent = '✗ ' + error.message; msg.style.color = '#cc4444'; return; }
+  msg.textContent = '✓ Bestätigungsmail an neue Adresse gesendet.'; msg.style.color = 'var(--up)';
+  setTimeout(() => closeM('m-email-change'), 1500);
+  toast('Bestätigungsmail gesendet ✓');
+}
+
+function openPasswordChangeModal() {
+  document.getElementById('pw-change-new').value         = '';
+  document.getElementById('pw-change-confirm').value     = '';
+  document.getElementById('pw-change-msg').textContent   = '';
+  openM('m-password-change');
+}
+
+async function savePasswordChange() {
+  const newPw  = document.getElementById('pw-change-new').value;
+  const confPw = document.getElementById('pw-change-confirm').value;
+  const msg    = document.getElementById('pw-change-msg');
+  if (newPw.length < 8) { msg.textContent = '✗ Passwort muss mindestens 8 Zeichen haben.'; msg.style.color = '#cc4444'; return; }
+  if (newPw !== confPw) { msg.textContent = '✗ Passwörter stimmen nicht überein.'; msg.style.color = '#cc4444'; return; }
+  msg.textContent = 'Speichern…'; msg.style.color = 'var(--muted2)';
+  const { error } = await _SB.auth.updateUser({ password: newPw });
+  if (error) { msg.textContent = '✗ ' + error.message; msg.style.color = '#cc4444'; return; }
+  msg.textContent = '✓ Passwort geändert.'; msg.style.color = 'var(--up)';
+  setTimeout(() => closeM('m-password-change'), 700);
+  toast('Passwort geändert ✓');
 }
 
 // Redirect to login gate when session expires

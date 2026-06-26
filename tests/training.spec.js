@@ -1,13 +1,16 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { sbMock } = require('./sb-mock');
 
 // Clears active session and DB before each test.
 async function setup(page) {
+  await page.addInitScript(sbMock); // bypass Supabase auth gate
   await page.addInitScript(() => {
     localStorage.removeItem('liftlog_active_v1');
     // Keep DB intact so we can verify saved sessions later
   });
   await page.goto('/');
+  await page.waitForSelector('#login-gate', { state: 'hidden' });
   await page.waitForSelector('#fab-btn');
 }
 
@@ -75,7 +78,7 @@ test.describe('Training tracken', () => {
     // Auf die geladene Übungsliste warten
     await expect(page.locator('#log-ex-list')).not.toBeEmpty();
 
-    await page.click('text=Training abschließen');
+    await page.click('text=Abschließen');
 
     // Modal geschlossen
     await expect(page.locator('#m-log')).not.toBeVisible();
@@ -135,7 +138,7 @@ test.describe('Training tracken', () => {
     await expect(page.locator('#m-log')).toBeVisible();
 
     // Abschließen
-    await page.click('text=Training abschließen');
+    await page.click('text=Abschließen');
     await expect(page.locator('#m-log')).not.toBeVisible();
   });
 
@@ -158,9 +161,12 @@ test.describe('Training tracken', () => {
     // 700 ms warten bis auto-save die Session in localStorage geschrieben hat
     await page.waitForTimeout(700);
 
-    page.on('dialog', d => d.accept());
+    // Styled confirm modal statt native confirm()
     await page.click('#btn-abort');
+    await expect(page.locator('#m-abort')).toBeVisible();
+    await page.click('text=Ja, abbrechen');
 
+    await expect(page.locator('#m-abort')).not.toBeVisible();
     await expect(page.locator('#m-log')).not.toBeVisible();
   });
 

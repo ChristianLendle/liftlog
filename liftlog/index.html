@@ -41,6 +41,9 @@
 
 body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
 
+/* Visible keyboard focus on all interactive elements (Item 12) */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: inherit; }
+
 /* ─── HEADER ─────────────────────────────── */
 header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0; flex-wrap: wrap; row-gap: 12px; }
 .logo { display: flex; align-items: center; gap: 7px; line-height: 1; min-width: 160px; }
@@ -51,7 +54,7 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 .header-stats { display: flex; gap: 32px; flex: 1; }
 .stat { display: flex; flex-direction: column; gap: 3px; }
 .stat-val { font-size: 1.85rem; font-weight: 700; color: var(--accent); line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
-.stat-lbl { font-size: 0.57rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted2); }
+.stat-lbl { font-size: 0.57rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted2); }
 .header-actions { display: flex; gap: 8px; align-items: center; }
 
 /* ─── ACTIVE INDICATOR ───────────────────── */
@@ -64,27 +67,31 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 .col-right { padding: 20px 26px; overflow-y: auto; max-height: calc(100vh - 82px); display: flex; flex-direction: column; gap: 18px; }
 
 /* ─── TYPE ───────────────────────────────── */
-.sec-label { font-size: 0.57rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
-.sec-title { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text); margin-bottom: 14px; }
+.sec-label { font-size: 0.57rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.sec-title { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; text-transform: none; color: var(--text); margin-bottom: 14px; }
 
 /* ─── FILTER BAR ─────────────────────────── */
 .filter-bar { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
-.filter-bar select { font-size: 0.65rem; padding: 5px 7px; flex: 1; min-width: 0; background: var(--surface2); border: 1px solid var(--border); color: var(--muted2); border-radius: 4px; font-family: var(--font); }
+.filter-bar select { font-size: 0.65rem; padding: 5px 7px; flex: 1; min-width: 0; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 4px; font-family: var(--font); }
+.filter-bar select:has(option[value=""]:checked) { color: var(--muted2); }
 .filter-bar select:focus { border-color: var(--accent); color: var(--text); outline: none; }
 
 /* ─── SESSION LIST ───────────────────────── */
 .sessions-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .session-list { display: flex; flex-direction: column; gap: 5px; }
-.s-card { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; cursor: pointer; transition: border-color .12s, background .12s; }
-.s-card:hover { border-color: var(--border2); background: var(--surface); }
+.s-card { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; cursor: pointer; transition: border-color .12s, background .12s, box-shadow .12s, transform .12s; }
+.s-card:hover { border-color: var(--border2); background: var(--surface); box-shadow: 0 2px 4px rgba(28,43,74,.06), 0 10px 24px rgba(28,43,74,.10); transform: translateY(-1px); }
 .s-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 .s-left { flex: 1; min-width: 0; }
 .s-date { font-size: 0.82rem; font-weight: 600; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
 .s-sub  { font-size: 0.67rem; color: var(--muted2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.s-right { font-size: 0.67rem; color: var(--muted); text-align: right; flex-shrink: 0; }
+.s-right { font-size: 0.67rem; color: var(--muted); text-align: right; flex-shrink: 0; white-space: nowrap; }
 
 /* ─── PANEL ──────────────────────────────── */
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 20px; margin-bottom: 16px; min-width: 0; }
+
+/* Depth system — lighter borders, layered shadows carry the hierarchy (Item 13) */
+.panel, .dash-tile, .s-card { border-color: #E7EBF3; box-shadow: 0 1px 2px rgba(28,43,74,.04), 0 6px 16px rgba(28,43,74,.05); }
 
 /* ─── EXERCISE SEARCH ────────────────────── */
 .ex-search-wrap { position: relative; margin-bottom: 16px; }
@@ -96,7 +103,11 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 
 /* ─── CHARTS ─────────────────────────────── */
 .chart-wrap { position: relative; height: 200px; }
-.chart-empty { height: 200px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--muted); font-size: 0.72rem; letter-spacing: .08em; text-transform: uppercase; }
+.chart-empty { min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 1px solid #EEF1F7; border-radius: 10px; background: #FAFBFD; color: var(--muted); font-size: 0.72rem; padding: 16px; text-align: center; }
+.empty-mark { opacity: .5; margin-bottom: 4px; }
+.empty-title { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.empty-sub { font-size: 0.72rem; color: var(--muted2); }
+.empty-cta { margin-top: 8px; background: none; border: none; color: var(--accent); font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-family: var(--font); cursor: pointer; }
 
 /* ─── DISTRIBUTION ───────────────────────── */
 .dist-wrap { display: flex; gap: 22px; align-items: center; }
@@ -108,14 +119,19 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 .dist-count { font-size: 0.74rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* ─── BUTTONS ────────────────────────────── */
-.btn { background: none; border: 1px solid var(--border); color: var(--muted2); border-radius: 5px; padding: 6px 12px; font-size: 0.68rem; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: all .12s; }
-.btn:hover { border-color: var(--accent); color: var(--accent); }
-.btn-fill { background: var(--accent); color: #ffffff; border: none; border-radius: 5px; padding: 8px 16px; font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: opacity .12s; }
+/* Button hierarchy: primary (fill) / secondary (outline) / ghost (text) — unified 36px height (Item 15) */
+.btn { background: none; border: 1px solid var(--border2); color: var(--accent); border-radius: 6px; padding: 0 16px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.68rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: all .12s; }
+.btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.btn-fill { background: var(--accent); color: #ffffff; border: none; border-radius: 6px; padding: 0 16px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; font-family: var(--font); box-shadow: 0 1px 2px rgba(46,74,122,.25); transition: opacity .12s; }
 .btn-fill:hover { opacity: .88; }
+.btn-ghost { background: none; border: none; color: var(--accent); border-radius: 6px; padding: 0 12px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.7rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: opacity .12s; }
+.btn-ghost:hover { opacity: .7; }
 .btn-start { background: var(--accent); color: #ffffff; border: none; border-radius: 5px; padding: 8px 18px; font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: opacity .12s; display: flex; align-items: center; gap: 6px; }
 .btn-start:hover { opacity: .88; }
 .btn-danger { border-color: transparent !important; color: #cc3333 !important; }
 .btn-danger:hover { border-color: #cc3333 !important; background: rgba(204,51,51,.08) !important; }
+.btn, .btn-fill, .btn-start { white-space: nowrap; }
+#log-footer .btn, #log-footer .btn-fill { letter-spacing: .04em; }
 
 /* ─── MODAL ──────────────────────────────── */
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.84); z-index: 500; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -123,15 +139,19 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: 24px; width: 100%; max-width: 540px; margin: auto; flex-shrink: 0; }
 .modal-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .modal-title { font-size: 0.7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-.modal-x { background: none; border: none; color: var(--muted2); font-size: 1rem; cursor: pointer; padding: 0; line-height: 1; }
+.modal-x { background: none; border: none; color: var(--muted2); font-size: 1rem; cursor: pointer; padding: 0; line-height: 1; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 .modal-x:hover { color: var(--text); }
+
+/* Touch targets ≥44px — keep optical glyph size, expand hit area (Item 05) */
+.info-btn, .set-rm { position: relative; }
+.info-btn::after, .set-rm::after { content: ""; position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
 
 /* ─── FORM ───────────────────────────────── */
 .field { margin-bottom: 12px; min-width: 0; }
 .field label { display: block; font-size: 0.58rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2); margin-bottom: 5px; }
 input, select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--text); border-radius: 5px; padding: 8px 11px; font-family: var(--font); font-size: 0.82rem; outline: none; transition: border-color .12s; }
-input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-input[type="date"] { color-scheme: dark; width: 100%; min-width: 0; box-sizing: border-box; -webkit-appearance: none; appearance: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+input[type="date"] { color-scheme: light; width: 100%; min-width: 0; box-sizing: border-box; -webkit-appearance: none; appearance: none; }
 select option { background: var(--surface); }
 textarea { font-family: 'Courier New', monospace; font-size: 0.7rem; resize: vertical; min-height: 160px; line-height: 1.6; }
 input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -228,13 +248,14 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
 .dash-tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
 .dash-tile-val { font-size: 2rem; font-weight: 700; color: var(--accent); letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; }
-.dash-tile-lbl { font-size: 0.53rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2); margin-top: 5px; }
-.dash-tile-delta { font-size: 0.68rem; font-weight: 600; margin-top: 8px; }
-.dash-tile-delta.up      { color: var(--accent); }
-.dash-tile-delta.down    { color: #ff6b35; }
-.dash-tile-delta.neutral { color: var(--muted2); }
-.dash-tile.streak-tile   { border-color: rgba(212,134,10,.25); }
+.dash-tile-lbl { font-size: 0.56rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.dash-tile-delta { display: inline-flex; align-items: center; gap: 3px; font-size: 0.64rem; font-weight: 700; margin-top: 10px; border-radius: 999px; padding: 3px 8px; }
+.dash-tile-delta.up      { color: var(--up); background: rgba(30,122,74,.12); }
+.dash-tile-delta.down    { color: #d9542b; background: rgba(255,107,53,.12); }
+.dash-tile-delta.neutral { color: var(--muted2); background: var(--surface2); }
+.dash-tile.streak-tile   { border-color: #E7EBF3; border-top: 2px solid var(--cardio); box-shadow: 0 1px 2px rgba(28,43,74,.04), 0 6px 16px rgba(168,116,10,.07); }
 .dash-tile.streak-tile .dash-tile-val { color: var(--cardio); }
+.dash-tile.streak-tile .dash-tile-delta { color: #A8740A; background: rgba(212,134,10,.12); }
 
 
 /* ─── DASHBOARD LOWER GRID ─────────────────── */
@@ -320,8 +341,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   .hd-div { display: none; }
   .header-stats { display: flex; flex-direction: row; flex: 1; justify-content: space-between; gap: 0; }
   .stat { flex: 1; text-align: center; }
-  .stat-val { font-size: 1.0rem; }
-  .stat-lbl { font-size: 0.41rem; }
+  .stat-val { font-size: 1.2rem; }
+  .stat-lbl { font-size: 0.52rem; }
   .header-actions { display: none; }
   .layout { grid-template-columns: 1fr; }
   .col-left { border-right: none; padding: 14px; overflow-y: auto; }
@@ -395,36 +416,52 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
   <!-- ── Screen A: Landing ── -->
   <div id="gate-a" style="width:100%;max-width:360px">
-    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:40px">
-      <span style="font-size:1.6rem;font-weight:700;letter-spacing:0.08em;color:var(--text)">PRSON</span>
-      <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0"><span style="font-weight:700;font-size:10px;color:var(--accent);letter-spacing:0.05em">AL</span></span>
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:30px">
+      <svg width="56" height="56" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="margin-bottom:18px">
+        <circle cx="48" cy="48" r="36" fill="none" stroke="#2E4A7A" stroke-width="6"/>
+        <circle cx="48" cy="48" r="23" fill="none" stroke="#2E4A7A" stroke-width="2" opacity="0.35"/>
+        <circle cx="48" cy="48" r="10" fill="none" stroke="#2E4A7A" stroke-width="1.5" opacity="0.15"/>
+        <circle cx="48" cy="48" r="4" fill="#2E4A7A"/>
+      </svg>
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">
+        <span style="font-size:1.6rem;font-weight:700;letter-spacing:0.08em;color:var(--text)">PRSON</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0"><span style="font-weight:700;font-size:10px;color:var(--accent);letter-spacing:0.05em">AL</span></span>
+      </div>
+      <div style="font-size:1.1rem;font-weight:600;color:var(--text);line-height:1.35;letter-spacing:-0.01em">Dein Training. Deine Daten.<br>Dein Fortschritt.</div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px">
-      <div style="font-size:.84rem;font-weight:600;color:var(--text);text-align:center;margin-bottom:6px">Dein persönliches Trainings-Tracking</div>
-      <div style="font-size:.72rem;color:var(--muted2);text-align:center;margin-bottom:28px;line-height:1.6">Verfolge Fortschritt, tracke Gewichte und analysiere deine Leistung.</div>
-      <button class="btn-fill" style="width:100%;padding:12px;font-size:.78rem;margin-bottom:10px" onclick="gateShowB()">Anmelden</button>
-      <button class="btn" style="width:100%;padding:12px;font-size:.78rem" onclick="gateShowC()">Neu registrieren</button>
+
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:34px;height:34px;border-radius:9px;background:var(--surface);border:1px solid #E7EBF3;box-shadow:0 1px 2px rgba(28,43,74,.04);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2E4A7A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></div>
+        <span style="font-size:0.84rem;color:var(--text)">PRs &amp; Progression — automatisch berechnet</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:34px;height:34px;border-radius:9px;background:var(--surface);border:1px solid #E7EBF3;box-shadow:0 1px 2px rgba(28,43,74,.04);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2E4A7A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg></div>
+        <span style="font-size:0.84rem;color:var(--text)">Jede Session in Sekunden geloggt</span>
+      </div>
     </div>
+
+    <button class="btn-fill" style="width:100%;height:48px;font-size:.82rem;margin-bottom:8px" onclick="gateShowC()">Konto erstellen</button>
+    <button class="btn-ghost" style="width:100%;height:44px;font-size:.78rem;text-transform:none;font-weight:600" onclick="gateShowB()">Ich habe schon ein Konto · Anmelden</button>
   </div>
 
   <!-- ── Screen B: Sign In ── -->
   <div id="gate-b" style="display:none;width:100%;max-width:360px">
-    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:40px">
-      <span style="font-size:1.6rem;font-weight:700;letter-spacing:0.08em;color:var(--text)">PRSON</span>
-      <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0"><span style="font-weight:700;font-size:10px;color:var(--accent);letter-spacing:0.05em">AL</span></span>
+    <button onclick="gateShowA()" aria-label="Zurück" style="background:var(--surface);border:1px solid #E7EBF3;border-radius:9px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 2px rgba(28,43,74,.04);margin-bottom:24px;color:var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div style="font-size:0.58rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px">Willkommen zurück</div>
+    <div style="font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;color:var(--text);margin-bottom:28px">Anmelden</div>
+    <div class="field"><label>E-Mail</label><input type="email" id="gate-email" placeholder="deine@email.de" autocomplete="email" onkeydown="if(event.key==='Enter')gateSignIn()"></div>
+    <div class="field">
+      <label>Passwort</label>
+      <div style="position:relative">
+        <input type="password" id="gate-pw" placeholder="Passwort" autocomplete="current-password" onkeydown="if(event.key==='Enter')gateSignIn()" style="padding-right:44px;width:100%">
+        <button type="button" id="gate-pw-eye" onclick="togglePwVis('gate-pw','gate-pw-eye')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted2);padding:4px;line-height:0;display:flex;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-        <button onclick="gateShowA()" style="background:none;border:none;cursor:pointer;color:var(--muted2);padding:4px;line-height:0;display:flex;align-items:center;border-radius:6px;transition:color .15s" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--muted2)'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent)">Anmelden</div>
-      </div>
-      <div class="field"><label>E-Mail</label><input type="email" id="gate-email" placeholder="deine@email.de" autocomplete="email" onkeydown="if(event.key==='Enter')gateSignIn()"></div>
-      <div class="field"><label>Passwort</label><input type="password" id="gate-pw" placeholder="Passwort" autocomplete="current-password" onkeydown="if(event.key==='Enter')gateSignIn()"></div>
-      <div id="gate-msg" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
-      <button class="btn-fill" style="width:100%;padding:12px;font-size:.78rem;margin-bottom:12px" onclick="gateSignIn()">Anmelden</button>
-      <div style="text-align:center">
-        <button onclick="gateForgotPw()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.68rem;font-family:var(--font);letter-spacing:.04em;text-decoration:underline">Passwort vergessen?</button>
-      </div>
+    <div id="gate-msg" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
+    <button class="btn-fill" style="width:100%;height:48px;font-size:.82rem;margin-bottom:14px" onclick="gateSignIn()">Anmelden</button>
+    <div style="text-align:center">
+      <button class="btn-ghost" onclick="gateForgotPw()" style="text-transform:none;font-weight:600;color:var(--muted);letter-spacing:.02em;font-size:.74rem">Passwort vergessen?</button>
     </div>
   </div>
 
@@ -446,10 +483,9 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
       <!-- Step 1: Auth credentials -->
       <div id="reg-step-1">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-          <button onclick="gateShowA()" style="background:none;border:none;cursor:pointer;color:var(--muted2);padding:4px;line-height:0;display:flex;align-items:center;border-radius:6px;transition:color .15s" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--muted2)'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-          <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent)">Konto erstellen · Schritt 1</div>
-        </div>
+        <button onclick="gateShowA()" aria-label="Zurück" style="background:var(--surface);border:1px solid #E7EBF3;border-radius:9px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 2px rgba(28,43,74,.04);margin-bottom:18px;color:var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div style="font-size:0.58rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px">Schritt 1 von 3</div>
+        <div style="font-size:1.35rem;font-weight:700;letter-spacing:-0.02em;color:var(--text);margin-bottom:22px">Konto erstellen</div>
         <div class="field"><label>E-Mail</label><input type="email" id="reg-email" placeholder="deine@email.de" autocomplete="email"></div>
         <div class="field">
           <label>Passwort</label>
@@ -458,12 +494,11 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
             <button type="button" id="reg-pw-eye" onclick="togglePwVis('reg-pw','reg-pw-eye')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted2);padding:4px;line-height:0;display:flex;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
         </div>
-        <div id="reg-pw-rules" style="margin:-8px 0 14px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:.68rem;line-height:1.9">
-          <div id="rule-len"  class="pw-rule">✗ Mindestens 10 Zeichen</div>
-          <div id="rule-low"  class="pw-rule">✗ Mindestens 1 Kleinbuchstabe</div>
-          <div id="rule-up"   class="pw-rule">✗ Mindestens 1 Großbuchstabe</div>
-          <div id="rule-num"  class="pw-rule">✗ Mindestens 1 Zahl</div>
-          <div id="rule-spec" class="pw-rule">✗ Mindestens 1 Sonderzeichen (!@#$%…)</div>
+        <div id="reg-pw-rules" style="background:var(--surface);border:1px solid #E7EBF3;border-radius:10px;padding:12px 14px;margin:-2px 0 16px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(28,43,74,.04);font-size:.74rem">
+          <div id="rule-len"  class="pw-rule">○ Mindestens 10 Zeichen</div>
+          <div id="rule-case" class="pw-rule">○ Groß- und Kleinbuchstabe</div>
+          <div id="rule-num"  class="pw-rule">○ Mindestens 1 Zahl</div>
+          <div id="rule-spec" class="pw-rule">○ Mindestens 1 Sonderzeichen (!@#$%…)</div>
         </div>
         <div class="field" style="margin-bottom:6px">
           <label>Passwort bestätigen</label>
@@ -473,7 +508,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
           </div>
         </div>
         <div id="reg-msg-1" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
-        <button class="btn-fill" style="width:100%;padding:12px;font-size:.78rem;display:flex;align-items:center;justify-content:center;gap:6px" onclick="regStep1Next()">Weiter <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <button class="btn-fill" style="width:100%;height:48px;font-size:.82rem" onclick="regStep1Next()">Weiter <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
 
       <!-- Step 2: Profile info -->
@@ -565,6 +600,13 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   <button class="top-nav-tab" id="nav-settings"  onclick="switchView('settings')">Einstellungen</button>
 </nav>
 
+<!-- ═══ RESUME BANNER (active session) ════════════════ -->
+<div id="resume-bar" onclick="openLog()" style="display:none;align-items:center;gap:10px;background:var(--accent);color:#fff;padding:10px 16px;cursor:pointer;font-size:.72rem;font-weight:700;letter-spacing:.06em">
+  <span class="active-dot" style="background:#fff"></span>
+  <span id="resume-bar-text" style="flex:1">Training läuft</span>
+  <span style="text-transform:uppercase;letter-spacing:.08em">Fortsetzen →</span>
+</div>
+
 <!-- ═══ VIEWS ════════════════════════════════════════ -->
 
 <!-- ── Dashboard ── -->
@@ -653,7 +695,16 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
           <input type="text" id="ex-search" placeholder="Übung suchen…" oninput="onExSearch(this.value)" autocomplete="off" onblur="setTimeout(()=>closeExDropdown(),150)">
           <div id="ex-dropdown" class="ex-dropdown" style="display:none"></div>
         </div>
-        <div id="chart-empty" class="chart-empty">Übung auswählen</div>
+        <div id="chart-empty" class="chart-empty">
+          <svg class="empty-mark" width="32" height="32" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="48" cy="48" r="36" fill="none" stroke="#A8B4CC" stroke-width="6"/>
+            <circle cx="48" cy="48" r="23" fill="none" stroke="#A8B4CC" stroke-width="2" opacity="0.5"/>
+            <circle cx="48" cy="48" r="4" fill="#A8B4CC"/>
+          </svg>
+          <div class="empty-title">Noch keine Auswertung</div>
+          <div class="empty-sub">Wähle eine Übung, um deinen Verlauf zu sehen.</div>
+          <button class="empty-cta" onclick="document.getElementById('ex-search').focus()">Übung wählen →</button>
+        </div>
         <div class="chart-wrap" id="chart-wrap" style="display:none"><canvas id="prog-chart"></canvas></div>
       </div>
 
@@ -1111,11 +1162,11 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <button class="log-add-ex" onclick="addLogEx()">＋ Übung hinzufügen</button>
     </div>
 
-    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:18px">
-      <button class="btn btn-danger" id="btn-abort" onclick="abortTraining()">Training abbrechen</button>
+    <div id="log-footer" style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:18px">
+      <button class="btn btn-danger" id="btn-abort" onclick="abortTraining()">Abbrechen</button>
       <div style="display:flex;gap:8px">
-        <button class="btn" id="btn-pause-session" onclick="pauseSession()" style="display:none">Training fortsetzen</button>
-        <button class="btn-fill" onclick="saveLog()">Training abschließen</button>
+        <button class="btn" id="btn-pause-session" onclick="pauseSession()" style="display:none">Fortsetzen</button>
+        <button class="btn-fill" onclick="saveLog()">Abschließen</button>
       </div>
     </div>
   </div><!-- /modal -->
@@ -1168,6 +1219,22 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     <div style="display:flex;flex-direction:column;gap:10px">
       <button class="btn-fill" style="background:#cc4444;border-color:#cc4444;width:100%;padding:12px;font-size:.78rem" onclick="confirmClearAll()">Ja, alles löschen</button>
       <button class="btn" style="width:100%;padding:12px;font-size:.78rem" onclick="closeM('m-clear')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: TRAINING ABBRECHEN ════════════════════ -->
+<div class="overlay" id="m-abort">
+  <div class="modal" style="max-width:320px;text-align:center">
+    <div style="font-size:2rem;margin-bottom:12px">⚠️</div>
+    <div class="modal-title" style="margin-bottom:10px;color:#cc4444;font-size:.8rem">Training abbrechen</div>
+    <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin:0 0 22px">
+      Training wirklich abbrechen?<br>
+      <b style="color:var(--text)">Nicht gespeicherte Daten gehen verloren.</b>
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn-fill" style="background:#cc4444;border-color:#cc4444;width:100%;padding:12px;font-size:.78rem" onclick="confirmAbort()">Ja, abbrechen</button>
+      <button class="btn" style="width:100%;padding:12px;font-size:.78rem" onclick="closeM('m-abort')">Weiter trainieren</button>
     </div>
   </div>
 </div>
@@ -1254,7 +1321,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 // ─────────────────────────────────────────────────────
 if (typeof Chart !== 'undefined') {
   Chart.defaults.font.family = "'Helvetica Neue', Helvetica, Arial, sans-serif";
-  Chart.defaults.color = '#6070A0';
+  Chart.defaults.color = '#A8B4CC';
 }
 
 // ─────────────────────────────────────────────────────
@@ -1392,9 +1459,32 @@ function toast(msg, err = false) {
   el.textContent = msg;
   el.style.background = err ? '#cc2222' : 'var(--accent)';
   el.style.color = err ? '#fff' : '#ffffff';
+  el.style.pointerEvents = 'none';
   el.classList.add('show');
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// Toast with an inline "Rückgängig" (undo) action (Item 11)
+let _undoFn = null;
+function toastUndo(msg, undoFn) {
+  const el = document.getElementById('toast');
+  _undoFn = undoFn;
+  el.style.background = 'var(--accent)';
+  el.style.color = '#ffffff';
+  el.style.pointerEvents = 'auto';
+  el.innerHTML = `<span>${msg}</span><button onclick="doUndo()" style="background:none;border:none;color:#fff;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;margin-left:12px;text-transform:uppercase;letter-spacing:.08em">Rückgängig</button>`;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.classList.remove('show'); el.style.pointerEvents = 'none'; _undoFn = null; }, 5000);
+}
+function doUndo() {
+  const fn = _undoFn; _undoFn = null;
+  const el = document.getElementById('toast');
+  el.classList.remove('show');
+  el.style.pointerEvents = 'none';
+  clearTimeout(el._t);
+  if (fn) fn();
 }
 
 function openM(id)  { document.getElementById(id).classList.add('open'); }
@@ -1531,12 +1621,21 @@ function updateStartBtn() {
   const wrap   = document.getElementById('fab-wrap');
   const icon   = document.getElementById('fab-icon');
   const active = loadActive();
+  const bar    = document.getElementById('resume-bar');
   if (active) {
     wrap.classList.add('fab-active');
     icon.textContent = '▶';
+    if (bar) {
+      const detail = active.isCardio
+        ? (active.cat || 'Cardio')
+        : ((active.exercises || []).length + ' Übungen');
+      document.getElementById('resume-bar-text').textContent = 'Training läuft · ' + detail;
+      bar.style.display = 'flex';
+    }
   } else {
     wrap.classList.remove('fab-active');
     icon.textContent = '＋';
+    if (bar) bar.style.display = 'none';
   }
   closeFabMenu();
 }
@@ -1592,14 +1691,21 @@ function editWeightEntry(date) {
 }
 
 function deleteWeightEntry() {
-  const date = document.getElementById('wt-date').value;
-  if (!confirm('Eintrag wirklich löschen?')) return;
-  const entries = getWeightEntries().filter(e => e.date !== date);
-  saveWeightEntries(entries);
+  const date    = document.getElementById('wt-date').value;
+  const all     = getWeightEntries();
+  const removed = all.find(e => e.date === date);
+  saveWeightEntries(all.filter(e => e.date !== date));
   closeM('m-weight');
   applyFilters();
   renderWeightChart();
-  toast('Eintrag gelöscht');
+  if (removed) toastUndo('Eintrag gelöscht', () => {
+    const cur = getWeightEntries();
+    cur.push(removed);
+    saveWeightEntries(cur);
+    applyFilters();
+    renderWeightChart();
+    toast('Wiederhergestellt');
+  });
 }
 
 // Attach auto-save listener to the log modal
@@ -1651,7 +1757,7 @@ let editingId  = null;
 function updateModalButtons() {
   const isEditing = !!editingId;
   document.getElementById('btn-pause-session').style.display = isEditing ? 'none' : '';
-  document.getElementById('btn-abort').textContent = isEditing ? 'Abbrechen' : 'Training abbrechen';
+  document.getElementById('btn-abort').textContent = 'Abbrechen';
 }
 
 function openLog() {
@@ -1741,15 +1847,19 @@ function restoreActiveSession(active) {
 }
 
 function abortTraining() {
-  if (!editingId) {
-    const active = loadActive();
-    if (active) {
-      if (!confirm('Training wirklich abbrechen? Alle nicht gespeicherten Daten gehen verloren.')) return;
-      clearActive();
-    }
-  }
+  // Editing an existing session, or no active draft → just close, no confirmation needed
+  if (editingId) { editingId = null; closeM('m-log'); return; }
+  const active = loadActive();
+  if (!active) { closeM('m-log'); return; }
+  openM('m-abort'); // styled confirm in place of native confirm() (Item 11)
+}
+
+function confirmAbort() {
+  clearActive();
   editingId = null;
+  closeM('m-abort');
   closeM('m-log');
+  toast('Training abgebrochen');
 }
 
 function onLogChange() {
@@ -1802,26 +1912,72 @@ function addLogEx(name = '') {
   `;
   document.getElementById('log-ex-list').appendChild(el);
   addLogSet('sr-' + id);
+  // Plan-loaded exercises: seed the first set from the most recent session of the same exercise (Item 06)
+  if (name) {
+    const ls = lastSetFor(name);
+    if (ls) {
+      const row = document.querySelector('#sr-' + id + ' .sets-grid');
+      if (row) {
+        row.querySelector('.set-w').value = ls.w;
+        row.querySelector('.set-r').value = ls.r;
+      }
+    }
+  }
 }
 
 function addLogSet(rowsId) {
-  const wrap = document.getElementById(rowsId);
-  const n    = wrap.querySelectorAll('.sets-grid').length + 1;
+  const wrap     = document.getElementById(rowsId);
+  const existing = wrap.querySelectorAll('.sets-grid');
+  const n        = existing.length + 1;
+  // Prefill new set with the previous set's values (Item 06) — one tap instead of full re-entry
+  let prevW = '', prevR = '';
+  if (existing.length) {
+    const last = existing[existing.length - 1];
+    prevW = last.querySelector('.set-w')?.value || '';
+    prevR = last.querySelector('.set-r')?.value || '';
+  }
   const row  = document.createElement('div');
   row.className = 'sets-grid';
   row.innerHTML = `
     <span class="set-n">${n}</span>
-    <input type="number" class="set-input set-w" step="0.5" min="0" placeholder="0">
-    <input type="number" class="set-input set-r" min="0" placeholder="0">
+    <input type="number" class="set-input set-w" step="0.5" min="0" placeholder="0" value="${prevW}">
+    <input type="number" class="set-input set-r" min="0" placeholder="0" value="${prevR}">
     <button class="set-rm" onclick="removeLogSet(this,'${rowsId}')">✕</button>
   `;
   wrap.appendChild(row);
 }
 
+// Most recent logged first-set values for an exercise name (Item 06 bonus)
+function lastSetFor(name) {
+  const key = (name || '').toLowerCase().trim();
+  if (!key) return null;
+  const sessions = loadDB().sessions.slice().sort((a, b) => b.date.localeCompare(a.date));
+  for (const s of sessions) {
+    const ex = (s.exercises || []).find(e => (e.name || '').toLowerCase().trim() === key);
+    if (ex && ex.sets && ex.sets.length) {
+      const st = ex.sets.find(x => x.weight || x.reps);
+      if (st) return { w: st.weight || '', r: st.reps || '' };
+    }
+  }
+  return null;
+}
+
 function removeLogSet(btn, rowsId) {
-  btn.closest('.sets-grid').remove();
+  const row = btn.closest('.sets-grid');
+  const w = row.querySelector('.set-w')?.value || '';
+  const r = row.querySelector('.set-r')?.value || '';
+  row.remove();
   document.getElementById(rowsId).querySelectorAll('.set-n').forEach((el,i) => el.textContent = i+1);
   triggerAutoSave();
+  toastUndo('Satz entfernt', () => {
+    const wrap = document.getElementById(rowsId);
+    if (!wrap) return;
+    addLogSet(rowsId);
+    const rows = wrap.querySelectorAll('.sets-grid');
+    const last = rows[rows.length - 1];
+    if (last) { last.querySelector('.set-w').value = w; last.querySelector('.set-r').value = r; }
+    triggerAutoSave();
+  });
 }
 
 function removeLogEx(id) {
@@ -2249,6 +2405,14 @@ function typeColor(s) {
   return 'var(--other)';
 }
 
+// Category chip text + background tint (Item 16) — same palette as the calendar
+function typeChip(s) {
+  if (s.type === 'cardio' || /cardio/i.test(s.category)) return { color: '#A8740A', bg: 'rgba(212,134,10,.12)' };
+  if (/push/i.test(s.category)) return { color: '#2E4A7A', bg: 'rgba(46,74,122,.10)' };
+  if (/pull/i.test(s.category)) return { color: '#3a64a0', bg: 'rgba(74,122,191,.14)' };
+  return { color: 'var(--muted)', bg: 'var(--surface2)' };
+}
+
 
 // ─── PERSONAL RECORDS ────────────────────────────────
 // Big 3 matcher — case-insensitive contains
@@ -2416,8 +2580,7 @@ function renderList(sessions, weightEntries = [], targetEl = null) {
     if (item._type === 'weight') {
       const w = item.w;
       const right = w.kfa != null ? `${w.kg} kg · ${w.kfa}%` : `${w.kg} kg`;
-      return `<div class="s-card" onclick="editWeightEntry('${w.date}')">
-        <div class="s-dot" style="background:#4a9eff"></div>
+      return `<div class="s-card" style="border-left:3px solid #4a9eff" onclick="editWeightEntry('${w.date}')">
         <div class="s-left">
           <div class="s-date">${fmt(w.date)}</div>
           <div class="s-sub">⚖ Körpergewicht</div>
@@ -2427,15 +2590,19 @@ function renderList(sessions, weightEntries = [], targetEl = null) {
     }
     const s = item.s;
     const col  = typeColor(s);
+    const chip = typeChip(s);
     const info = s.type === 'cardio' && s.cardio
       ? `${s.cardio.distance_km || s.cardio.floors || '–'} · ${s.cardio.duration_min || '–'}min`
       : `${(s.exercises || []).length} Übungen`;
     const dateLabel = s.dateDisplay || (s.date ? fmt(s.date) : '—');
-    return `<div class="s-card" onclick="showDetail('${s.id}')">
-      <div class="s-dot" style="background:${col}"></div>
+    const locSub = s.location ? locLabel(LOC_KEY[s.location] || s.location) : '';
+    return `<div class="s-card" style="border-left:3px solid ${col}" onclick="showDetail('${s.id}')">
       <div class="s-left">
-        <div class="s-date">${dateLabel}</div>
-        <div class="s-sub">${s.category}${s.location ? ' · ' + locLabel(LOC_KEY[s.location] || s.location) : ''}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="s-date">${dateLabel}</span>
+          <span style="font-size:0.55rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${chip.color};background:${chip.bg};border-radius:4px;padding:2px 6px">${s.category}</span>
+        </div>
+        ${locSub ? `<div class="s-sub">${locSub}</div>` : ''}
       </div>
       <div class="s-right">${info}</div>
     </div>`;
@@ -2499,7 +2666,7 @@ function selectExByName(name) {
   progChart = new Chart(ctx, {
     type: 'line',
     data: { labels: pts.map(p => p.label), datasets: [{ label: name, data: pts.map(p => p.val), borderColor: '#2E4A7A', backgroundColor: 'rgba(46,74,122,.07)', pointBackgroundColor: '#2E4A7A', pointBorderColor: '#ffffff', pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7, tension: 0.35, fill: true }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: '#ffffff', borderColor: '#DDE2EE', borderWidth: 1, titleColor: '#2E4A7A', bodyColor: '#1A2035', callbacks: { label: c => (Math.round(c.parsed.y * 100) / 100) + ' kg' } } }, scales: { x: { ticks: { color: '#6070A0', font: { size: 11, family: 'Helvetica Neue' } }, grid: { color: 'rgba(0,0,0,.05)' }, border: { color: 'rgba(0,0,0,.08)' } }, y: { ticks: { color: '#6070A0', font: { size: 11 }, stepSize: 0.5, callback: v => (Math.round(v * 100) / 100) + ' kg' }, grid: { color: 'rgba(0,0,0,.05)' }, border: { color: 'rgba(0,0,0,.08)' } } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: '#ffffff', borderColor: '#DDE2EE', borderWidth: 1, titleColor: '#2E4A7A', bodyColor: '#1A2035', callbacks: { label: c => (Math.round(c.parsed.y * 100) / 100) + ' kg' } } }, scales: { x: { ticks: { color: '#A8B4CC', font: { size: 11, family: 'Helvetica Neue' }, autoSkip: true, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false }, border: { color: '#EEF1F7' } }, y: { ticks: { color: '#A8B4CC', font: { size: 11 }, stepSize: 0.5, callback: v => (Math.round(v * 100) / 100) + ' kg' }, grid: { color: '#EEF1F7' }, border: { color: '#EEF1F7' } } } }
   });
 }
 
@@ -2552,8 +2719,8 @@ function renderDurChart() {
         }
       },
       scales: {
-        x: { ticks: { color: '#6070A0', font: { size: 10, family: 'Helvetica Neue' }, maxRotation: 45 }, grid: { color: 'rgba(0,0,0,.05)' }, border: { color: 'rgba(0,0,0,.08)' } },
-        y: { beginAtZero: true, ticks: { color: '#6070A0', font: { size: 11 }, callback: v => v + ' min' }, grid: { color: 'rgba(0,0,0,.05)' }, border: { color: 'rgba(0,0,0,.08)' } }
+        x: { ticks: { color: '#A8B4CC', font: { size: 10, family: 'Helvetica Neue' }, autoSkip: true, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false }, border: { color: '#EEF1F7' } },
+        y: { beginAtZero: true, ticks: { color: '#A8B4CC', font: { size: 11 }, callback: v => v + ' min' }, grid: { color: '#EEF1F7' }, border: { color: '#EEF1F7' } }
       }
     }
   });
@@ -2679,13 +2846,21 @@ function editSession(id) {
 }
 
 function delSession(id) {
-  if (!confirm('Session wirklich löschen?')) return;
-  const db = loadDB();
-  db.sessions = db.sessions.filter(s => s.id !== id);
+  const db  = loadDB();
+  const idx = db.sessions.findIndex(s => s.id === id);
+  if (idx === -1) return;
+  const removed = db.sessions[idx];
+  db.sessions.splice(idx, 1);
   writeDB(db);
   closeM('m-detail');
   renderAll();
-  toast('Gelöscht');
+  toastUndo('Session gelöscht', () => {
+    const d = loadDB();
+    d.sessions.push(removed);
+    writeDB(d);
+    renderAll();
+    toast('Wiederhergestellt');
+  });
 }
 
 // ── Settings ─────────────────────────────────────────
@@ -3060,8 +3235,8 @@ function renderWeightChart() {
   }
 
   const scales = {
-    x: { ticks: { color: '#6070A0', font: { family: 'Helvetica Neue', size: 11 } }, grid: { color: 'rgba(0,0,0,.05)' } },
-    y: { position: 'left', ticks: { color: '#2E4A7A', font: { family: 'Helvetica Neue', size: 11 } }, grid: { color: 'rgba(0,0,0,.05)' } }
+    x: { ticks: { color: '#A8B4CC', font: { family: 'Helvetica Neue', size: 11 }, autoSkip: true, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
+    y: { position: 'left', ticks: { color: '#2E4A7A', font: { family: 'Helvetica Neue', size: 11 } }, grid: { color: '#EEF1F7' } }
   };
   if (hasKfa) scales.y2 = { position: 'right', ticks: { color: '#4a7abf', font: { family: 'Helvetica Neue', size: 11 }, callback: v => v + '%' }, grid: { display: false } };
 
@@ -3184,8 +3359,7 @@ function togglePwVis(inputId, btnId) {
 
 const _PW_RULES = [
   { id: 'rule-len',  test: v => v.length >= 10,                              text: 'Mindestens 10 Zeichen' },
-  { id: 'rule-low',  test: v => /[a-z]/.test(v),                             text: 'Mindestens 1 Kleinbuchstabe' },
-  { id: 'rule-up',   test: v => /[A-Z]/.test(v),                             text: 'Mindestens 1 Großbuchstabe' },
+  { id: 'rule-case', test: v => /[a-z]/.test(v) && /[A-Z]/.test(v),          text: 'Groß- und Kleinbuchstabe' },
   { id: 'rule-num',  test: v => /[0-9]/.test(v),                             text: 'Mindestens 1 Zahl' },
   { id: 'rule-spec', test: v => /[!@#$%^&*()\\_+\-=\[\]{};':"\\|<>?,./`~]/.test(v), text: 'Mindestens 1 Sonderzeichen (!@#$%…)' },
 ];
@@ -3196,7 +3370,7 @@ function regPwCheck(val) {
     if (!el) return;
     const ok = test(val);
     el.classList.toggle('ok', ok);
-    el.textContent = (ok ? '✓ ' : '✗ ') + text;
+    el.textContent = (ok ? '✓ ' : '○ ') + text;
   });
 }
 
@@ -3616,6 +3790,22 @@ function calc1RM() {
 
 
 
+// Exercise (non-cardio) with the most logged sets — for sensible defaults (Item 09)
+function mostTrainedExercise() {
+  const counts = {};
+  loadDB().sessions.forEach(s => {
+    (s.exercises || []).forEach(e => {
+      if (e.type === 'cardio' || !e.name) return;
+      counts[e.name] = (counts[e.name] || 0) + ((e.sets || []).length || 1);
+    });
+  });
+  let best = null, bestN = 0;
+  for (const [name, n] of Object.entries(counts)) {
+    if (n > bestN) { bestN = n; best = name; }
+  }
+  return best;
+}
+
 // ─── FORTSCHRITT DEFAULT STATE ────────────────────────────────────────────────
 function initProgressDefaults() {
   const todayStr     = new Date().toLocaleString('sv-SE', {timeZone: 'Europe/Berlin'}).slice(0, 10);
@@ -3624,15 +3814,41 @@ function initProgressDefaults() {
   const toInput      = document.getElementById('prog-to');
   if (fromInput && !fromInput.value) fromInput.value = firstOfMonth;
   if (toInput   && !toInput.value)   toInput.value   = todayStr;
-  // Auto-select first alphabetical exercise if none selected
+  // Auto-select the most-trained exercise if none selected (Item 09)
   if (!_currentChartEx && allExNames.length > 0) {
-    const first = allExNames[0];
+    const pick = mostTrainedExercise() || allExNames[0];
     const searchInput = document.getElementById('ex-search');
-    if (searchInput) searchInput.value = first;
-    selectExByName(first);
+    if (searchInput) searchInput.value = pick;
+    selectExByName(pick);
   } else if (_currentChartEx) {
     rechartProgression();
   }
+  init1RMDefault();
+}
+
+// Prefill the 1RM calculator with the most-trained exercise's heaviest set (Item 09)
+function init1RMDefault() {
+  const sel = document.getElementById('rm-ex-select');
+  const wEl = document.getElementById('rm-weight');
+  const rEl = document.getElementById('rm-reps');
+  if (!sel || !wEl || !rEl) return;
+  if (sel.value || wEl.value || rEl.value) return; // respect any user input
+  const pick = mostTrainedExercise();
+  if (!pick) return;
+  // Find the heaviest set for that exercise
+  let best = null;
+  loadDB().sessions.forEach(s => {
+    (s.exercises || []).filter(e => e.name === pick).forEach(e => {
+      (e.sets || []).forEach(st => {
+        if (st.weight && st.reps && (!best || st.weight > best.weight)) best = { weight: st.weight, reps: st.reps };
+      });
+    });
+  });
+  if (!best) return;
+  sel.value = pick;
+  wEl.value = best.weight;
+  rEl.value = best.reps;
+  calc1RM();
 }
 
 

@@ -1,8 +1,10 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { sbMock } = require('./sb-mock');
 
 // Clears leftover data before each test.
 async function setup(page, { seedWeight = null } = {}) {
+  await page.addInitScript(sbMock); // bypass Supabase auth gate
   await page.addInitScript((entry) => {
     localStorage.removeItem('liftlog_active_v1');
     localStorage.removeItem('liftlog_weight_v1');
@@ -11,6 +13,7 @@ async function setup(page, { seedWeight = null } = {}) {
     }
   }, seedWeight);
   await page.goto('/');
+  await page.waitForSelector('#login-gate', { state: 'hidden' });
   await page.waitForSelector('#fab-btn');
 }
 

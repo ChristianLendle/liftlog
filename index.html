@@ -1447,9 +1447,9 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <div style="font-size:.78rem;color:var(--muted2);line-height:1.5">Tippe auf das Bild,<br>um es zu ändern</div>
     </div>
     <div class="field">
-      <label>Username <span style="color:#cc4444;font-weight:400">*</span></label>
-      <input type="text" id="profile-edit-username" placeholder="z.B. christian_lifts" oninput="checkUsernameEditAvail(this.value)">
-      <div id="profile-edit-username-msg" style="font-size:.7rem;margin-top:4px;min-height:16px"></div>
+      <label>Username</label>
+      <input type="text" id="profile-edit-username" readonly tabindex="-1" style="background:var(--surface2);color:var(--muted);cursor:not-allowed">
+      <div style="font-size:.68rem;color:var(--muted2);margin-top:4px;line-height:1.5">🔒 Der Username ist fest und kann nach der Registrierung nicht mehr geändert werden.</div>
     </div>
     <div class="field"><label>Anzeigename</label><input type="text" id="profile-edit-displayname" placeholder="Christian Lendle"></div>
     <div class="field"><label>Trainingsziele</label><input type="text" id="profile-edit-goals" placeholder="z.B. Muskelaufbau, Kraft steigern"></div>
@@ -3887,7 +3887,6 @@ function openProfileEditModal() {
   document.getElementById('profile-edit-height').value             = _PROFILE.height_cm || '';
   document.getElementById('profile-edit-fitness-level').value      = _PROFILE.fitness_level || '';
   document.getElementById('profile-edit-msg').textContent          = '';
-  document.getElementById('profile-edit-username-msg').textContent = '';
   document.getElementById('profile-edit-avatar-file').value        = '';
   const prev = document.getElementById('profile-edit-avatar-preview');
   if (prev) prev.innerHTML = _PROFILE.avatar_url
@@ -3901,7 +3900,7 @@ async function saveProfileEdit() {
   msg.textContent = 'Speichern…'; msg.style.color = 'var(--muted2)';
   const { data: { user } } = await _SB.auth.getUser();
   if (!user) { msg.textContent = '✗ Nicht angemeldet.'; msg.style.color = '#cc4444'; return; }
-  const username    = document.getElementById('profile-edit-username').value.trim().toLowerCase();
+  const username    = _PROFILE?.username || null;   // fest – nach der Registrierung nicht änderbar
   const displayName = document.getElementById('profile-edit-displayname').value.trim();
   const goals       = document.getElementById('profile-edit-goals').value.trim();
   const hobbies     = document.getElementById('profile-edit-hobbies').value.trim();
@@ -3909,13 +3908,6 @@ async function saveProfileEdit() {
   const heightCm    = document.getElementById('profile-edit-height').value.trim();
   const fitnessLvl  = document.getElementById('profile-edit-fitness-level').value;
   const avatarFile  = document.getElementById('profile-edit-avatar-file').files[0];
-  if (!username || !/^[a-z0-9_]{3,30}$/.test(username)) {
-    msg.textContent = '✗ Ungültiger Username.'; msg.style.color = '#cc4444'; return;
-  }
-  if (_PROFILE && username !== _PROFILE.username) {
-    const { data } = await _SB.from('profiles').select('username').eq('username', username).maybeSingle();
-    if (data) { msg.textContent = '✗ Username bereits vergeben.'; msg.style.color = '#cc4444'; return; }
-  }
   let avatarUrl = _PROFILE?.avatar_url || null;
   if (avatarFile) {
     const ext  = (avatarFile.name.split('.').pop() || 'jpg').toLowerCase();

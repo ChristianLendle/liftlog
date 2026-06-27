@@ -406,6 +406,10 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .set-profile-card { background: linear-gradient(135deg,#34568c 0%,#26406b 100%); border-radius: 14px; padding: 18px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 26px rgba(38,64,107,.28); }
 .set-pc-avatar { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.45); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .set-pc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.set-pc-avatar-wrap { position: relative; flex-shrink: 0; cursor: pointer; }
+.set-pc-avatar-badge { position: absolute; bottom: -2px; right: -2px; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid #34568c; display: flex; align-items: center; justify-content: center; color: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: background .12s, color .12s; }
+.set-pc-avatar-wrap:hover .set-pc-avatar-badge { background: var(--accent); color: #fff; }
+.set-pc-avatar-wrap:hover .set-pc-avatar { border-color: rgba(255,255,255,.75); }
 .set-pc-name { font-size: 1.05rem; font-weight: 700; color: #fff; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .set-pc-user { font-size: .8rem; color: rgba(255,255,255,.66); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .set-pc-edit { width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.12); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s; }
@@ -890,8 +894,11 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
       <!-- Profil-Karte -->
       <div class="set-profile-card">
-        <div class="set-pc-avatar" id="settings-avatar">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <div class="set-pc-avatar-wrap" onclick="openProfileEditModal()" title="Profilbild bearbeiten" role="button" aria-label="Profilbild bearbeiten">
+          <div class="set-pc-avatar" id="settings-avatar">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          </div>
+          <span class="set-pc-avatar-badge" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
         </div>
         <div style="flex:1;min-width:0">
           <div class="set-pc-name" id="settings-display-name">—</div>
@@ -3765,12 +3772,13 @@ async function regSubmit() {
   if (signUpData.session) {
     let avatarUrl = null;
     if (avatarFile) {
-      try {
-        const ext = avatarFile.name.split('.').pop() || 'jpg';
-        await _SB.storage.from('avatars').upload(`${userId}/avatar.${ext}`, avatarFile, { upsert: true, contentType: avatarFile.type });
-        const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(`${userId}/avatar.${ext}`);
-        avatarUrl = urlData?.publicUrl || null;
-      } catch {}
+      const ext  = (avatarFile.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `${userId}/avatar.${ext}`;
+      const { error: upErr } = await _SB.storage.from('avatars').upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
+      if (!upErr) {
+        const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(path);
+        if (urlData?.publicUrl) avatarUrl = urlData.publicUrl + '?t=' + Date.now();
+      } else { console.warn('Avatar-Upload bei Registrierung fehlgeschlagen:', upErr.message); }
     }
     const { error: profileErr } = await _SB.from('profiles').upsert({ id: userId, ...profileMeta, avatar_url: avatarUrl });
     if (profileErr) {
@@ -3841,7 +3849,13 @@ function renderProfileSection() {
   if (dn) dn.textContent = _PROFILE.display_name || _PROFILE.username || '—';
   if (un) un.textContent = '@' + (_PROFILE.username || '—');
   if (av && _PROFILE.avatar_url) {
-    av.innerHTML = `<img src="${_PROFILE.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
+    const ph = '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+    const img = document.createElement('img');
+    img.src = _PROFILE.avatar_url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    img.onerror = () => { av.innerHTML = ph; };   // Datei fehlt → Platzhalter statt kaputtem Bild
+    av.innerHTML = '';
+    av.appendChild(img);
   }
 }
 
@@ -3903,12 +3917,12 @@ async function saveProfileEdit() {
   }
   let avatarUrl = _PROFILE?.avatar_url || null;
   if (avatarFile) {
-    try {
-      const ext = avatarFile.name.split('.').pop() || 'jpg';
-      await _SB.storage.from('avatars').upload(`${user.id}/avatar.${ext}`, avatarFile, { upsert: true, contentType: avatarFile.type });
-      const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(`${user.id}/avatar.${ext}`);
-      avatarUrl = urlData?.publicUrl || avatarUrl;
-    } catch {}
+    const ext  = (avatarFile.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${user.id}/avatar.${ext}`;
+    const { error: upErr } = await _SB.storage.from('avatars').upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
+    if (upErr) { msg.textContent = '✗ Bild-Upload fehlgeschlagen: ' + upErr.message; msg.style.color = '#cc4444'; return; }
+    const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(path);
+    if (urlData?.publicUrl) avatarUrl = urlData.publicUrl + '?t=' + Date.now();  // Cache-Buster, damit das neue Bild sofort erscheint
   }
   const updates = { id: user.id, username, display_name: displayName || null, avatar_url: avatarUrl,
     goals: goals || null, hobbies: hobbies || null, lifestyle: lifestyle || null,

@@ -3759,7 +3759,12 @@ async function regSubmit() {
   const profileData = { id: userId, username, display_name: displayName || null, avatar_url: avatarUrl,
     goals: goals || null, hobbies: hobbies || null, lifestyle: lifestyle || null,
     height_cm: heightCm ? parseInt(heightCm, 10) : null, fitness_level: fitnessLvl || null };
-  await _SB.from('profiles').upsert(profileData);
+  const { error: profileErr } = await _SB.from('profiles').upsert(profileData);
+  if (profileErr) {
+    msg.textContent = '✗ Konto erstellt, aber Profil nicht gespeichert: ' + profileErr.message + ' — später unter Einstellungen → Profil anpassen ergänzbar.';
+    msg.style.color = '#cc4444';
+    return;
+  }
   if (signUpData.session) {
     hideLoginGate();
     await loadApp();

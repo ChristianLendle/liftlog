@@ -406,6 +406,10 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .set-profile-card { background: linear-gradient(135deg,#34568c 0%,#26406b 100%); border-radius: 14px; padding: 18px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 26px rgba(38,64,107,.28); }
 .set-pc-avatar { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.45); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .set-pc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.set-pc-avatar-wrap { position: relative; flex-shrink: 0; cursor: pointer; }
+.set-pc-avatar-badge { position: absolute; bottom: -2px; right: -2px; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid #34568c; display: flex; align-items: center; justify-content: center; color: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: background .12s, color .12s; }
+.set-pc-avatar-wrap:hover .set-pc-avatar-badge { background: var(--accent); color: #fff; }
+.set-pc-avatar-wrap:hover .set-pc-avatar { border-color: rgba(255,255,255,.75); }
 .set-pc-name { font-size: 1.05rem; font-weight: 700; color: #fff; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .set-pc-user { font-size: .8rem; color: rgba(255,255,255,.66); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .set-pc-edit { width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.12); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s; }
@@ -890,8 +894,11 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
       <!-- Profil-Karte -->
       <div class="set-profile-card">
-        <div class="set-pc-avatar" id="settings-avatar">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <div class="set-pc-avatar-wrap" onclick="openProfileEditModal()" title="Profilbild bearbeiten" role="button" aria-label="Profilbild bearbeiten">
+          <div class="set-pc-avatar" id="settings-avatar">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          </div>
+          <span class="set-pc-avatar-badge" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
         </div>
         <div style="flex:1;min-width:0">
           <div class="set-pc-name" id="settings-display-name">—</div>
@@ -1430,18 +1437,19 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <button class="modal-x" onclick="closeM('m-profile-edit')">✕</button>
     </div>
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
-      <div class="settings-avatar-circle" id="profile-edit-avatar-preview">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-      </div>
-      <label style="cursor:pointer">
-        <span class="btn" style="display:inline-block;cursor:pointer">Bild ändern</span>
+      <label style="cursor:pointer;position:relative;display:inline-flex;flex-shrink:0" title="Bild ändern">
+        <div class="settings-avatar-circle" id="profile-edit-avatar-preview">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+        <span aria-hidden="true" style="position:absolute;bottom:-2px;right:-2px;width:24px;height:24px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
         <input type="file" id="profile-edit-avatar-file" accept="image/*" style="display:none" onchange="previewEditAvatar(this)">
       </label>
+      <div style="font-size:.78rem;color:var(--muted2);line-height:1.5">Tippe auf das Bild,<br>um es zu ändern</div>
     </div>
     <div class="field">
-      <label>Username <span style="color:#cc4444;font-weight:400">*</span></label>
-      <input type="text" id="profile-edit-username" placeholder="z.B. christian_lifts" oninput="checkUsernameEditAvail(this.value)">
-      <div id="profile-edit-username-msg" style="font-size:.7rem;margin-top:4px;min-height:16px"></div>
+      <label>Username</label>
+      <input type="text" id="profile-edit-username" readonly tabindex="-1" style="background:var(--surface2);color:var(--muted);cursor:not-allowed">
+      <div style="font-size:.68rem;color:var(--muted2);margin-top:4px;line-height:1.5">🔒 Der Username ist fest und kann nach der Registrierung nicht mehr geändert werden.</div>
     </div>
     <div class="field"><label>Anzeigename</label><input type="text" id="profile-edit-displayname" placeholder="Christian Lendle"></div>
     <div class="field"><label>Trainingsziele</label><input type="text" id="profile-edit-goals" placeholder="z.B. Muskelaufbau, Kraft steigern"></div>
@@ -1494,6 +1502,30 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn" onclick="closeM('m-password-change')">Abbrechen</button>
       <button class="btn-fill" onclick="savePasswordChange()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: BILD ZUSCHNEIDEN ════════════════════════ -->
+<div class="overlay" id="m-cropper">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-hd">
+      <div class="modal-title">Bild zuschneiden</div>
+      <button class="modal-x" onclick="closeM('m-cropper')">✕</button>
+    </div>
+    <p style="font-size:.74rem;color:var(--muted2);line-height:1.6;margin-bottom:14px">Ziehen zum Verschieben, Regler zum Zoomen — der sichtbare Kreis wird als Profilbild übernommen.</p>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+      <div id="cropper-stage" style="position:relative;width:280px;height:280px;border-radius:50%;overflow:hidden;background:var(--surface2);border:2px solid var(--border);touch-action:none;cursor:grab;user-select:none">
+        <canvas id="cropper-canvas" width="280" height="280" style="display:block"></canvas>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;width:100%">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6M20 20l-3.5-3.5"/></svg>
+        <input type="range" id="cropper-zoom" min="1" max="4" step="0.01" value="1" style="flex:1" oninput="cropperZoom(this.value)">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;width:100%">
+        <button class="btn" onclick="closeM('m-cropper')">Abbrechen</button>
+        <button class="btn-fill" onclick="cropperConfirm()">Übernehmen</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3591,6 +3623,7 @@ function gateShowC() {
   document.getElementById('gate-a').style.display = 'none';
   document.getElementById('gate-b').style.display = 'none';
   document.getElementById('gate-c').style.display = '';
+  _regAvatarFile = null;   // frische Registrierung → evtl. altes Bild verwerfen
   regGotoStep(1);
 }
 
@@ -3694,25 +3727,100 @@ async function checkUsernameEditAvail(val) {
   }, 500);
 }
 
+// ── Avatar-Auswahl mit Crop/Zoom ──────────────────────
+let _regAvatarFile  = null;   // zugeschnittene Datei aus der Registrierung
+let _editAvatarFile = null;   // zugeschnittene Datei aus dem Profil-Dialog
+
 function previewRegAvatar(input) {
   const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
+  openCropper(file, (cropped, dataUrl) => {
+    _regAvatarFile = cropped;
     const prev = document.getElementById('reg-avatar-preview');
-    if (prev) prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-  };
-  reader.readAsDataURL(file);
+    if (prev) prev.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  });
 }
 
 function previewEditAvatar(input) {
   const file = input.files[0]; if (!file) return;
+  openCropper(file, (cropped, dataUrl) => {
+    _editAvatarFile = cropped;
+    const prev = document.getElementById('profile-edit-avatar-preview');
+    if (prev) prev.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  });
+}
+
+// ── Cropper-Engine (Canvas, ohne externe Library) ─────
+const _crop = { img: null, base: 1, zoom: 1, offX: 0, offY: 0, view: 280, out: 512, drag: null, onDone: null };
+
+function openCropper(file, onDone) {
   const reader = new FileReader();
   reader.onload = e => {
-    const prev = document.getElementById('profile-edit-avatar-preview');
-    if (prev) prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    const img = new Image();
+    img.onload = () => {
+      _crop.img  = img;
+      _crop.base = Math.max(_crop.view / img.naturalWidth, _crop.view / img.naturalHeight); // "cover"
+      _crop.zoom = 1; _crop.offX = 0; _crop.offY = 0; _crop.onDone = onDone;
+      const z = document.getElementById('cropper-zoom'); if (z) z.value = 1;
+      openM('m-cropper');
+      _cropDraw();
+    };
+    img.src = e.target.result;   // data: URL → CSP-konform
   };
   reader.readAsDataURL(file);
 }
+
+function _cropScale() { return _crop.base * _crop.zoom; }
+function _cropClamp() {
+  const s = _cropScale(), v = _crop.view;
+  const iw = _crop.img.naturalWidth * s, ih = _crop.img.naturalHeight * s;
+  _crop.offX = Math.min(0, Math.max(v - iw, _crop.offX));
+  _crop.offY = Math.min(0, Math.max(v - ih, _crop.offY));
+}
+function _cropDraw() {
+  if (!_crop.img) return;
+  const c = document.getElementById('cropper-canvas'); if (!c) return;
+  const ctx = c.getContext('2d'), v = _crop.view, s = _cropScale();
+  _cropClamp();
+  ctx.clearRect(0, 0, v, v);
+  ctx.drawImage(_crop.img, _crop.offX, _crop.offY, _crop.img.naturalWidth * s, _crop.img.naturalHeight * s);
+}
+function cropperZoom(val) { _crop.zoom = parseFloat(val) || 1; _cropDraw(); }
+
+function _cropDragStart(e) { const p = e.touches ? e.touches[0] : e; _crop.drag = { x: p.clientX, y: p.clientY, ox: _crop.offX, oy: _crop.offY }; }
+function _cropDragMove(e) {
+  if (!_crop.drag) return;
+  const p = e.touches ? e.touches[0] : e;
+  _crop.offX = _crop.drag.ox + (p.clientX - _crop.drag.x);
+  _crop.offY = _crop.drag.oy + (p.clientY - _crop.drag.y);
+  _cropDraw();
+  if (e.cancelable) e.preventDefault();
+}
+function _cropDragEnd() { _crop.drag = null; }
+
+function cropperConfirm() {
+  const out = _crop.out, r = out / _crop.view, s = _cropScale() * r;
+  const cv = document.createElement('canvas'); cv.width = out; cv.height = out;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out, out);
+  ctx.drawImage(_crop.img, _crop.offX * r, _crop.offY * r, _crop.img.naturalWidth * s, _crop.img.naturalHeight * s);
+  const dataUrl = cv.toDataURL('image/jpeg', 0.9);
+  cv.toBlob(blob => {
+    const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+    closeM('m-cropper');
+    if (_crop.onDone) _crop.onDone(file, dataUrl);
+  }, 'image/jpeg', 0.9);
+}
+
+(function bindCropper() {
+  const stage = document.getElementById('cropper-stage');
+  if (!stage) return;
+  stage.addEventListener('mousedown', _cropDragStart);
+  window.addEventListener('mousemove', _cropDragMove);
+  window.addEventListener('mouseup', _cropDragEnd);
+  stage.addEventListener('touchstart', _cropDragStart, { passive: true });
+  stage.addEventListener('touchmove', _cropDragMove, { passive: false });
+  stage.addEventListener('touchend', _cropDragEnd);
+})();
 
 async function regStep2Next() {
   const username = document.getElementById('reg-username').value.trim().toLowerCase();
@@ -3739,7 +3847,7 @@ async function regSubmit() {
   const lifestyle   = document.getElementById('reg-lifestyle').value.trim();
   const heightCm    = document.getElementById('reg-height').value.trim();
   const fitnessLvl  = document.getElementById('reg-fitness-level').value;
-  const avatarFile  = document.getElementById('reg-avatar').files[0];
+  const avatarFile  = _regAvatarFile;   // zugeschnittenes Bild aus dem Cropper
   // Profilfelder als Auth-Metadaten mitgeben → der DB-Trigger handle_new_user()
   // legt daraus die profiles-Zeile an. Funktioniert auch ohne Session (E-Mail-
   // Bestätigung aktiv), weil der Trigger serverseitig läuft.
@@ -3765,12 +3873,13 @@ async function regSubmit() {
   if (signUpData.session) {
     let avatarUrl = null;
     if (avatarFile) {
-      try {
-        const ext = avatarFile.name.split('.').pop() || 'jpg';
-        await _SB.storage.from('avatars').upload(`${userId}/avatar.${ext}`, avatarFile, { upsert: true, contentType: avatarFile.type });
-        const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(`${userId}/avatar.${ext}`);
-        avatarUrl = urlData?.publicUrl || null;
-      } catch {}
+      const ext  = (avatarFile.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `${userId}/avatar.${ext}`;
+      const { error: upErr } = await _SB.storage.from('avatars').upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
+      if (!upErr) {
+        const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(path);
+        if (urlData?.publicUrl) avatarUrl = urlData.publicUrl + '?t=' + Date.now();
+      } else { console.warn('Avatar-Upload bei Registrierung fehlgeschlagen:', upErr.message); }
     }
     const { error: profileErr } = await _SB.from('profiles').upsert({ id: userId, ...profileMeta, avatar_url: avatarUrl });
     if (profileErr) {
@@ -3841,7 +3950,13 @@ function renderProfileSection() {
   if (dn) dn.textContent = _PROFILE.display_name || _PROFILE.username || '—';
   if (un) un.textContent = '@' + (_PROFILE.username || '—');
   if (av && _PROFILE.avatar_url) {
-    av.innerHTML = `<img src="${_PROFILE.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
+    const ph = '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+    const img = document.createElement('img');
+    img.src = _PROFILE.avatar_url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    img.onerror = () => { av.innerHTML = ph; };   // Datei fehlt → Platzhalter statt kaputtem Bild
+    av.innerHTML = '';
+    av.appendChild(img);
   }
 }
 
@@ -3872,8 +3987,8 @@ function openProfileEditModal() {
   document.getElementById('profile-edit-height').value             = _PROFILE.height_cm || '';
   document.getElementById('profile-edit-fitness-level').value      = _PROFILE.fitness_level || '';
   document.getElementById('profile-edit-msg').textContent          = '';
-  document.getElementById('profile-edit-username-msg').textContent = '';
   document.getElementById('profile-edit-avatar-file').value        = '';
+  _editAvatarFile = null;   // evtl. zuvor gewähltes Bild verwerfen
   const prev = document.getElementById('profile-edit-avatar-preview');
   if (prev) prev.innerHTML = _PROFILE.avatar_url
     ? `<img src="${_PROFILE.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
@@ -3886,29 +4001,22 @@ async function saveProfileEdit() {
   msg.textContent = 'Speichern…'; msg.style.color = 'var(--muted2)';
   const { data: { user } } = await _SB.auth.getUser();
   if (!user) { msg.textContent = '✗ Nicht angemeldet.'; msg.style.color = '#cc4444'; return; }
-  const username    = document.getElementById('profile-edit-username').value.trim().toLowerCase();
+  const username    = _PROFILE?.username || null;   // fest – nach der Registrierung nicht änderbar
   const displayName = document.getElementById('profile-edit-displayname').value.trim();
   const goals       = document.getElementById('profile-edit-goals').value.trim();
   const hobbies     = document.getElementById('profile-edit-hobbies').value.trim();
   const lifestyle   = document.getElementById('profile-edit-lifestyle').value.trim();
   const heightCm    = document.getElementById('profile-edit-height').value.trim();
   const fitnessLvl  = document.getElementById('profile-edit-fitness-level').value;
-  const avatarFile  = document.getElementById('profile-edit-avatar-file').files[0];
-  if (!username || !/^[a-z0-9_]{3,30}$/.test(username)) {
-    msg.textContent = '✗ Ungültiger Username.'; msg.style.color = '#cc4444'; return;
-  }
-  if (_PROFILE && username !== _PROFILE.username) {
-    const { data } = await _SB.from('profiles').select('username').eq('username', username).maybeSingle();
-    if (data) { msg.textContent = '✗ Username bereits vergeben.'; msg.style.color = '#cc4444'; return; }
-  }
+  const avatarFile  = _editAvatarFile;   // zugeschnittenes Bild aus dem Cropper
   let avatarUrl = _PROFILE?.avatar_url || null;
   if (avatarFile) {
-    try {
-      const ext = avatarFile.name.split('.').pop() || 'jpg';
-      await _SB.storage.from('avatars').upload(`${user.id}/avatar.${ext}`, avatarFile, { upsert: true, contentType: avatarFile.type });
-      const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(`${user.id}/avatar.${ext}`);
-      avatarUrl = urlData?.publicUrl || avatarUrl;
-    } catch {}
+    const ext  = (avatarFile.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${user.id}/avatar.${ext}`;
+    const { error: upErr } = await _SB.storage.from('avatars').upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
+    if (upErr) { msg.textContent = '✗ Bild-Upload fehlgeschlagen: ' + upErr.message; msg.style.color = '#cc4444'; return; }
+    const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(path);
+    if (urlData?.publicUrl) avatarUrl = urlData.publicUrl + '?t=' + Date.now();  // Cache-Buster, damit das neue Bild sofort erscheint
   }
   const updates = { id: user.id, username, display_name: displayName || null, avatar_url: avatarUrl,
     goals: goals || null, hobbies: hobbies || null, lifestyle: lifestyle || null,

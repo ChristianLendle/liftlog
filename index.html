@@ -1437,13 +1437,14 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <button class="modal-x" onclick="closeM('m-profile-edit')">✕</button>
     </div>
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
-      <div class="settings-avatar-circle" id="profile-edit-avatar-preview">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-      </div>
-      <label style="cursor:pointer">
-        <span class="btn" style="display:inline-block;cursor:pointer">Bild ändern</span>
+      <label style="cursor:pointer;position:relative;display:inline-flex;flex-shrink:0" title="Bild ändern">
+        <div class="settings-avatar-circle" id="profile-edit-avatar-preview">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+        <span aria-hidden="true" style="position:absolute;bottom:-2px;right:-2px;width:24px;height:24px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
         <input type="file" id="profile-edit-avatar-file" accept="image/*" style="display:none" onchange="previewEditAvatar(this)">
       </label>
+      <div style="font-size:.78rem;color:var(--muted2);line-height:1.5">Tippe auf das Bild,<br>um es zu ändern</div>
     </div>
     <div class="field">
       <label>Username <span style="color:#cc4444;font-weight:400">*</span></label>

@@ -3740,32 +3740,44 @@ async function regSubmit() {
   const heightCm    = document.getElementById('reg-height').value.trim();
   const fitnessLvl  = document.getElementById('reg-fitness-level').value;
   const avatarFile  = document.getElementById('reg-avatar').files[0];
-  const { data: signUpData, error: signUpErr } = await _SB.auth.signUp({ email, password: pw });
+  // Profilfelder als Auth-Metadaten mitgeben → der DB-Trigger handle_new_user()
+  // legt daraus die profiles-Zeile an. Funktioniert auch ohne Session (E-Mail-
+  // Bestätigung aktiv), weil der Trigger serverseitig läuft.
+  const profileMeta = {
+    username,
+    display_name:  displayName || null,
+    goals:         goals     || null,
+    hobbies:       hobbies   || null,
+    lifestyle:     lifestyle || null,
+    height_cm:     heightCm ? parseInt(heightCm, 10) : null,
+    fitness_level: fitnessLvl || null,
+  };
+  const { data: signUpData, error: signUpErr } = await _SB.auth.signUp({ email, password: pw, options: { data: profileMeta } });
   if (signUpErr) { msg.textContent = '✗ ' + signUpErr.message; msg.style.color = '#cc4444'; return; }
   const userId = signUpData.user?.id;
   if (!userId) {
     msg.textContent = '✓ Bestätigungsmail gesendet – bitte E-Mail prüfen.';
     msg.style.color = 'var(--up)'; return;
   }
-  let avatarUrl = null;
-  if (avatarFile) {
-    try {
-      const ext = avatarFile.name.split('.').pop() || 'jpg';
-      await _SB.storage.from('avatars').upload(`${userId}/avatar.${ext}`, avatarFile, { upsert: true, contentType: avatarFile.type });
-      const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(`${userId}/avatar.${ext}`);
-      avatarUrl = urlData?.publicUrl || null;
-    } catch {}
-  }
-  const profileData = { id: userId, username, display_name: displayName || null, avatar_url: avatarUrl,
-    goals: goals || null, hobbies: hobbies || null, lifestyle: lifestyle || null,
-    height_cm: heightCm ? parseInt(heightCm, 10) : null, fitness_level: fitnessLvl || null };
-  const { error: profileErr } = await _SB.from('profiles').upsert(profileData);
-  if (profileErr) {
-    msg.textContent = '✗ Konto erstellt, aber Profil nicht gespeichert: ' + profileErr.message + ' — später unter Einstellungen → Profil anpassen ergänzbar.';
-    msg.style.color = '#cc4444';
-    return;
-  }
+  // Nur mit aktiver Session (E-Mail-Bestätigung aus) lassen sich Avatar-Upload und
+  // ein direkter Profil-Upsert authentifiziert ausführen. Ohne Session hat der
+  // Trigger die Zeile bereits erstellt; das Avatar kann nach dem Login gesetzt werden.
   if (signUpData.session) {
+    let avatarUrl = null;
+    if (avatarFile) {
+      try {
+        const ext = avatarFile.name.split('.').pop() || 'jpg';
+        await _SB.storage.from('avatars').upload(`${userId}/avatar.${ext}`, avatarFile, { upsert: true, contentType: avatarFile.type });
+        const { data: urlData } = _SB.storage.from('avatars').getPublicUrl(`${userId}/avatar.${ext}`);
+        avatarUrl = urlData?.publicUrl || null;
+      } catch {}
+    }
+    const { error: profileErr } = await _SB.from('profiles').upsert({ id: userId, ...profileMeta, avatar_url: avatarUrl });
+    if (profileErr) {
+      msg.textContent = '✗ Konto erstellt, aber Profil nicht gespeichert: ' + profileErr.message + ' — später unter Einstellungen → Profil anpassen ergänzbar.';
+      msg.style.color = '#cc4444';
+      return;
+    }
     hideLoginGate();
     await loadApp();
   } else {

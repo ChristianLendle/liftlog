@@ -394,6 +394,43 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 #view-settings .panel { margin-bottom: 0; }
 #view-settings .view-inner > .panel + .panel { margin-top: 14px; }
 
+/* ── Settings hub + sub-screen navigation ── */
+.set-screen { display: none; }
+.set-screen.active { display: block; animation: setIn .22s ease; }
+@keyframes setIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+.set-hub-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; color: var(--text); margin: 2px 2px 18px; }
+.set-topbar { display: flex; align-items: center; height: 46px; margin: -4px 0 12px; position: relative; }
+.set-back { display: inline-flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; color: var(--accent); font-family: var(--font); font-size: .82rem; font-weight: 600; padding: 8px 8px 8px 0; }
+.set-topbar-title { position: absolute; left: 50%; transform: translateX(-50%); font-size: .95rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+.set-topbar-title.danger { color: #cc4444; }
+.set-profile-card { background: linear-gradient(135deg,#34568c 0%,#26406b 100%); border-radius: 14px; padding: 18px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 26px rgba(38,64,107,.28); }
+.set-pc-avatar { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.45); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.set-pc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.set-pc-name { font-size: 1.05rem; font-weight: 700; color: #fff; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-pc-user { font-size: .8rem; color: rgba(255,255,255,.66); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-pc-edit { width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.12); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s; }
+.set-pc-edit:hover { background: rgba(255,255,255,.22); }
+.set-group-label { font-size: .6rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 22px 6px 9px; }
+.set-card { background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(28,43,74,.04), 0 6px 16px rgba(28,43,74,.05); }
+.set-card + .set-card { margin-top: 14px; }
+.set-row { display: flex; align-items: center; gap: 13px; width: 100%; background: var(--surface); border: none; padding: 14px 16px; cursor: pointer; font-family: var(--font); text-align: left; transition: background .12s; }
+.set-row + .set-row { border-top: 1px solid var(--border); }
+.set-row:hover { background: var(--surface2); }
+.set-row-ic { width: 30px; height: 30px; border-radius: 9px; background: var(--accent-dim); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.set-row-ic.amber { background: rgba(212,134,10,.13); color: var(--cardio); }
+.set-row-ic.green { background: rgba(30,122,74,.12); color: var(--up); }
+.set-row-ic.danger { background: rgba(204,68,68,.11); color: #cc4444; }
+.set-row-lbl { font-size: .85rem; font-weight: 600; color: var(--text); }
+.set-row-lbl.danger { color: #cc4444; }
+.set-row-sub { display: block; font-size: .72rem; color: var(--muted2); margin-top: 2px; font-weight: 400; }
+.set-row-val { font-size: .8rem; color: var(--muted2); }
+.set-row-chev { flex-shrink: 0; margin-left: 6px; display: flex; }
+.set-foot { text-align: center; font-size: .68rem; color: var(--muted2); margin-top: 24px; letter-spacing: .04em; }
+#view-settings .set-screen .panel { margin-bottom: 0; }
+#view-settings .set-screen .panel + .panel { margin-top: 14px; }
+.set-hint { font-size: .72rem; color: var(--muted2); line-height: 1.65; margin: 14px 4px 0; }
+.set-pane-pad { padding: 4px 2px; }
+
 /* ─── AUTH GATE SCREENS ──────────────────── */
 .reg-step { width:28px;height:28px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:var(--muted2);flex-shrink:0;transition:all .18s; }
 .reg-step.active { background:var(--accent);border-color:var(--accent);color:#fff; }
@@ -845,171 +882,317 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 <!-- ═══ VIEW: SETTINGS ═══════════════════════════════ -->
 <div id="view-settings" class="view">
-  <div class="view-inner" style="max-width:640px">
+  <div class="view-inner" style="max-width:560px">
 
-    <!-- ── Profil ── -->
-    <div class="panel">
-      <div class="sec-label">Profil</div>
-      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-        <div class="settings-avatar-circle" id="settings-avatar">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <!-- ════════════ HUB ════════════ -->
+    <div class="set-screen active" id="set-scr-hub">
+      <div class="set-hub-title">Einstellungen</div>
+
+      <!-- Profil-Karte -->
+      <div class="set-profile-card">
+        <div class="set-pc-avatar" id="settings-avatar">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
         </div>
-        <div>
-          <div id="settings-display-name" style="font-size:.9rem;font-weight:700;color:var(--text);line-height:1.3">—</div>
-          <div id="settings-username" style="font-size:.72rem;color:var(--muted2);margin-top:2px">@—</div>
+        <div style="flex:1;min-width:0">
+          <div class="set-pc-name" id="settings-display-name">—</div>
+          <div class="set-pc-user" id="settings-username">@—</div>
         </div>
+        <button class="set-pc-edit" aria-label="Profil bearbeiten" onclick="settingsNav('edit')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
       </div>
-      <button class="btn" onclick="openProfileEditModal()">Profil bearbeiten</button>
+
+      <!-- Gruppe: Profil -->
+      <div class="set-group-label">Profil</div>
+      <div class="set-card">
+        <button class="set-row" onclick="settingsNav('streak')">
+          <span class="set-row-ic amber"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.5 3-2.5 4.5-2.5 7.5a2.5 2.5 0 0 0 5 0c0-1-.5-1.8-.5-2.5 1.6 1 3 2.8 3 5a5 5 0 1 1-10 0C7.5 8 12 7 12 3Z"/></svg></span>
+          <span class="set-row-lbl">Streak-Ziel</span>
+          <span style="flex:1"></span>
+          <span class="set-row-val" id="set-streak-val">3 / Woche</span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+        <button class="set-row" onclick="settingsNav('export')">
+          <span class="set-row-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span>
+          <span class="set-row-lbl">Daten-Export</span>
+          <span style="flex:1"></span>
+          <span class="set-row-val">CSV · JSON · PDF</span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+      </div>
+
+      <!-- Gruppe: Trainingsplan -->
+      <div class="set-group-label">Trainingsplan</div>
+      <div class="set-card">
+        <button class="set-row" onclick="settingsNav('plans')">
+          <span class="set-row-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4"/><path d="M9 10h6"/><path d="M9 14h4"/></svg></span>
+          <span class="set-row-lbl">Trainingspläne</span>
+          <span style="flex:1"></span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+        <button class="set-row" onclick="settingsNav('locs')">
+          <span class="set-row-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
+          <span class="set-row-lbl">Standorte</span>
+          <span style="flex:1"></span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+        <button class="set-row" onclick="settingsNav('cats')">
+          <span class="set-row-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11V5a2 2 0 0 1 2-2h6l9 9-8 8-9-9Z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg></span>
+          <span class="set-row-lbl">Kategorien</span>
+          <span style="flex:1"></span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+        <button class="set-row" onclick="settingsNav('import')">
+          <span class="set-row-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3"/><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/></svg></span>
+          <span class="set-row-lbl">Trainingslog importieren</span>
+          <span style="flex:1"></span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+      </div>
+
+      <div class="set-foot">PRSONAL · v2.4</div>
     </div>
 
-    <!-- ── Account ── -->
-    <div class="panel">
-      <div class="sec-label">Account</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" onclick="openEmailChangeModal()">E-Mail ändern</button>
-        <button class="btn" onclick="openPasswordChangeModal()">Passwort ändern</button>
+    <!-- ════════════ PROFIL BEARBEITEN (Auswahl) ════════════ -->
+    <div class="set-screen" id="set-scr-edit" data-parent="hub">
+      <div class="set-topbar">
+        <button class="set-back" onclick="settingsBack()"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Profil bearbeiten</span>
+      </div>
+      <div class="set-card">
+        <button class="set-row" onclick="openProfileEditModal()">
+          <span class="set-row-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+          <span style="flex:1"><span class="set-row-lbl">Profil anpassen</span><span class="set-row-sub">Bild, Username, Anzeigename, Ziele</span></span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+        <button class="set-row" onclick="settingsNav('creds')">
+          <span class="set-row-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <span style="flex:1"><span class="set-row-lbl">Zugangsdaten verwalten</span><span class="set-row-sub">Anmeldung, E-Mail &amp; Passwort</span></span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+        <button class="set-row" onclick="settingsNav('invite')">
+          <span class="set-row-ic green"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 20c0-3.5 3-6 7-6"/><path d="M17 9v6"/><path d="M14 12h6"/></svg></span>
+          <span style="flex:1"><span class="set-row-lbl">Freund einladen</span><span class="set-row-sub">App-Link teilen</span></span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+      </div>
+      <div class="set-group-label">Konto</div>
+      <div class="set-card">
+        <button class="set-row" onclick="settingsNav('del')">
+          <span class="set-row-ic danger"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></span>
+          <span style="flex:1"><span class="set-row-lbl danger">Daten löschen</span><span class="set-row-sub">Trainingsdaten von diesem Gerät entfernen</span></span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="#E3B4B4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
       </div>
     </div>
 
-    <!-- ── Allgemein ── -->
-    <div class="panel">
-      <div class="sec-label">Allgemein</div>
-      <div class="field">
-        <label>Streak-Minimum (Sessions pro Woche)</label>
-        <select id="cfg-streak-min">
-          <option value="1">1 Session / Woche</option>
-          <option value="2">2 Sessions / Woche</option>
-          <option value="3" selected>3 Sessions / Woche</option>
-          <option value="4">4 Sessions / Woche</option>
-          <option value="5">5 Sessions / Woche</option>
-        </select>
+    <!-- ════════════ ZUGANGSDATEN ════════════ -->
+    <div class="set-screen" id="set-scr-creds" data-parent="edit">
+      <div class="set-topbar">
+        <button class="set-back" onclick="settingsBack()"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Zugangsdaten</span>
       </div>
-      <p style="font-size:.7rem;color:var(--muted2);margin-bottom:18px;line-height:1.7">
-        Der Wochen-Streak zählt wie viele aufeinander folgende Wochen du mindestens diese Anzahl an Trainings absolviert hast.
-      </p>
-      <div style="display:flex;justify-content:flex-end">
-        <button class="btn-fill" onclick="saveGeneralSettings()">Speichern</button>
+      <div class="panel">
+        <div class="sec-label">Synchronisierung</div>
+        <p style="font-size:.72rem;color:var(--muted2);margin-bottom:14px;line-height:1.7">
+          Mit Konto anmelden um Trainingsdaten geräteübergreifend zu synchronisieren.
+        </p>
+        <div id="sync-panel-body">Wird geladen…</div>
       </div>
-    </div>
-
-    <!-- ── Export ── -->
-    <div class="panel">
-      <div class="sec-label">Export</div>
-      <div class="export-grid">
-        <div class="export-btn" onclick="exportCSV()">
-          <div class="export-btn-icon">📊</div>
-          <div class="export-btn-lbl">CSV Export</div>
-          <div class="export-btn-sub">Alle Sessions als Tabelle</div>
+      <div class="panel" id="creds-change-panel">
+        <div class="sec-label">E-Mail &amp; Passwort</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" onclick="openEmailChangeModal()">E-Mail ändern</button>
+          <button class="btn" onclick="openPasswordChangeModal()">Passwort ändern</button>
         </div>
-        <div class="export-btn" onclick="exportJSON()">
-          <div class="export-btn-icon">📋</div>
-          <div class="export-btn-lbl">JSON Backup</div>
-          <div class="export-btn-sub">Vollständiges Daten-Backup</div>
+        <p class="set-hint">Aus Sicherheitsgründen wirst du nach einer Änderung evtl. erneut zur Anmeldung aufgefordert. Diese Optionen funktionieren nur, wenn du angemeldet bist.</p>
+      </div>
+    </div>
+
+    <!-- ════════════ FREUND EINLADEN ════════════ -->
+    <div class="set-screen" id="set-scr-invite" data-parent="edit">
+      <div class="set-topbar">
+        <button class="set-back" onclick="settingsBack()"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Freund einladen</span>
+      </div>
+      <div class="panel">
+        <div class="sec-label">App teilen</div>
+        <p style="font-size:.74rem;color:var(--muted2);margin-bottom:14px;line-height:1.7">
+          Teile diesen Link — dein Freund kann sich ein eigenes Konto erstellen und ebenfalls mit PRSONAL trainieren.
+        </p>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input type="text" id="invite-link" readonly style="flex:1;min-width:0" onclick="this.select()">
+          <button class="btn-fill" onclick="copyInviteLink()">Kopieren</button>
         </div>
-        <div class="export-btn" onclick="exportPDF()">
-          <div class="export-btn-icon">🖨️</div>
-          <div class="export-btn-lbl">PDF Report</div>
-          <div class="export-btn-sub">Seite drucken / als PDF speichern</div>
+        <button class="btn" style="width:100%" onclick="shareInviteLink()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+          Link teilen
+        </button>
+      </div>
+    </div>
+
+    <!-- ════════════ STREAK-ZIEL ════════════ -->
+    <div class="set-screen" id="set-scr-streak" data-parent="hub">
+      <div class="set-topbar">
+        <button class="set-back" onclick="settingsBack()"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Streak-Ziel</span>
+      </div>
+      <div class="panel">
+        <div class="field">
+          <label>Streak-Minimum (Sessions pro Woche)</label>
+          <select id="cfg-streak-min">
+            <option value="1">1 Session / Woche</option>
+            <option value="2">2 Sessions / Woche</option>
+            <option value="3" selected>3 Sessions / Woche</option>
+            <option value="4">4 Sessions / Woche</option>
+            <option value="5">5 Sessions / Woche</option>
+          </select>
         </div>
-        <div class="export-btn" onclick="shareStats()">
-          <div class="export-btn-icon">📤</div>
-          <div class="export-btn-lbl">Share</div>
-          <div class="export-btn-sub">Statistik in Zwischenablage</div>
+        <p style="font-size:.7rem;color:var(--muted2);margin-bottom:18px;line-height:1.7">
+          Der Wochen-Streak zählt wie viele aufeinander folgende Wochen du mindestens diese Anzahl an Trainings absolviert hast.
+        </p>
+        <div style="display:flex;justify-content:flex-end">
+          <button class="btn-fill" onclick="saveGeneralSettings()">Speichern</button>
         </div>
       </div>
     </div>
 
-    <!-- ── Import ── -->
-    <div class="panel">
-      <div class="sec-label">Import</div>
-      <p style="font-size:.74rem;color:var(--muted2);margin-bottom:12px;line-height:1.7">
-        Trainingslog einfügen — Format:<br>
-        <code style="color:var(--accent);font-size:.68rem">07.06. OK-Push / modern coach</code><br>
-        <code style="color:var(--accent);font-size:.68rem">Bankdrücken - 60kg x 9 | 60kg x 8</code>
-      </p>
-      <textarea id="import-txt" placeholder="Trainingsdaten einfügen…"></textarea>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-        <button class="btn-fill" onclick="runImport()">Importieren</button>
+    <!-- ════════════ DATEN-EXPORT ════════════ -->
+    <div class="set-screen" id="set-scr-export" data-parent="hub">
+      <div class="set-topbar">
+        <button class="set-back" onclick="settingsBack()"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Daten-Export</span>
       </div>
-    </div>
-
-    <!-- ── Sync ── -->
-    <div class="panel">
-      <div class="sec-label">Sync</div>
-      <p style="font-size:.72rem;color:var(--muted2);margin-bottom:14px;line-height:1.7">
-        Mit Konto anmelden um Trainingsdaten geräteübergreifend zu synchronisieren.
-      </p>
-      <div id="sync-panel-body">Wird geladen…</div>
-    </div>
-
-    <!-- ── Training (Trainingspläne + Standorte) ── -->
-    <div class="panel">
-      <div class="sec-label">Training</div>
-      <div class="training-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
-
-        <!-- Trainingspläne -->
-        <div>
-          <div style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">Trainingspläne</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-            <div class="field" style="margin:0">
-              <label>Kategorie</label>
-              <select id="plan-cat" onchange="loadPlanEditor()">
-                <option value="">— auswählen —</option>
-              </select>
-            </div>
-            <div class="field" style="margin:0">
-              <label>Standort</label>
-              <select id="plan-loc" onchange="loadPlanEditor()">
-                <option value="">— auswählen —</option>
-                <option value="haidhof">Sportpark Haidhof</option>
-                <option value="modern-coach">Modern Coach</option>
-              </select>
-            </div>
+      <div class="panel">
+        <div class="sec-label">Export</div>
+        <div class="export-grid">
+          <div class="export-btn" onclick="exportCSV()">
+            <div class="export-btn-icon">📊</div>
+            <div class="export-btn-lbl">CSV Export</div>
+            <div class="export-btn-sub">Alle Sessions als Tabelle</div>
           </div>
-          <div id="plan-ex-list" style="min-height:40px"></div>
-          <button class="log-add-ex" id="plan-add-btn" onclick="addPlanEx()" style="display:none">＋ Übung hinzufügen</button>
-          <div style="display:flex;justify-content:flex-end;margin-top:10px">
-            <button class="btn-fill" id="plan-save-btn" onclick="savePlanEditor()" style="display:none">Plan speichern</button>
+          <div class="export-btn" onclick="exportJSON()">
+            <div class="export-btn-icon">📋</div>
+            <div class="export-btn-lbl">JSON Backup</div>
+            <div class="export-btn-sub">Vollständiges Daten-Backup</div>
+          </div>
+          <div class="export-btn" onclick="exportPDF()">
+            <div class="export-btn-icon">🖨️</div>
+            <div class="export-btn-lbl">PDF Report</div>
+            <div class="export-btn-sub">Seite drucken / als PDF speichern</div>
+          </div>
+          <div class="export-btn" onclick="shareStats()">
+            <div class="export-btn-icon">📤</div>
+            <div class="export-btn-lbl">Share</div>
+            <div class="export-btn-sub">Statistik in Zwischenablage</div>
           </div>
         </div>
-
-        <!-- Standorte -->
-        <div>
-          <div style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">Standorte</div>
-          <p style="font-size:.7rem;color:var(--muted2);margin-bottom:10px;line-height:1.6">Deaktivierte Standorte werden im Training nicht angezeigt.</p>
-          <div id="loc-list"></div>
-          <div style="display:flex;gap:6px;margin-top:10px">
-            <input type="text" id="new-loc-label" placeholder="z.B. Fitnessstudio Mitte" style="flex:1" onkeydown="if(event.key==='Enter')addLocation()">
-            <button class="btn-fill" onclick="addLocation()">+</button>
-          </div>
-        </div>
-
       </div>
     </div>
 
-    <!-- ── Kategorien ── -->
-    <div class="panel">
-      <div class="sec-label">Kategorien</div>
-      <p style="font-size:.72rem;color:var(--muted2);margin-bottom:12px;line-height:1.6">
-        Deaktivierte Kategorien werden im Training nicht angezeigt.
-      </p>
-      <div id="cat-list"></div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <input type="text" id="new-cat-input" placeholder="Neue Kategorie…" style="flex:1" onkeydown="if(event.key==='Enter')addCategory()">
-        <button class="btn-fill" onclick="addCategory()">Hinzufügen</button>
+    <!-- ════════════ TRAININGSPLÄNE ════════════ -->
+    <div class="set-screen" id="set-scr-plans" data-parent="hub">
+      <div class="set-topbar">
+        <button class="set-back" onclick="settingsBack()"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Trainingspläne</span>
+      </div>
+      <div class="panel">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <div class="field" style="margin:0">
+            <label>Kategorie</label>
+            <select id="plan-cat" onchange="loadPlanEditor()">
+              <option value="">— auswählen —</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0">
+            <label>Standort</label>
+            <select id="plan-loc" onchange="loadPlanEditor()">
+              <option value="">— auswählen —</option>
+              <option value="haidhof">Sportpark Haidhof</option>
+              <option value="modern-coach">Modern Coach</option>
+            </select>
+          </div>
+        </div>
+        <div id="plan-ex-list" style="min-height:40px"></div>
+        <button class="log-add-ex" id="plan-add-btn" onclick="addPlanEx()" style="display:none">＋ Übung hinzufügen</button>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
+          <button class="btn-fill" id="plan-save-btn" onclick="savePlanEditor()" style="display:none">Plan speichern</button>
+        </div>
       </div>
     </div>
 
-    <!-- ── Danger Zone ── -->
-    <div class="panel" style="border:1px solid rgba(204,51,51,.4);background:rgba(204,51,51,.05)">
-      <div class="sec-label" style="color:#cc4444;border-bottom-color:rgba(204,51,51,.25)">⚠ Danger Zone</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
-        <div>
-          <div style="font-size:.82rem;font-weight:600;color:#cc4444;margin-bottom:3px">Alle Daten löschen</div>
-          <div style="font-size:.74rem;color:var(--muted2);line-height:1.5">Diese Aktion löscht alle Trainingsdaten<br>unwiderruflich von diesem Gerät.</div>
-        </div>
-        <button class="btn" style="border-color:#cc4444;color:#cc4444;white-space:nowrap;flex-shrink:0" onclick="showClearConfirm()">Daten löschen</button>
+    <!-- ════════════ STANDORTE ════════════ -->
+    <div class="set-screen" id="set-scr-locs" data-parent="hub">
+      <div class="set-topbar">
+        <button class="set-back" onclick="settingsBack()"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Standorte</span>
       </div>
+      <div class="panel">
+        <p style="font-size:.7rem;color:var(--muted2);margin-bottom:10px;line-height:1.6">Deaktivierte Standorte werden im Training nicht angezeigt.</p>
+        <div id="loc-list"></div>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <input type="text" id="new-loc-label" placeholder="z.B. Fitnessstudio Mitte" style="flex:1" onkeydown="if(event.key==='Enter')addLocation()">
+          <button class="btn-fill" onclick="addLocation()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ KATEGORIEN ════════════ -->
+    <div class="set-screen" id="set-scr-cats" data-parent="hub">
+      <div class="set-topbar">
+        <button class="set-back" onclick="settingsBack()"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Kategorien</span>
+      </div>
+      <div class="panel">
+        <p style="font-size:.72rem;color:var(--muted2);margin-bottom:12px;line-height:1.6">
+          Deaktivierte Kategorien werden im Training nicht angezeigt.
+        </p>
+        <div id="cat-list"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <input type="text" id="new-cat-input" placeholder="Neue Kategorie…" style="flex:1" onkeydown="if(event.key==='Enter')addCategory()">
+          <button class="btn-fill" onclick="addCategory()">Hinzufügen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ IMPORT ════════════ -->
+    <div class="set-screen" id="set-scr-import" data-parent="hub">
+      <div class="set-topbar">
+        <button class="set-back" onclick="settingsBack()"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Import</span>
+      </div>
+      <div class="panel">
+        <p style="font-size:.74rem;color:var(--muted2);margin-bottom:12px;line-height:1.7">
+          Trainingslog einfügen — Format:<br>
+          <code style="color:var(--accent);font-size:.68rem">07.06. OK-Push / modern coach</code><br>
+          <code style="color:var(--accent);font-size:.68rem">Bankdrücken - 60kg x 9 | 60kg x 8</code>
+        </p>
+        <textarea id="import-txt" placeholder="Trainingsdaten einfügen…"></textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+          <button class="btn-fill" onclick="runImport()">Importieren</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ DATEN LÖSCHEN ════════════ -->
+    <div class="set-screen" id="set-scr-del" data-parent="edit">
+      <div class="set-topbar">
+        <button class="set-back" onclick="settingsBack()"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title danger">Daten löschen</span>
+      </div>
+      <div class="panel" style="border:1px solid rgba(204,51,51,.4);background:rgba(204,51,51,.05)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          <span style="font-size:.9rem;font-weight:700;color:#cc4444">Unwiderruflich</span>
+        </div>
+        <p style="font-size:.78rem;color:var(--text);line-height:1.65;margin:0 0 16px">
+          Dies löscht alle Trainingsdaten, Pläne und Einstellungen <b>von diesem Gerät</b> endgültig. Diese Aktion kann nicht rückgängig gemacht werden.
+        </p>
+        <label style="display:block;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#cc4444;margin-bottom:6px">Tippe LÖSCHEN zum Bestätigen</label>
+        <input type="text" id="del-confirm-input" placeholder="LÖSCHEN" autocomplete="off" oninput="updateDelConfirm()" style="width:100%;margin-bottom:14px">
+        <button class="btn-fill" id="del-confirm-btn" disabled style="width:100%;background:#cc4444;border-color:#cc4444;opacity:.5;pointer-events:none" onclick="confirmDeleteData()">Daten endgültig löschen</button>
+      </div>
+      <p class="set-hint">Hinweis: Dein Online-Konto (Anmeldung &amp; Cloud-Backup) bleibt bestehen. Zum vollständigen Löschen des Kontos kontaktiere den Support.</p>
     </div>
 
   </div>
@@ -2890,6 +3073,9 @@ function loadCfgUI() {
     const cfg = getCfg();
     const sel = document.getElementById('cfg-streak-min');
     if (sel) sel.value = cfg.streakMin || 3;
+    const sv = document.getElementById('set-streak-val');
+    if (sv) sv.textContent = (cfg.streakMin || 3) + ' / Woche';
+    settingsNav('hub');           // immer auf der Übersicht starten
     populateCategorySelects();
     populateLocationSelects();
     loadCatEditor();
@@ -2899,6 +3085,81 @@ function loadCfgUI() {
   } catch(e) {
     console.error('loadCfgUI error:', e);
   }
+}
+
+// ─── SETTINGS HUB / SUB-SCREEN NAVIGATION ─────────────────────────────────────
+let _setCur = 'hub';
+function settingsNav(id) {
+  document.querySelectorAll('#view-settings .set-screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('set-scr-' + id);
+  if (!el) { id = 'hub'; document.getElementById('set-scr-hub').classList.add('active'); }
+  else el.classList.add('active');
+  _setCur = id;
+  // Inhalte beim Öffnen aktualisieren
+  if (id === 'creds')  renderSyncPanel();
+  if (id === 'cats')   loadCatEditor();
+  if (id === 'locs')   loadLocEditor();
+  if (id === 'streak') { const c = getCfg(); const s = document.getElementById('cfg-streak-min'); if (s) s.value = c.streakMin || 3; }
+  if (id === 'invite') {
+    const inp = document.getElementById('invite-link');
+    if (inp) inp.value = location.origin + location.pathname;
+  }
+  if (id === 'del') {
+    const di = document.getElementById('del-confirm-input');
+    if (di) di.value = '';
+    updateDelConfirm();
+  }
+  // an den Anfang scrollen
+  const inner = document.querySelector('#view-settings .view-inner');
+  if (inner) inner.scrollTop = 0;
+  try { window.scrollTo(0, 0); } catch {}
+}
+function settingsBack() {
+  const cur = document.getElementById('set-scr-' + _setCur);
+  const parent = (cur && cur.dataset.parent) || 'hub';
+  settingsNav(parent);
+}
+
+// ─── FREUND EINLADEN (App-Link teilen) ────────────────────────────────────────
+function inviteLinkValue() {
+  const inp = document.getElementById('invite-link');
+  return (inp && inp.value) || (location.origin + location.pathname);
+}
+function copyInviteLink() {
+  const link = inviteLinkValue();
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(link).then(() => toast('Link kopiert ✓'), () => fallbackCopyInvite(link));
+  } else {
+    fallbackCopyInvite(link);
+  }
+}
+function fallbackCopyInvite(link) {
+  const inp = document.getElementById('invite-link');
+  if (inp) { inp.removeAttribute('readonly'); inp.select(); try { document.execCommand('copy'); toast('Link kopiert ✓'); } catch { toast('Kopieren nicht möglich', true); } inp.setAttribute('readonly', ''); }
+}
+function shareInviteLink() {
+  const link = inviteLinkValue();
+  if (navigator.share) {
+    navigator.share({ title: 'PRSONAL', text: 'Trainier mit mir auf PRSONAL 💪', url: link }).catch(() => {});
+  } else {
+    copyInviteLink();
+  }
+}
+
+// ─── DATEN LÖSCHEN (Bestätigung per Tippen) ───────────────────────────────────
+function updateDelConfirm() {
+  const inp = document.getElementById('del-confirm-input');
+  const btn = document.getElementById('del-confirm-btn');
+  if (!inp || !btn) return;
+  const ok = inp.value.trim().toUpperCase() === 'LÖSCHEN';
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '.5';
+  btn.style.pointerEvents = ok ? 'auto' : 'none';
+}
+function confirmDeleteData() {
+  const inp = document.getElementById('del-confirm-input');
+  if (!inp || inp.value.trim().toUpperCase() !== 'LÖSCHEN') return;
+  confirmClearAll();   // löscht lokalen Speicher + lädt App neu (bestehende Funktion)
 }
 
 // ─── SUPABASE AUTH ────────────────────────────────────────────────────────────

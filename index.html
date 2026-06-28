@@ -234,21 +234,26 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .tr-switch.off { background: var(--border2); }
 .tr-switch.off .knob { left: 2px; }
 
-/* ─── FAB ────────────────────────────────── */
-.fab-wrap { position: fixed; bottom: 26px; right: 26px; z-index: 100; background: var(--accent); border-radius: 27px; box-shadow: 0 4px 22px rgba(46,74,122,.35); overflow: hidden; display: flex; flex-direction: column; align-items: stretch; transition: box-shadow .3s; }
-.fab-active.fab-wrap { animation: fab-pulse 2s ease-in-out infinite; }
-@keyframes fab-pulse { 0%,100% { box-shadow: 0 4px 22px rgba(46,74,122,.35); } 50% { box-shadow: 0 4px 32px rgba(46,74,122,.7), 0 0 0 8px rgba(46,74,122,.15); } }
-.fab-items { display: none; flex-direction: column; }
+/* ─── FAB (sprechende Pille) ─────────────── */
+.fab-wrap { position: fixed; bottom: 26px; right: 26px; z-index: 100; display: flex; flex-direction: column; align-items: flex-end; }
+.fab-pill { min-height: 52px; padding: 0 20px; border: none; border-radius: 26px; cursor: pointer; background: linear-gradient(145deg,#3a5a92,#26406b); color: #fff; display: flex; align-items: center; gap: 10px; font-family: var(--font); font-size: .8rem; font-weight: 700; letter-spacing: .04em; box-shadow: 0 2px 5px rgba(28,43,74,.28), 0 10px 24px rgba(46,74,122,.4); transition: transform .18s, box-shadow .18s; -webkit-tap-highlight-color: transparent; }
+.fab-pill:hover  { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(28,43,74,.3), 0 16px 32px rgba(46,74,122,.5); }
+.fab-pill:active { transform: scale(.96); }
+.fab-pill-ic { display: flex; align-items: center; justify-content: center; line-height: 1; }
+.fab-ic-idle { font-size: 1.35rem; font-weight: 300; }
+.fab-ic-live { width: 9px; height: 9px; border-radius: 50%; background: #7ee0a6; display: none; }
+.fab-pill-lbl { white-space: nowrap; }
+.fab-lbl-run { display: none; font-variant-numeric: tabular-nums; }
+.fab-wrap.fab-active .fab-ic-idle  { display: none; }
+.fab-wrap.fab-active .fab-ic-live  { display: inline-block; animation: fabLive 1.2s ease-in-out infinite; }
+.fab-wrap.fab-active .fab-lbl-idle { display: none; }
+.fab-wrap.fab-active .fab-lbl-run  { display: inline; }
+@keyframes fabLive { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .4; transform: scale(.8);} }
+.fab-items { display: none; flex-direction: column; gap: 4px; background: var(--surface); border-radius: 16px; padding: 8px; box-shadow: 0 14px 34px rgba(28,43,74,.2); margin-bottom: 12px; }
 .fab-wrap.open .fab-items { display: flex; }
-.fab-wrap.open { border-radius: 16px; }
-.fab-item { display: flex; align-items: center; gap: 12px; padding: 15px 20px; color: #ffffff; font-family: var(--font); font-size: 0.75rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
-.fab-item:active { background: rgba(0,0,0,.1); }
-.fab-item-icon { font-size: 1.15rem; width: 22px; text-align: center; flex-shrink: 0; }
-.fab-sep { height: 1px; background: rgba(0,0,0,.15); }
-.fab { width: 54px; height: 54px; background: transparent; border: none; color: #ffffff; font-size: 1.6rem; font-weight: 300; cursor: pointer; display: flex; align-items: center; justify-content: center; align-self: flex-end; line-height: 1; font-family: var(--font); transition: transform .18s; position: relative; -webkit-tap-highlight-color: transparent; }
-.fab-wrap.open .fab { transform: rotate(45deg); }
-.fab-badge { position: absolute; top: 9px; right: 9px; width: 9px; height: 9px; border-radius: 50%; background: #ffffff; border: 2px solid var(--accent); animation: pulse 1.5s infinite; display: none; }
-.fab-active .fab-badge { display: block; }
+.fab-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px 10px 10px; border: none; background: none; border-radius: 10px; cursor: pointer; font-family: var(--font); font-size: .82rem; font-weight: 700; color: var(--text); white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+.fab-item:hover, .fab-item:active { background: var(--surface2); }
+.fab-item-ic { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0; }
 
 /* ─── TOP NAV ────────────────────────────── */
 .top-nav { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; position: sticky; top: 0; z-index: 50; }
@@ -1277,18 +1282,20 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 <!-- ═══ FAB ═══════════════════════════════════════════ -->
 <div class="fab-wrap" id="fab-wrap">
   <div class="fab-items" id="fab-items">
-    <div class="fab-item" onclick="startTrainingFromMenu()">
-      <span class="fab-item-icon">＋</span>Training starten
-    </div>
-    <div class="fab-sep"></div>
-    <div class="fab-item" onclick="openWeightModal()">
-      <span class="fab-item-icon">⚖</span>Gewicht tracken
-    </div>
-    <div class="fab-sep"></div>
+    <button class="fab-item" onclick="startTrainingFromMenu()">
+      <span class="fab-item-ic" style="background:rgba(46,74,122,.1);color:var(--accent)">＋</span>Neues Training
+    </button>
+    <button class="fab-item" onclick="openWeightModal()">
+      <span class="fab-item-ic" style="background:rgba(212,134,10,.14);color:var(--cardio)">⚖</span>Gewicht tracken
+    </button>
   </div>
-  <button class="fab" id="fab-btn" onclick="onFabClick()">
-    <span id="fab-icon">＋</span>
-    <span class="fab-badge" id="fab-badge"></span>
+  <button class="fab-pill" id="fab-pill" onclick="onFabClick()">
+    <span class="fab-pill-ic">
+      <span class="fab-ic-idle">＋</span>
+      <span class="fab-ic-live"></span>
+    </span>
+    <span class="fab-pill-lbl fab-lbl-idle">Training starten</span>
+    <span class="fab-pill-lbl fab-lbl-run">Läuft<span id="fab-timer-wrap"> · <span id="fab-timer">00:00</span></span></span>
   </button>
 </div>
 <div id="fab-backdrop" style="display:none;position:fixed;inset:0;z-index:99" onclick="closeFabMenu()"></div>
@@ -1859,14 +1866,40 @@ function saveActiveSession() {
   updateStartBtn();
 }
 
+let _fabTimer = null;
+
+// MM:SS aus (jetzt − startedAt); beide via nowBerlin-Format → tz-neutral
+function fabElapsed(startedAt) {
+  if (!startedAt) return null;
+  const diffMs = new Date(nowBerlin()) - new Date(startedAt);
+  if (!(diffMs > 0)) return '00:00';
+  const totalSec = Math.floor(diffMs / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function startFabTimer(startedAt) {
+  const wrapEl = document.getElementById('fab-timer-wrap');
+  // Altdaten ohne Startzeit → nur "Läuft" ohne Timer
+  if (!startedAt) { if (wrapEl) wrapEl.style.display = 'none'; return; }
+  if (wrapEl) wrapEl.style.display = '';
+  const render = () => {
+    const el = document.getElementById('fab-timer');
+    if (el) el.textContent = fabElapsed(startedAt);
+  };
+  render();
+  _fabTimer = setInterval(render, 1000);
+}
+
 function updateStartBtn() {
   const wrap   = document.getElementById('fab-wrap');
-  const icon   = document.getElementById('fab-icon');
   const active = loadActive();
   const bar    = document.getElementById('resume-bar');
+  clearInterval(_fabTimer); _fabTimer = null;
   if (active) {
     wrap.classList.add('fab-active');
-    icon.textContent = '▶';
+    startFabTimer(active.startedAt);
     if (bar) {
       const detail = active.isCardio
         ? (active.cat || 'Cardio')
@@ -1876,7 +1909,6 @@ function updateStartBtn() {
     }
   } else {
     wrap.classList.remove('fab-active');
-    icon.textContent = '＋';
     if (bar) bar.style.display = 'none';
   }
   closeFabMenu();

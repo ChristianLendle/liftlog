@@ -86,6 +86,11 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 .s-date { font-size: 0.82rem; font-weight: 600; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
 .s-sub  { font-size: 0.67rem; color: var(--muted2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .s-right { font-size: 0.67rem; color: var(--muted); text-align: right; flex-shrink: 0; white-space: nowrap; }
+.sess-group-hd { font-size: 0.62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted2); margin: 16px 2px 7px; }
+.sess-group-hd:first-child { margin-top: 2px; }
+.w-delta { font-size: 0.62rem; font-weight: 600; margin-left: 5px; }
+.w-delta.up   { color: #e0584d; }
+.w-delta.down { color: #2bb673; }
 
 /* ─── PANEL ──────────────────────────────── */
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 20px; margin-bottom: 16px; min-width: 0; }
@@ -216,6 +221,18 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .cat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); }
 .cat-row-name { flex: 1; font-size: 0.82rem; }
 .cat-row-name.disabled { color: var(--muted); text-decoration: line-through; }
+
+/* ─── TOGGLE LIST (Standorte / Kategorien) ─── */
+.toggle-row { display: flex; align-items: center; gap: 12px; padding: 13px 4px; border-top: 1px solid var(--border); }
+.toggle-row:first-child { border-top: none; }
+.toggle-row .tr-name { flex: 1; font-size: .85rem; font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.toggle-row.off .tr-name { color: var(--muted2); }
+.tr-del { background: none; border: none; color: var(--muted2); font-size: 1rem; line-height: 1; cursor: pointer; padding: 4px 6px; flex-shrink: 0; border-radius: 6px; }
+.tr-del:hover { color: var(--down); background: var(--surface2); }
+.tr-switch { width: 42px; height: 25px; border-radius: 13px; border: none; cursor: pointer; background: var(--accent); position: relative; flex-shrink: 0; transition: background .18s; }
+.tr-switch .knob { position: absolute; top: 2px; left: 19px; width: 21px; height: 21px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: left .18s; }
+.tr-switch.off { background: var(--border2); }
+.tr-switch.off .knob { left: 2px; }
 
 /* ─── FAB ────────────────────────────────── */
 .fab-wrap { position: fixed; bottom: 26px; right: 26px; z-index: 100; background: var(--accent); border-radius: 27px; box-shadow: 0 4px 22px rgba(46,74,122,.35); overflow: hidden; display: flex; flex-direction: column; align-items: stretch; transition: box-shadow .3s; }
@@ -1669,6 +1686,16 @@ function populateCategorySelects() {
 // ─────────────────────────────────────────────────────
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 
+// Escape for HTML text / attribute context
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+// Escape for a single-quoted JS string embedded inside an inline handler attribute
+function escAttr(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
 function toast(msg, err = false) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -2775,53 +2802,139 @@ function switchMobileTab(tab) {
   switchView(map[tab] || tab);
 }
 
+// ─── DATUM / WOCHEN-GRUPPIERUNG (Sessions) ──────────────────────────────
+// Erwartet Datum als "YYYY-MM-DD".
+
+function _parseDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);                 // lokale Zeit, 00:00
+}
+
+// Montag als Wochenstart; gibt den Montag-Date der Woche zurück
+function _weekStart(date) {
+  const d = new Date(date);
+  const day = (d.getDay() + 6) % 7;             // Mo=0 … So=6
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+const _MONTHS = ['Januar','Februar','März','April','Mai','Juni',
+                 'Juli','August','September','Oktober','November','Dezember'];
+const _WEEKDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+// Gruppen-Überschrift: "Diese Woche" / "Letzte Woche" / "Mai 2025"
+function groupLabel(dateStr) {
+  const d        = _parseDate(dateStr);
+  const thisWeek = _weekStart(new Date());
+  const lastWeek = new Date(thisWeek); lastWeek.setDate(lastWeek.getDate() - 7);
+  const wkStart  = _weekStart(d);
+
+  if (wkStart.getTime() === thisWeek.getTime()) return 'Diese Woche';
+  if (wkStart.getTime() === lastWeek.getTime()) return 'Letzte Woche';
+  return _MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+// Relatives Label auf der Karte: "Heute" / "Gestern" / "Do, 05.06."
+function relDateLabel(dateStr) {
+  const d     = _parseDate(dateStr);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff  = Math.round((today - d) / 86400000);   // ganze Tage
+
+  if (diff === 0) return 'Heute';
+  if (diff === 1) return 'Gestern';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return _WEEKDAYS[d.getDay()] + ', ' + dd + '.' + mm + '.';
+}
+
+// Items (Sessions + Gewicht) → [{ label, items: [...] }], chronologisch absteigend.
+function groupByWeek(items) {
+  const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
+  const groups = [];
+  let cur = null;
+  sorted.forEach(it => {
+    const label = groupLabel(it.date);
+    if (!cur || cur.label !== label) { cur = { label, items: [] }; groups.push(cur); }
+    cur.items.push(it);
+  });
+  return groups;
+}
+
+// entries = alle Gewichtseinträge; gibt {kg: "-0.3"|null, kfa: "-0.4"|null} zurück
+function weightDelta(entries, entry) {
+  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const i = sorted.findIndex(e => e.date === entry.date);
+  if (i <= 0) return { kg: null, kfa: null };
+  const prev = sorted[i - 1];
+  const dk  = +(entry.kg - prev.kg).toFixed(1);
+  const kfa = (entry.kfa != null && prev.kfa != null)
+    ? (entry.kfa - prev.kfa >= 0 ? '+' : '') + (entry.kfa - prev.kfa).toFixed(1)
+    : null;
+  return { kg: (dk >= 0 ? '+' : '') + dk, kfa };
+}
+
+function weightRowHTML(w, allEntries) {
+  const right = w.kfa != null ? `${w.kg} kg · ${w.kfa}%` : `${w.kg} kg`;
+  const d     = weightDelta(allEntries, w);
+  let delta = '';
+  if (d.kg != null && d.kg !== '+0') {
+    const dir = d.kg.startsWith('-') ? 'down' : 'up';
+    delta = `<span class="w-delta ${dir}">${d.kg}${d.kfa != null ? ` · ${d.kfa}%` : ''}</span>`;
+  }
+  return `<div class="s-card" style="border-left:3px solid #4a9eff" onclick="editWeightEntry('${w.date}')">
+    <div class="s-left">
+      <div class="s-date">${relDateLabel(w.date)}</div>
+      <div class="s-sub">⚖ Körpergewicht</div>
+    </div>
+    <div class="s-right">${right}${delta}</div>
+  </div>`;
+}
+
+function sessionCardHTML(s) {
+  const col  = typeColor(s);
+  const chip = typeChip(s);
+  const info = s.type === 'cardio' && s.cardio
+    ? `${s.cardio.distance_km || s.cardio.floors || '–'} · ${s.cardio.duration_min || '–'}min`
+    : `${(s.exercises || []).length} Übungen`;
+  const dateLabel = s.date ? relDateLabel(s.date) : (s.dateDisplay || '—');
+  const locSub = s.location ? locLabel(LOC_KEY[s.location] || s.location) : '';
+  return `<div class="s-card" style="border-left:3px solid ${col}" onclick="showDetail('${s.id}')">
+    <div class="s-left">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="s-date">${dateLabel}</span>
+        <span style="font-size:0.55rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${chip.color};background:${chip.bg};border-radius:4px;padding:2px 6px">${s.category}</span>
+      </div>
+      ${locSub ? `<div class="s-sub">${locSub}</div>` : ''}
+    </div>
+    <div class="s-right">${info}</div>
+  </div>`;
+}
+
 function renderList(sessions, weightEntries = [], targetEl = null) {
   const el = targetEl || document.getElementById('session-list');
 
-  const fmt = date => { const [y,mo,d] = date.split('-'); return `${d}.${mo}.${y.slice(2)}`; };
-
-  // Build combined + sorted items
+  // Build combined items
   const items = [
     ...sessions.map(s => ({ _type: 'session', date: s.date, s })),
     ...weightEntries.map(w => ({ _type: 'weight', date: w.date, w }))
-  ].sort((a, b) => b.date.localeCompare(a.date));
+  ];
 
   if (!items.length) {
     el.innerHTML = '<div class="empty">Keine Daten vorhanden, <br>um neuen Daten hinzuzufügen klicke auf<br>"＋ Training" oder "↑ Import".</div>';
     return;
   }
 
-  el.innerHTML = items.map(item => {
-    if (item._type === 'weight') {
-      const w = item.w;
-      const right = w.kfa != null ? `${w.kg} kg · ${w.kfa}%` : `${w.kg} kg`;
-      return `<div class="s-card" style="border-left:3px solid #4a9eff" onclick="editWeightEntry('${w.date}')">
-        <div class="s-left">
-          <div class="s-date">${fmt(w.date)}</div>
-          <div class="s-sub">⚖ Körpergewicht</div>
-        </div>
-        <div class="s-right">${right}</div>
-      </div>`;
-    }
-    const s = item.s;
-    const col  = typeColor(s);
-    const chip = typeChip(s);
-    const info = s.type === 'cardio' && s.cardio
-      ? `${s.cardio.distance_km || s.cardio.floors || '–'} · ${s.cardio.duration_min || '–'}min`
-      : `${(s.exercises || []).length} Übungen`;
-    const dateLabel = s.dateDisplay || (s.date ? fmt(s.date) : '—');
-    const locSub = s.location ? locLabel(LOC_KEY[s.location] || s.location) : '';
-    return `<div class="s-card" style="border-left:3px solid ${col}" onclick="showDetail('${s.id}')">
-      <div class="s-left">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="s-date">${dateLabel}</span>
-          <span style="font-size:0.55rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${chip.color};background:${chip.bg};border-radius:4px;padding:2px 6px">${s.category}</span>
-        </div>
-        ${locSub ? `<div class="s-sub">${locSub}</div>` : ''}
-      </div>
-      <div class="s-right">${info}</div>
-    </div>`;
-  }).join('');
+  // Vollständige Gewichts-Historie für korrekte Deltas (auch über Seitengrenzen)
+  const allWeights = getWeightEntries();
+
+  const groups = groupByWeek(items);
+  el.innerHTML = groups.map(g => `
+    <div class="sess-group-hd">${g.label}</div>
+    ${g.items.map(it => it._type === 'weight'
+      ? weightRowHTML(it.w, allWeights)
+      : sessionCardHTML(it.s)).join('')}
+  `).join('');
 }
 
 let allExNames = [];
@@ -3316,10 +3429,10 @@ function loadCatEditor() {
   const cats = getCategories();
   const el   = document.getElementById('cat-list');
   el.innerHTML = cats.map(c => `
-    <div class="cat-row">
-      <span class="cat-row-name${c.enabled ? '' : ' disabled'}">${c.name}</span>
-      <button class="btn" onclick="toggleCat('${c.name}')">${c.enabled ? 'Deaktivieren' : 'Aktivieren'}</button>
-      <button class="btn btn-danger" onclick="deleteCat('${c.name}')">✕</button>
+    <div class="toggle-row${c.enabled ? '' : ' off'}">
+      <span class="tr-name">${escapeHtml(c.name)}</span>
+      <button class="tr-del" title="Löschen" onclick="deleteCat('${escAttr(c.name)}')">✕</button>
+      <button class="tr-switch${c.enabled ? '' : ' off'}" role="switch" aria-checked="${c.enabled}" aria-label="${escAttr(c.name)} ${c.enabled ? 'aktiv' : 'deaktiviert'}" onclick="toggleCat('${escAttr(c.name)}')"><span class="knob"></span></button>
     </div>`).join('');
 }
 
@@ -3356,10 +3469,10 @@ function loadLocEditor() {
   const locs = getLocations();
   const el   = document.getElementById('loc-list');
   el.innerHTML = locs.map(l => `
-    <div class="cat-row">
-      <span class="cat-row-name${l.enabled ? '' : ' disabled'}">${l.label}</span>
-      <button class="btn" onclick="toggleLoc('${l.key}')">${l.enabled ? 'Deaktivieren' : 'Aktivieren'}</button>
-      <button class="btn btn-danger" onclick="deleteLoc('${l.key}')">✕</button>
+    <div class="toggle-row${l.enabled ? '' : ' off'}">
+      <span class="tr-name">${escapeHtml(l.label)}</span>
+      <button class="tr-del" title="Löschen" onclick="deleteLoc('${escAttr(l.key)}')">✕</button>
+      <button class="tr-switch${l.enabled ? '' : ' off'}" role="switch" aria-checked="${l.enabled}" aria-label="${escAttr(l.label)} ${l.enabled ? 'aktiv' : 'deaktiviert'}" onclick="toggleLoc('${escAttr(l.key)}')"><span class="knob"></span></button>
     </div>`).join('');
 }
 

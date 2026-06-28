@@ -86,6 +86,11 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 .s-date { font-size: 0.82rem; font-weight: 600; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
 .s-sub  { font-size: 0.67rem; color: var(--muted2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .s-right { font-size: 0.67rem; color: var(--muted); text-align: right; flex-shrink: 0; white-space: nowrap; }
+.sess-group-hd { font-size: 0.62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted2); margin: 16px 2px 7px; }
+.sess-group-hd:first-child { margin-top: 2px; }
+.w-delta { font-size: 0.62rem; font-weight: 600; margin-left: 5px; }
+.w-delta.up   { color: #e0584d; }
+.w-delta.down { color: #2bb673; }
 
 /* ─── PANEL ──────────────────────────────── */
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 20px; margin-bottom: 16px; min-width: 0; }
@@ -2797,53 +2802,139 @@ function switchMobileTab(tab) {
   switchView(map[tab] || tab);
 }
 
+// ─── DATUM / WOCHEN-GRUPPIERUNG (Sessions) ──────────────────────────────
+// Erwartet Datum als "YYYY-MM-DD".
+
+function _parseDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);                 // lokale Zeit, 00:00
+}
+
+// Montag als Wochenstart; gibt den Montag-Date der Woche zurück
+function _weekStart(date) {
+  const d = new Date(date);
+  const day = (d.getDay() + 6) % 7;             // Mo=0 … So=6
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+const _MONTHS = ['Januar','Februar','März','April','Mai','Juni',
+                 'Juli','August','September','Oktober','November','Dezember'];
+const _WEEKDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+// Gruppen-Überschrift: "Diese Woche" / "Letzte Woche" / "Mai 2025"
+function groupLabel(dateStr) {
+  const d        = _parseDate(dateStr);
+  const thisWeek = _weekStart(new Date());
+  const lastWeek = new Date(thisWeek); lastWeek.setDate(lastWeek.getDate() - 7);
+  const wkStart  = _weekStart(d);
+
+  if (wkStart.getTime() === thisWeek.getTime()) return 'Diese Woche';
+  if (wkStart.getTime() === lastWeek.getTime()) return 'Letzte Woche';
+  return _MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+// Relatives Label auf der Karte: "Heute" / "Gestern" / "Do, 05.06."
+function relDateLabel(dateStr) {
+  const d     = _parseDate(dateStr);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff  = Math.round((today - d) / 86400000);   // ganze Tage
+
+  if (diff === 0) return 'Heute';
+  if (diff === 1) return 'Gestern';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return _WEEKDAYS[d.getDay()] + ', ' + dd + '.' + mm + '.';
+}
+
+// Items (Sessions + Gewicht) → [{ label, items: [...] }], chronologisch absteigend.
+function groupByWeek(items) {
+  const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
+  const groups = [];
+  let cur = null;
+  sorted.forEach(it => {
+    const label = groupLabel(it.date);
+    if (!cur || cur.label !== label) { cur = { label, items: [] }; groups.push(cur); }
+    cur.items.push(it);
+  });
+  return groups;
+}
+
+// entries = alle Gewichtseinträge; gibt {kg: "-0.3"|null, kfa: "-0.4"|null} zurück
+function weightDelta(entries, entry) {
+  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const i = sorted.findIndex(e => e.date === entry.date);
+  if (i <= 0) return { kg: null, kfa: null };
+  const prev = sorted[i - 1];
+  const dk  = +(entry.kg - prev.kg).toFixed(1);
+  const kfa = (entry.kfa != null && prev.kfa != null)
+    ? (entry.kfa - prev.kfa >= 0 ? '+' : '') + (entry.kfa - prev.kfa).toFixed(1)
+    : null;
+  return { kg: (dk >= 0 ? '+' : '') + dk, kfa };
+}
+
+function weightRowHTML(w, allEntries) {
+  const right = w.kfa != null ? `${w.kg} kg · ${w.kfa}%` : `${w.kg} kg`;
+  const d     = weightDelta(allEntries, w);
+  let delta = '';
+  if (d.kg != null && d.kg !== '+0') {
+    const dir = d.kg.startsWith('-') ? 'down' : 'up';
+    delta = `<span class="w-delta ${dir}">${d.kg}${d.kfa != null ? ` · ${d.kfa}%` : ''}</span>`;
+  }
+  return `<div class="s-card" style="border-left:3px solid #4a9eff" onclick="editWeightEntry('${w.date}')">
+    <div class="s-left">
+      <div class="s-date">${relDateLabel(w.date)}</div>
+      <div class="s-sub">⚖ Körpergewicht</div>
+    </div>
+    <div class="s-right">${right}${delta}</div>
+  </div>`;
+}
+
+function sessionCardHTML(s) {
+  const col  = typeColor(s);
+  const chip = typeChip(s);
+  const info = s.type === 'cardio' && s.cardio
+    ? `${s.cardio.distance_km || s.cardio.floors || '–'} · ${s.cardio.duration_min || '–'}min`
+    : `${(s.exercises || []).length} Übungen`;
+  const dateLabel = s.date ? relDateLabel(s.date) : (s.dateDisplay || '—');
+  const locSub = s.location ? locLabel(LOC_KEY[s.location] || s.location) : '';
+  return `<div class="s-card" style="border-left:3px solid ${col}" onclick="showDetail('${s.id}')">
+    <div class="s-left">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="s-date">${dateLabel}</span>
+        <span style="font-size:0.55rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${chip.color};background:${chip.bg};border-radius:4px;padding:2px 6px">${s.category}</span>
+      </div>
+      ${locSub ? `<div class="s-sub">${locSub}</div>` : ''}
+    </div>
+    <div class="s-right">${info}</div>
+  </div>`;
+}
+
 function renderList(sessions, weightEntries = [], targetEl = null) {
   const el = targetEl || document.getElementById('session-list');
 
-  const fmt = date => { const [y,mo,d] = date.split('-'); return `${d}.${mo}.${y.slice(2)}`; };
-
-  // Build combined + sorted items
+  // Build combined items
   const items = [
     ...sessions.map(s => ({ _type: 'session', date: s.date, s })),
     ...weightEntries.map(w => ({ _type: 'weight', date: w.date, w }))
-  ].sort((a, b) => b.date.localeCompare(a.date));
+  ];
 
   if (!items.length) {
     el.innerHTML = '<div class="empty">Keine Daten vorhanden, <br>um neuen Daten hinzuzufügen klicke auf<br>"＋ Training" oder "↑ Import".</div>';
     return;
   }
 
-  el.innerHTML = items.map(item => {
-    if (item._type === 'weight') {
-      const w = item.w;
-      const right = w.kfa != null ? `${w.kg} kg · ${w.kfa}%` : `${w.kg} kg`;
-      return `<div class="s-card" style="border-left:3px solid #4a9eff" onclick="editWeightEntry('${w.date}')">
-        <div class="s-left">
-          <div class="s-date">${fmt(w.date)}</div>
-          <div class="s-sub">⚖ Körpergewicht</div>
-        </div>
-        <div class="s-right">${right}</div>
-      </div>`;
-    }
-    const s = item.s;
-    const col  = typeColor(s);
-    const chip = typeChip(s);
-    const info = s.type === 'cardio' && s.cardio
-      ? `${s.cardio.distance_km || s.cardio.floors || '–'} · ${s.cardio.duration_min || '–'}min`
-      : `${(s.exercises || []).length} Übungen`;
-    const dateLabel = s.dateDisplay || (s.date ? fmt(s.date) : '—');
-    const locSub = s.location ? locLabel(LOC_KEY[s.location] || s.location) : '';
-    return `<div class="s-card" style="border-left:3px solid ${col}" onclick="showDetail('${s.id}')">
-      <div class="s-left">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="s-date">${dateLabel}</span>
-          <span style="font-size:0.55rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${chip.color};background:${chip.bg};border-radius:4px;padding:2px 6px">${s.category}</span>
-        </div>
-        ${locSub ? `<div class="s-sub">${locSub}</div>` : ''}
-      </div>
-      <div class="s-right">${info}</div>
-    </div>`;
-  }).join('');
+  // Vollständige Gewichts-Historie für korrekte Deltas (auch über Seitengrenzen)
+  const allWeights = getWeightEntries();
+
+  const groups = groupByWeek(items);
+  el.innerHTML = groups.map(g => `
+    <div class="sess-group-hd">${g.label}</div>
+    ${g.items.map(it => it._type === 'weight'
+      ? weightRowHTML(it.w, allWeights)
+      : sessionCardHTML(it.s)).join('')}
+  `).join('');
 }
 
 let allExNames = [];

@@ -217,6 +217,18 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .cat-row-name { flex: 1; font-size: 0.82rem; }
 .cat-row-name.disabled { color: var(--muted); text-decoration: line-through; }
 
+/* ─── TOGGLE LIST (Standorte / Kategorien) ─── */
+.toggle-row { display: flex; align-items: center; gap: 12px; padding: 13px 4px; border-top: 1px solid var(--border); }
+.toggle-row:first-child { border-top: none; }
+.toggle-row .tr-name { flex: 1; font-size: .85rem; font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.toggle-row.off .tr-name { color: var(--muted2); }
+.tr-del { background: none; border: none; color: var(--muted2); font-size: 1rem; line-height: 1; cursor: pointer; padding: 4px 6px; flex-shrink: 0; border-radius: 6px; }
+.tr-del:hover { color: var(--down); background: var(--surface2); }
+.tr-switch { width: 42px; height: 25px; border-radius: 13px; border: none; cursor: pointer; background: var(--accent); position: relative; flex-shrink: 0; transition: background .18s; }
+.tr-switch .knob { position: absolute; top: 2px; left: 19px; width: 21px; height: 21px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: left .18s; }
+.tr-switch.off { background: var(--border2); }
+.tr-switch.off .knob { left: 2px; }
+
 /* ─── FAB ────────────────────────────────── */
 .fab-wrap { position: fixed; bottom: 26px; right: 26px; z-index: 100; background: var(--accent); border-radius: 27px; box-shadow: 0 4px 22px rgba(46,74,122,.35); overflow: hidden; display: flex; flex-direction: column; align-items: stretch; transition: box-shadow .3s; }
 .fab-active.fab-wrap { animation: fab-pulse 2s ease-in-out infinite; }
@@ -1668,6 +1680,16 @@ function populateCategorySelects() {
 //  UTILS
 // ─────────────────────────────────────────────────────
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+// Escape for HTML text / attribute context
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+// Escape for a single-quoted JS string embedded inside an inline handler attribute
+function escAttr(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
 
 function toast(msg, err = false) {
   const el = document.getElementById('toast');
@@ -3316,10 +3338,10 @@ function loadCatEditor() {
   const cats = getCategories();
   const el   = document.getElementById('cat-list');
   el.innerHTML = cats.map(c => `
-    <div class="cat-row">
-      <span class="cat-row-name${c.enabled ? '' : ' disabled'}">${c.name}</span>
-      <button class="btn" onclick="toggleCat('${c.name}')">${c.enabled ? 'Deaktivieren' : 'Aktivieren'}</button>
-      <button class="btn btn-danger" onclick="deleteCat('${c.name}')">✕</button>
+    <div class="toggle-row${c.enabled ? '' : ' off'}">
+      <span class="tr-name">${escapeHtml(c.name)}</span>
+      <button class="tr-del" title="Löschen" onclick="deleteCat('${escAttr(c.name)}')">✕</button>
+      <button class="tr-switch${c.enabled ? '' : ' off'}" role="switch" aria-checked="${c.enabled}" aria-label="${escAttr(c.name)} ${c.enabled ? 'aktiv' : 'deaktiviert'}" onclick="toggleCat('${escAttr(c.name)}')"><span class="knob"></span></button>
     </div>`).join('');
 }
 
@@ -3356,10 +3378,10 @@ function loadLocEditor() {
   const locs = getLocations();
   const el   = document.getElementById('loc-list');
   el.innerHTML = locs.map(l => `
-    <div class="cat-row">
-      <span class="cat-row-name${l.enabled ? '' : ' disabled'}">${l.label}</span>
-      <button class="btn" onclick="toggleLoc('${l.key}')">${l.enabled ? 'Deaktivieren' : 'Aktivieren'}</button>
-      <button class="btn btn-danger" onclick="deleteLoc('${l.key}')">✕</button>
+    <div class="toggle-row${l.enabled ? '' : ' off'}">
+      <span class="tr-name">${escapeHtml(l.label)}</span>
+      <button class="tr-del" title="Löschen" onclick="deleteLoc('${escAttr(l.key)}')">✕</button>
+      <button class="tr-switch${l.enabled ? '' : ' off'}" role="switch" aria-checked="${l.enabled}" aria-label="${escAttr(l.label)} ${l.enabled ? 'aktiv' : 'deaktiviert'}" onclick="toggleLoc('${escAttr(l.key)}')"><span class="knob"></span></button>
     </div>`).join('');
 }
 

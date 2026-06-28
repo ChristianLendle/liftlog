@@ -14,7 +14,7 @@ async function setup(page, { seedWeight = null } = {}) {
   }, seedWeight);
   await page.goto('/');
   await page.waitForSelector('#login-gate', { state: 'hidden' });
-  await page.waitForSelector('#fab-btn');
+  await page.waitForSelector('#fab-pill');
 }
 
 // ─── Gewicht erfassen ──────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ test.describe('Gewicht erfassen', () => {
   test('Modal öffnet sich über FAB-Menü', async ({ page }) => {
     await setup(page);
 
-    await page.click('#fab-btn');
+    await page.click('#fab-pill');
     await page.click('text=Gewicht tracken');
 
     await expect(page.locator('#m-weight')).toBeVisible();
@@ -37,7 +37,7 @@ test.describe('Gewicht erfassen', () => {
     await setup(page);
 
     // Modal öffnen
-    await page.click('#fab-btn');
+    await page.click('#fab-pill');
     await page.click('text=Gewicht tracken');
 
     // Formular ausfüllen
@@ -58,7 +58,7 @@ test.describe('Gewicht erfassen', () => {
   test('Eintrag ohne KFA speichern', async ({ page }) => {
     await setup(page);
 
-    await page.click('#fab-btn');
+    await page.click('#fab-pill');
     await page.click('text=Gewicht tracken');
     await page.fill('#wt-date', '2026-06-12');
     await page.fill('#wt-kg', '80.0');
@@ -106,7 +106,7 @@ test.describe('Gewicht erfassen', () => {
   test('Abbrechen schließt Modal ohne zu speichern', async ({ page }) => {
     await setup(page);
 
-    await page.click('#fab-btn');
+    await page.click('#fab-pill');
     await page.click('text=Gewicht tracken');
     await page.fill('#wt-kg', '99.9');
     await page.locator('#m-weight').getByRole('button', { name: 'Abbrechen' }).click();

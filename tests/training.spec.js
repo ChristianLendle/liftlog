@@ -11,13 +11,13 @@ async function setup(page) {
   });
   await page.goto('/');
   await page.waitForSelector('#login-gate', { state: 'hidden' });
-  await page.waitForSelector('#fab-btn');
+  await page.waitForSelector('#fab-pill');
 }
 
 // Opens the training modal via the FAB menu.
 async function openTrainingModal(page) {
-  await page.click('#fab-btn');
-  await page.click('text=Training starten');
+  await page.click('#fab-pill');
+  await page.click('text=Neues Training');
   await expect(page.locator('#m-log')).toBeVisible();
 }
 
@@ -32,7 +32,8 @@ async function fillTrainingHeader(page, {
   await page.fill('#log-date', date);
   await page.selectOption('#log-cat',  category);
   await page.selectOption('#log-loc',  location);
-  await page.selectOption('#log-mood', mood);
+  // Mood ist jetzt ein Segment-Selektor (Buttons), kein <select> mehr
+  await page.click(`#log-mood-seg .mood-seg-btn[data-mood="${mood}"]`);
 }
 
 // ─── Training tracken ─────────────────────────────────────────────────────
@@ -115,8 +116,8 @@ test.describe('Training tracken', () => {
     await page.click('#btn-pause-session');
     await expect(page.locator('#m-log')).not.toBeVisible();
 
-    // FAB-Badge signalisiert aktive Session — FAB-Klick öffnet direkt das Modal
-    await page.click('#fab-btn');
+    // Aktive Session — FAB-Klick öffnet direkt das Modal
+    await page.click('#fab-pill');
     await expect(page.locator('#m-log')).toBeVisible();
 
     // Titel zeigt "Training fortsetzen"
@@ -134,7 +135,7 @@ test.describe('Training tracken', () => {
 
     // Pausieren dann wieder öffnen
     await page.click('#btn-pause-session');
-    await page.click('#fab-btn');
+    await page.click('#fab-pill');
     await expect(page.locator('#m-log')).toBeVisible();
 
     // Abschließen

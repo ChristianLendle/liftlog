@@ -1695,28 +1695,11 @@ if (typeof Chart !== 'undefined') {
 // ─────────────────────────────────────────────────────
 //  TRAINING PLANS
 // ─────────────────────────────────────────────────────
-const DEFAULT_PLANS = {
-  'OK-Push': {
-    'haidhof':      ['Brustpresse', 'Schrägbank', 'Flys Kabel', 'Seitheben Maschine', 'Seitheben Kabel', 'KH Skullcrusher', 'Trizepsstrecker'],
-    'modern-coach': ['Frei Bankdrücken', 'Pure Hart Schrägbank', 'Flys Kabel', 'Pull ups', 'TBar', 'KH Skullcrusher', 'Seitheben Kabel', 'Trizepsstrecker'],
-  },
-  'OK-Pull': {
-    'haidhof':      ['Pull ups', 'Lattzug', 'Seitheben KH', 'Schrägbank gym80', 'TBar', 'Triceps Extension', 'Reverse Flys', 'Flys Kabel sitzend', 'Curls Seil'],
-    'modern-coach': ['TBar', 'Pull ups', 'Lattzug', 'Schrägbank', 'Überzüge', 'Rudern', 'Hammer Curls', 'Bizeps Curls'],
-  },
-  'Legs': {
-    'haidhof':      ['Beinpresse', 'Beinstrecker', 'Bein Curl', 'Wade'],
-    'modern-coach': ['Beinpresse', 'Beinstrecker', 'Bein Curl', 'Wade'],
-  },
-  'Individual': {
-    'haidhof':      [],
-    'modern-coach': [],
-  },
-};
+const DEFAULT_PLANS = {};
 
 const PLANS_KEY = 'liftlog_plans_v1';
 const getPlans = () => { try { return JSON.parse(localStorage.getItem(PLANS_KEY)) || DEFAULT_PLANS; } catch { return DEFAULT_PLANS; } };
-const savePlansToStorage = p => localStorage.setItem(PLANS_KEY, JSON.stringify(p));
+const savePlansToStorage = p => { localStorage.setItem(PLANS_KEY, JSON.stringify(p)); syncAllUserData(); };
 
 // LOC_LABEL is computed dynamically from stored locations (see buildLocLabel())
 // Static fallback for backward compat with old keys
@@ -1735,7 +1718,7 @@ const MOOD_KEY   = { '😁 Großartig': 'great', '🙂 Gut': 'good', '😴 Ok': 
 //  CATEGORIES
 // ─────────────────────────────────────────────────────
 const CATEGORIES_KEY      = 'liftlog_categories_v1';
-const DEFAULT_CATEGORIES  = ['OK-Push', 'OK-Pull', 'Legs', 'Cardio', 'Individual'];
+const DEFAULT_CATEGORIES  = [];
 
 function getCategories() {
   try {
@@ -1747,6 +1730,7 @@ function getCategories() {
 
 function saveCategories(cats) {
   localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
+  syncAllUserData();
 }
 
 function getEnabledCategories() {
@@ -1757,10 +1741,7 @@ function getEnabledCategories() {
 //  LOCATIONS
 // ─────────────────────────────────────────────────────
 const LOCATIONS_KEY = 'liftlog_locations_v1';
-const DEFAULT_LOCATIONS = [
-  { key: 'haidhof',      label: 'Sportpark Haidhof',       enabled: true },
-  { key: 'modern-coach', label: 'Modern Coach Deggendorf',  enabled: true },
-];
+const DEFAULT_LOCATIONS = [];
 
 function getLocations() {
   try {
@@ -1772,6 +1753,7 @@ function getLocations() {
 
 function saveLocations(locs) {
   localStorage.setItem(LOCATIONS_KEY, JSON.stringify(locs));
+  syncAllUserData();
 }
 
 function getEnabledLocations() {
@@ -1907,7 +1889,7 @@ const CFG_KEY    = 'liftlog_cfg_v1';
 const ACTIVE_KEY = 'liftlog_active_v1';
 const WEIGHT_KEY  = 'liftlog_weight_v1';
 const getWeightEntries  = () => JSON.parse(localStorage.getItem(WEIGHT_KEY) || '[]');
-const saveWeightEntries = (entries) => localStorage.setItem(WEIGHT_KEY, JSON.stringify(entries));
+const saveWeightEntries = (entries) => { localStorage.setItem(WEIGHT_KEY, JSON.stringify(entries)); syncAllUserData(); };
 
 
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
@@ -1920,22 +1902,69 @@ const getCfg = () => {
   const stored = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
   return { streakMin: stored.streakMin || 3 };
 };
-const setCfg  = c  => localStorage.setItem(CFG_KEY, JSON.stringify(c));
+const setCfg  = c  => { localStorage.setItem(CFG_KEY, JSON.stringify(c)); syncAllUserData(); };
 const loadDB  = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || { sessions: [] }; } catch { return { sessions: [] }; } };
-const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncSupabase(db); };
+const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncAllUserData(); };
 
 const loadActive  = () => { try { return JSON.parse(localStorage.getItem(ACTIVE_KEY)); } catch { return null; } };
 const clearActive = () => { localStorage.removeItem(ACTIVE_KEY); updateStartBtn(); };
 
-async function syncSupabase(db) {
+async function syncAllUserData() {
   try {
     const { data: { user } } = await _SB.auth.getUser();
     if (!user) return;
+    const payload = {
+      sessions:   loadDB().sessions,
+      weightLog:  getWeightEntries(),
+      plans:      getPlans(),
+      categories: getCategories(),
+      locations:  getLocations(),
+      cfg:        getCfg(),
+    };
     await _SB.from('liftlog_data').upsert(
-      { user_id: user.id, data: db, updated_at: new Date().toISOString() },
+      { user_id: user.id, data: payload, updated_at: new Date().toISOString() },
       { onConflict: 'user_id' }
     );
   } catch {}
+}
+
+// Alias für Abwärtskompatibilität
+const syncSupabase = () => syncAllUserData();
+
+/**
+ * Stellt den vollständigen User-Datenstand aus dem Cloud-Snapshot wieder her.
+ * Sessions werden per ID gemerged (kein Datenverlust bei Offline-Nutzung).
+ * Pläne, Kategorien, Standorte, Config: Remote gewinnt (Config ist nicht additiv).
+ * Gewicht: Merge per Datum, Remote gewinnt bei Konflikt.
+ */
+function restoreFromRemote(remote) {
+  if (!remote) return;
+
+  // ── Sessions: ID-basierter Merge ──────────────────────
+  if (Array.isArray(remote.sessions)) {
+    const local = loadDB();
+    const byId  = {};
+    for (const s of (local.sessions || [])) byId[s.id] = s;
+    for (const s of remote.sessions)        byId[s.id] = s; // remote überschreibt bei gleicher ID
+    const merged = Object.values(byId).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    localStorage.setItem(DB_KEY, JSON.stringify({ sessions: merged }));
+  }
+
+  // ── Gewicht: Merge per Datum ──────────────────────────
+  if (Array.isArray(remote.weightLog)) {
+    const localW = getWeightEntries();
+    const byDate = {};
+    for (const e of localW)           byDate[e.date] = e;
+    for (const e of remote.weightLog) byDate[e.date] = e; // remote gewinnt
+    const merged = Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
+    localStorage.setItem(WEIGHT_KEY, JSON.stringify(merged));
+  }
+
+  // ── Konfiguration: Remote gewinnt direkt ──────────────
+  if (remote.plans      !== undefined) localStorage.setItem(PLANS_KEY,      JSON.stringify(remote.plans));
+  if (remote.categories !== undefined) localStorage.setItem(CATEGORIES_KEY, JSON.stringify(remote.categories));
+  if (remote.locations  !== undefined) localStorage.setItem(LOCATIONS_KEY,  JSON.stringify(remote.locations));
+  if (remote.cfg        !== undefined) localStorage.setItem(CFG_KEY,        JSON.stringify(remote.cfg));
 }
 
 async function fetchSupabase() {
@@ -3751,11 +3780,10 @@ async function supabaseSignIn() {
   if (error) { msg.textContent = '✗ ' + error.message; return; }
   renderSyncPanel();
   const remote = await fetchSupabase();
-  if (remote?.sessions) {
-    const local = loadDB();
-    if (remote.sessions.length >= local.sessions.length) localStorage.setItem(DB_KEY, JSON.stringify(remote));
-    renderAll();
-  }
+  restoreFromRemote(remote);
+  populateCategorySelects();
+  populateLocationSelects();
+  renderAll();
   toast('Angemeldet ✓');
 }
 
@@ -3772,6 +3800,10 @@ async function supabaseSignUp() {
 
 async function supabaseSignOut() {
   await _SB.auth.signOut();
+  // Alle user-spezifischen Daten aus localStorage löschen
+  // damit der nächste Nutzer auf diesem Gerät einen leeren Stand hat
+  [DB_KEY, WEIGHT_KEY, PLANS_KEY, CATEGORIES_KEY, LOCATIONS_KEY, CFG_KEY, ACTIVE_KEY]
+    .forEach(k => localStorage.removeItem(k));
   showLoginGate();
 }
 function exportJSON() {
@@ -4485,15 +4517,13 @@ function renderProfileSection() {
 }
 
 async function loadApp() {
-  populateCategorySelects();
-  populateLocationSelects();
   switchView('dashboard');
   await loadProfile();
   const remote = await fetchSupabase();
-  if (remote?.sessions) {
-    const local = loadDB();
-    if (remote.sessions.length >= local.sessions.length) localStorage.setItem(DB_KEY, JSON.stringify(remote));
-  }
+  restoreFromRemote(remote);
+  // Selects nach Restore befüllen, damit User-Kategorien und -Standorte geladen sind
+  populateCategorySelects();
+  populateLocationSelects();
   renderAll();
   initBodyDates();
   renderSyncPanel();

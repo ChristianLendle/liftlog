@@ -188,7 +188,9 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .log-ex-chip { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; font-size: .72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .log-ex-name { flex: 1; min-width: 0; font-size: .85rem; font-weight: 700; padding: 6px 8px; border: 1px solid transparent; border-radius: 7px; background: none; }
 .log-ex-name:focus { border-color: var(--border2); background: var(--surface2); outline: none; }
-.log-ex-last { display: inline-flex; align-items: center; gap: 4px; font-size: .62rem; font-weight: 600; color: var(--muted); background: var(--surface2); border-radius: 7px; padding: 4px 8px; white-space: nowrap; flex-shrink: 0; }
+.log-ex-prev { display: flex; align-items: center; gap: 7px; margin: -4px 0 10px; padding: 6px 10px; background: var(--surface2); border-radius: 8px; border-left: 3px solid var(--accent); }
+.log-ex-prev-label { font-size: .65rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted2); flex-shrink: 0; }
+.log-ex-prev-val { font-size: .82rem; font-weight: 700; color: var(--text); }
 .log-ex-del { background: none; border: none; color: var(--muted2); font-size: .85rem; cursor: pointer; padding: 5px 7px; border-radius: 7px; flex-shrink: 0; transition: all .12s; font-family: var(--font); line-height: 1; }
 .log-ex-del:hover { color: #cc3333; background: rgba(204,51,51,.08); }
 .sets-hd { display: grid; grid-template-columns: 26px 1fr 1fr 44px; gap: 7px; padding: 0 2px 6px; }
@@ -2140,9 +2142,41 @@ document.getElementById('log-ex-list').addEventListener('focusout', e => {
 });
 
 function selectExName(name) {
-  if (_activeExInput) { _activeExInput.value = name; _activeExInput.classList.remove('field-error'); }
+  if (_activeExInput) {
+    _activeExInput.value = name;
+    _activeExInput.classList.remove('field-error');
+    // Update the prominent "Letztes Mal" line for the picked exercise
+    const card = _activeExInput.closest('.log-ex');
+    if (card) updateLastBadge(card, name);
+  }
   document.getElementById('log-ex-dropdown').style.display = 'none';
   triggerAutoSave();
+}
+
+// Render/refresh the ".log-ex-prev" (Letztes Mal) line for a log-ex card and
+// sync the ghost-placeholder dataset (phW/phR) used by addLogSet.
+function updateLastBadge(card, name) {
+  const last = lastSetFor(name);
+  let prev = card.querySelector('.log-ex-prev');
+  if (!last || !last.sets || !last.sets.length) {
+    if (prev) prev.remove();
+    card.dataset.phW = '';
+    card.dataset.phR = '';
+    return;
+  }
+  const valText = last.sets.length === 1
+    ? `${last.sets[0].weight} kg × ${last.sets[0].reps}`
+    : last.sets.map((s, i) => i === 0 ? `${s.weight} kg×${s.reps}` : `${s.weight}×${s.reps}`).join(' · ');
+  if (!prev) {
+    prev = document.createElement('div');
+    prev.className = 'log-ex-prev';
+    prev.innerHTML = `<span class="log-ex-prev-label">Letztes Mal</span><span class="log-ex-prev-val"></span>`;
+    card.querySelector('.log-ex-hd').insertAdjacentElement('afterend', prev);
+  }
+  prev.querySelector('.log-ex-prev-val').textContent = valText;
+  // Sync placeholder data for ghost-fill (first set of last session)
+  card.dataset.phW = last.sets[0]?.weight || '';
+  card.dataset.phR = last.sets[0]?.reps   || '';
 }
 
 // ─────────────────────────────────────────────────────
@@ -2349,22 +2383,14 @@ function loadPlan(cat, loc) {
 function addLogEx(name = '') {
   logExCount++;
   const id = 'lex' + uid();
-  const last = name ? lastSetFor(name) : null;   // last-time values of this exercise
   const color = catColor(document.getElementById('log-cat').value);
-  const badge = (last && (last.w || last.r))
-    ? `<span class="log-ex-last">🕐 ${last.w || '–'} × ${last.r || '–'}</span>`
-    : '';
   const el = document.createElement('div');
   el.className = 'log-ex';
   el.id = id;
-  // Ghost-placeholder source for empty sets (last training of this exercise)
-  el.dataset.phW = last && last.w ? String(last.w) : '';
-  el.dataset.phR = last && last.r ? String(last.r) : '';
   el.innerHTML = `
     <div class="log-ex-hd">
       <span class="log-ex-chip log-ex-num" style="background:${color}">${logExCount}</span>
       <input type="text" class="log-ex-name" placeholder="Übungsname" value="${name.replace(/"/g,'&quot;')}">
-      ${badge}
       <button class="log-ex-del" onclick="removeLogEx('${id}')" title="Übung entfernen">✕</button>
     </div>
     <div class="sets-hd">
@@ -2374,6 +2400,8 @@ function addLogEx(name = '') {
     <button class="log-add-set" onclick="addLogSet('sr-${id}')">＋ Satz</button>
   `;
   document.getElementById('log-ex-list').appendChild(el);
+  // "Letztes Mal" line + ghost-placeholder source (dataset.phW/phR) for empty sets
+  if (name) updateLastBadge(el, name);
   addLogSet('sr-' + id);
   updateLogSummary();
 }
@@ -2414,7 +2442,8 @@ function toggleSetDone(btn) {
   if (row) row.classList.toggle('done', on);
 }
 
-// Most recent logged first-set values for an exercise name (Item 06 bonus)
+// All logged sets of the most recent session for an exercise name (Item 06 bonus).
+// Returns { sets: [{weight, reps}, ...] } for the prominent "Letztes Mal" line.
 function lastSetFor(name) {
   const key = (name || '').toLowerCase().trim();
   if (!key) return null;
@@ -2422,8 +2451,8 @@ function lastSetFor(name) {
   for (const s of sessions) {
     const ex = (s.exercises || []).find(e => (e.name || '').toLowerCase().trim() === key);
     if (ex && ex.sets && ex.sets.length) {
-      const st = ex.sets.find(x => x.weight || x.reps);
-      if (st) return { w: st.weight || '', r: st.reps || '' };
+      const sets = ex.sets.filter(x => x.weight || x.reps);
+      if (sets.length) return { sets };
     }
   }
   return null;

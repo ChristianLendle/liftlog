@@ -192,6 +192,20 @@ function doUndo() {
 
 function openM(id)  { document.getElementById(id).classList.add('open'); }
 function closeM(id) { document.getElementById(id).classList.remove('open'); }
+
+// Reusable confirm modal (#m-confirm) — replaces native confirm()
+let _confirmFn = null;
+function showConfirm(message, onConfirm) {
+  const msg = document.getElementById('m-confirm-msg');
+  if (msg) msg.textContent = message;
+  _confirmFn = (typeof onConfirm === 'function') ? onConfirm : null;
+  openM('m-confirm');
+}
+function confirmYes() {
+  const fn = _confirmFn; _confirmFn = null;
+  closeM('m-confirm');
+  if (fn) fn();
+}
 document.querySelectorAll('.overlay').forEach(o =>
   o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); })
 );
@@ -231,6 +245,10 @@ const DB_KEY     = 'liftlog_db_v1';
 const CFG_KEY    = 'liftlog_cfg_v1';
 const ACTIVE_KEY = 'liftlog_active_v1';
 const WEIGHT_KEY  = 'liftlog_weight_v1';
+
+// Produktions-Domain für Einladungslinks (statt location.origin/pathname,
+// das je nach Deployment /index.html o.ä. enthalten kann)
+const APP_URL = 'https://prsonal.vercel.app';
 const getWeightEntries  = () => JSON.parse(localStorage.getItem(WEIGHT_KEY) || '[]');
 const saveWeightEntries = (entries) => { localStorage.setItem(WEIGHT_KEY, JSON.stringify(entries)); syncAllUserData(); };
 
@@ -1088,75 +1106,6 @@ function saveLog() {
 }
 
 // ─────────────────────────────────────────────────────
-//  PARSER (Import)
-// ─────────────────────────────────────────────────────
-function parseHeader(line) {
-  const m = line.match(/^(\d{1,2})\.(\d{2})\.?\s+(.+)$/);
-  if (!m) return null;
-  const [, day, month, rest] = m;
-  let category, location;
-  if (rest.includes('/')) {
-    const idx = rest.lastIndexOf('/');
-    category = rest.slice(0, idx).trim().replace(/^[-–]\s*/, '');
-    location = rest.slice(idx + 1).trim();
-  } else {
-    const parts = rest.split(/\s+-\s+/);
-    category = parts[0].trim().replace(/^[-–]\s*/, '');
-    location = parts.length > 1 ? parts[parts.length - 1].trim() : '';
-  }
-  const now  = new Date();
-  let year   = now.getFullYear();
-  if (parseInt(month) > now.getMonth() + 1) year--;
-  return { date: `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`, dateDisplay: `${day}.${month}.${String(year).slice(2)}`, category, location, type: /cardio/i.test(category) ? 'cardio' : 'strength' };
-}
-
-function parseSet(str) {
-  str = str.trim();
-  const wr = str.match(/^([\d.,]+)\s*kg\s*x\s*(\d*)$/i);
-  if (wr) return { weight: parseFloat(wr[1].replace(',','.')), reps: wr[2] ? parseInt(wr[2]) : null };
-  const ro = str.match(/^(\d+)$/);
-  if (ro) return { weight: 0, reps: parseInt(ro[1]) };
-  return null;
-}
-
-function parseSets(str) {
-  return str.split('|').flatMap(p => p.split(/\s+SS\s+/i).map(s => parseSet(s.trim()))).filter(Boolean);
-}
-
-function parseText(raw) {
-  const sessions = [];
-  let cur = null;
-  for (const line of raw.split('\n').map(l => l.trim()).filter(Boolean)) {
-    const hdr = parseHeader(line);
-    if (hdr) { if (cur) sessions.push(cur); cur = { id: uid(), ...hdr, exercises: [], cardio: null }; continue; }
-    if (!cur) continue;
-    const c1 = line.match(/^(\d+)min\s*x\s*([\d.,]+)km(?:\s*x\s*(\d+)kcal)?/i);
-    if (c1) { cur.cardio = { duration_min: +c1[1], distance_km: parseFloat(c1[2].replace(',','.')), calories: c1[3] ? +c1[3] : null }; continue; }
-    const c2 = line.match(/^([\d.,]+)km\s*[-–]\s*(\d+)\s*min/i);
-    if (c2) { cur.cardio = { distance_km: parseFloat(c2[1].replace(',','.')), duration_min: +c2[2], calories: null }; continue; }
-    const ex = line.match(/^(.+?)\s*-\s*(.+)$/);
-    if (ex) cur.exercises.push({ name: ex[1].trim(), sets: parseSets(ex[2]) });
-  }
-  if (cur) sessions.push(cur);
-  return sessions;
-}
-
-function runImport() {
-  const raw = document.getElementById('import-txt').value.trim();
-  if (!raw) { toast('Kein Text eingefügt', true); return; }
-  const newS = parseText(raw);
-  if (!newS.length) { toast('Keine Sessions erkannt', true); return; }
-  const db = loadDB();
-  db.sessions.push(...newS);
-  db.sessions.sort((a,b) => b.date.localeCompare(a.date));
-  writeDB(db);
-  document.getElementById('import-txt').value = '';
-  switchView('dashboard');
-  renderAll();
-  toast(`${newS.length} Sessions importiert`);
-}
-
-// ─────────────────────────────────────────────────────
 //  FILTERS
 // ─────────────────────────────────────────────────────
 let _sessPage = 0;
@@ -1734,7 +1683,7 @@ function onExSearch(val) {
   const escaped = val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   dropdown.innerHTML = matches.map(n => {
     const hi = n.replace(new RegExp(escaped, 'gi'), m => `<mark>${m}</mark>`);
-    return `<div class="ex-dropdown-item" onmousedown="selectFromDropdown('${n.replace(/'/g,"\\'")}')">${hi}</div>`;
+    return `<div class="ex-dropdown-item" data-act="selectFromDropdown" data-arg="${escAttr(n)}">${hi}</div>`;
   }).join('');
   dropdown.style.display = 'block';
 }
@@ -1977,7 +1926,7 @@ function delSession(id) {
 
 // ── Settings ─────────────────────────────────────────
 function showStab(tab) {
-  ['general','plans','cats','locs','import','sync'].forEach(t => {
+  ['general','plans','cats','locs','sync'].forEach(t => {
     const el  = document.getElementById('stab-' + t);
     const btn = document.getElementById('stab-btn-' + t);
     if (el)  el.style.display  = t === tab ? 'block' : 'none';
@@ -2033,7 +1982,7 @@ function settingsNav(id) {
   if (id === 'streak') { const c = getCfg(); const s = document.getElementById('cfg-streak-min'); if (s) s.value = c.streakMin || 3; }
   if (id === 'invite') {
     const inp = document.getElementById('invite-link');
-    if (inp) inp.value = location.origin + location.pathname;
+    if (inp) inp.value = APP_URL;
   }
   if (id === 'del') {
     const di = document.getElementById('del-confirm-input');
@@ -2053,8 +2002,7 @@ function settingsBack() {
 
 // ─── FREUND EINLADEN (App-Link teilen) ────────────────────────────────────────
 function inviteLinkValue() {
-  const inp = document.getElementById('invite-link');
-  return (inp && inp.value) || (location.origin + location.pathname);
+  return APP_URL;
 }
 function copyInviteLink() {
   const link = inviteLinkValue();
@@ -2152,20 +2100,6 @@ async function supabaseSignOut() {
     .forEach(k => localStorage.removeItem(k));
   showLoginGate();
 }
-function exportJSON() {
-  try {
-    const db = loadDB();
-    const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url;
-    a.download = 'liftlog-backup-' + new Date().toISOString().slice(0,10) + '.json';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast('JSON heruntergeladen ✓');
-  } catch(e) { toast('Export fehlgeschlagen', true); }
-}
-
 function exportCSV() {
   try {
     const { sessions } = loadDB();
@@ -2194,26 +2128,6 @@ function exportCSV() {
   } catch(e) { toast('Export fehlgeschlagen', true); }
 }
 
-function exportPDF() {
-  window.print();
-}
-
-function shareStats() {
-  try {
-    const el = id => document.getElementById(id);
-    const sessions = el('s-sessions') ? el('s-sessions').textContent : '?';
-    const volume   = el('s-volume')   ? el('s-volume').textContent   : '?';
-    const text = `🏋️ LiftLog
-📅 ${sessions} Sessions · ⚖️ ${volume} Tonnen Volumen`;
-    if (navigator.share) {
-      navigator.share({ title: 'LiftLog Stats', text });
-    } else {
-      navigator.clipboard.writeText(text).then(() => toast('In Zwischenablage kopiert ✓')).catch(() => toast('Teilen nicht verfügbar', true));
-    }
-  } catch(e) { toast('Fehler beim Teilen', true); }
-}
-
-
 // Stift-Icon für „Bearbeiten"-Buttons in den Listen
 const EDIT_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 
@@ -2239,13 +2153,14 @@ function toggleCat(id) {
 }
 
 function deleteCat(id) {
-  if (!confirm('Kategorie wirklich löschen?')) return;
-  saveCategories(getCategories().filter(c => c.id !== id));
-  // Zugehörige Pläne entfernen (nach Kategorie-ID verschlüsselt)
-  const plans = getPlans();
-  if (plans[id]) { delete plans[id]; savePlansToStorage(plans); }
-  loadCatEditor();
-  populateCategorySelects();
+  showConfirm('Kategorie wirklich löschen?', () => {
+    saveCategories(getCategories().filter(c => c.id !== id));
+    // Zugehörige Pläne entfernen (nach Kategorie-ID verschlüsselt)
+    const plans = getPlans();
+    if (plans[id]) { delete plans[id]; savePlansToStorage(plans); }
+    loadCatEditor();
+    populateCategorySelects();
+  });
 }
 
 function addCategory() {
@@ -2309,10 +2224,11 @@ function toggleLoc(key) {
 }
 
 function deleteLoc(key) {
-  if (!confirm('Standort wirklich löschen?')) return;
-  saveLocations(getLocations().filter(l => l.key !== key));
-  loadLocEditor();
-  populateLocationSelects();
+  showConfirm('Standort wirklich löschen?', () => {
+    saveLocations(getLocations().filter(l => l.key !== key));
+    loadLocEditor();
+    populateLocationSelects();
+  });
 }
 
 function addLocation() {
@@ -2440,15 +2356,16 @@ function editPlan(catId, loc) {
 }
 
 function deletePlan(catId, loc) {
-  if (!confirm('Plan wirklich löschen?')) return;
-  const plans = getPlans();
-  if (plans[catId]) {
-    delete plans[catId][loc];
-    if (!Object.keys(plans[catId]).length) delete plans[catId];
-  }
-  savePlansToStorage(plans);
-  loadPlanOverview();
-  toast('Plan gelöscht');
+  showConfirm('Plan wirklich löschen?', () => {
+    const plans = getPlans();
+    if (plans[catId]) {
+      delete plans[catId][loc];
+      if (!Object.keys(plans[catId]).length) delete plans[catId];
+    }
+    savePlansToStorage(plans);
+    loadPlanOverview();
+    toast('Plan gelöscht');
+  });
 }
 
 function showClearConfirm() {
@@ -2456,7 +2373,8 @@ function showClearConfirm() {
 }
 function confirmClearAll() {
   closeM('m-clear');
-  localStorage.clear();
+  [DB_KEY, WEIGHT_KEY, PLANS_KEY, CATEGORIES_KEY, LOCATIONS_KEY, CFG_KEY, ACTIVE_KEY]
+    .forEach(k => localStorage.removeItem(k));
   location.reload();
 }
 
@@ -2675,14 +2593,21 @@ const _PW_RULES = [
   { id: 'rule-spec', test: v => /[!@#$%^&*()\\_+\-=\[\]{};':"\\|<>?,./`~]/.test(v), text: 'Mindestens 1 Sonderzeichen (!@#$%…)' },
 ];
 
-function regPwCheck(val) {
+function regPwCheck(val, scope) {
+  const root = scope || document;
   _PW_RULES.forEach(({ id, test, text }) => {
-    const el = document.getElementById(id);
+    const el = root.querySelector('#' + id);
     if (!el) return;
     const ok = test(val);
     el.classList.toggle('ok', ok);
     el.textContent = (ok ? '✓ ' : '○ ') + text;
   });
+}
+
+// Password-change modal reuses the same rule checklist (#rule-*); scope the
+// update to the modal so it doesn't collide with the registration checklist.
+function pwChangeCheck(val) {
+  regPwCheck(val, document.getElementById('m-password-change'));
 }
 
 function validatePw(pw) {
@@ -3071,6 +2996,7 @@ function openPasswordChangeModal() {
   document.getElementById('pw-change-new').value         = '';
   document.getElementById('pw-change-confirm').value     = '';
   document.getElementById('pw-change-msg').textContent   = '';
+  pwChangeCheck('');
   openM('m-password-change');
 }
 
@@ -3078,7 +3004,8 @@ async function savePasswordChange() {
   const newPw  = document.getElementById('pw-change-new').value;
   const confPw = document.getElementById('pw-change-confirm').value;
   const msg    = document.getElementById('pw-change-msg');
-  if (newPw.length < 8) { msg.textContent = '✗ Passwort muss mindestens 8 Zeichen haben.'; msg.style.color = '#cc4444'; return; }
+  const pwErr  = validatePw(newPw);
+  if (pwErr) { msg.textContent = pwErr; msg.style.color = '#cc4444'; return; }
   if (newPw !== confPw) { msg.textContent = '✗ Passwörter stimmen nicht überein.'; msg.style.color = '#cc4444'; return; }
   msg.textContent = 'Speichern…'; msg.style.color = 'var(--muted2)';
   const { error } = await _SB.auth.updateUser({ password: newPw });

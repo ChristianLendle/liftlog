@@ -18,7 +18,7 @@ async function setup(page) {
 async function openTrainingModal(page) {
   await page.click('#fab-pill');
   await page.click('text=Neues Training');
-  await expect(page.locator('#m-log')).toBeVisible();
+  await expect(page.locator('#view-training')).toBeVisible();
 }
 
 // Fills the required header fields (Datum, Kategorie, Standort, Mood).
@@ -82,7 +82,7 @@ test.describe('Training tracken', () => {
     await page.click('text=Abschließen');
 
     // Modal geschlossen
-    await expect(page.locator('#m-log')).not.toBeVisible();
+    await expect(page.locator('#view-training')).not.toBeVisible();
 
     // Session in der Sessions-Ansicht prüfen
     await page.click('#nav-sessions');
@@ -100,7 +100,7 @@ test.describe('Training tracken', () => {
     await expect(page.locator('#btn-pause-session')).toBeVisible();
     await page.click('#btn-pause-session');
 
-    await expect(page.locator('#m-log')).not.toBeVisible();
+    await expect(page.locator('#view-training')).not.toBeVisible();
 
     // Toast-Meldung
     await expect(page.locator('body')).toContainText('pausiert');
@@ -114,11 +114,11 @@ test.describe('Training tracken', () => {
 
     // Pausieren
     await page.click('#btn-pause-session');
-    await expect(page.locator('#m-log')).not.toBeVisible();
+    await expect(page.locator('#view-training')).not.toBeVisible();
 
     // Aktive Session — FAB-Klick öffnet direkt das Modal
     await page.click('#fab-pill');
-    await expect(page.locator('#m-log')).toBeVisible();
+    await expect(page.locator('#view-training')).toBeVisible();
 
     // Titel zeigt "Training fortsetzen"
     await expect(page.locator('#log-title')).toHaveText('Training fortsetzen');
@@ -136,11 +136,11 @@ test.describe('Training tracken', () => {
     // Pausieren dann wieder öffnen
     await page.click('#btn-pause-session');
     await page.click('#fab-pill');
-    await expect(page.locator('#m-log')).toBeVisible();
+    await expect(page.locator('#view-training')).toBeVisible();
 
     // Abschließen
     await page.click('text=Abschließen');
-    await expect(page.locator('#m-log')).not.toBeVisible();
+    await expect(page.locator('#view-training')).not.toBeVisible();
   });
 
   test('Training abbrechen schließt Modal', async ({ page }) => {
@@ -150,7 +150,7 @@ test.describe('Training tracken', () => {
 
     // Abbrechen (kein confirm-Dialog weil auto-save noch nicht gelaufen)
     await page.click('#btn-abort');
-    await expect(page.locator('#m-log')).not.toBeVisible();
+    await expect(page.locator('#view-training')).not.toBeVisible();
   });
 
   test('Abbrechen mit aktiver Session — Bestätigungs-Dialog', async ({ page }) => {
@@ -168,7 +168,7 @@ test.describe('Training tracken', () => {
     await page.click('text=Ja, abbrechen');
 
     await expect(page.locator('#m-abort')).not.toBeVisible();
-    await expect(page.locator('#m-log')).not.toBeVisible();
+    await expect(page.locator('#view-training')).not.toBeVisible();
   });
 
 });

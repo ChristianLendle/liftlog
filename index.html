@@ -168,7 +168,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .modal-hd-col { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .modal-ctx { display: flex; align-items: center; gap: 7px; font-size: .72rem; font-weight: 600; color: var(--muted); letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .modal-ctx .ctx-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--accent); }
-#m-log .modal-hd, #m-weight .modal-hd { position: sticky; top: -1px; z-index: 4; background: var(--surface); align-items: flex-start; }
+#m-weight .modal-hd { position: sticky; top: -1px; z-index: 4; background: var(--surface); align-items: flex-start; }
 
 /* ─── LOG META ───────────────────────────── */
 .log-meta { display: grid; grid-template-columns: .9fr 1.2fr 1.2fr; gap: 10px; margin-bottom: 14px; }
@@ -312,6 +312,56 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .view { display: none; }
 .view.active { display: block; }
 .view-inner { max-width: 860px; margin: 0 auto; padding: 28px 24px 110px; }
+
+/* ─── TRAINING VIEW ──────────────────────────── */
+#view-training { display: none; }
+#view-training.active { display: block; }
+#view-training .train-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 0 120px;
+}
+.train-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  gap: 12px;
+}
+.train-topbar-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.train-topbar-ctx {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.train-topbar-ctx .ctx-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--accent);
+}
+.train-body {
+  padding: 20px 20px 0;
+}
+@media (max-width: 680px) {
+  .train-topbar { padding: 12px 14px; }
+  .train-body   { padding: 14px 14px 0; }
+}
 
 /* ─── DASHBOARD STATS ─────────────────────── */
 .dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
@@ -1349,98 +1399,108 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 </div>
 <div id="fab-backdrop" style="display:none;position:fixed;inset:0;z-index:99" onclick="closeFabMenu()"></div>
 
-<!-- ═══ MODAL: TRAINING LOGGEN ════════════════════════ -->
-<div class="overlay" id="m-log">
-  <div class="modal" style="max-width:680px">
-    <div class="modal-hd">
-      <div class="modal-hd-col">
-        <div class="modal-title" id="log-title">Neues Training</div>
-        <div class="modal-ctx" id="log-ctx" style="display:none"><span class="ctx-dot" id="log-ctx-dot"></span><span id="log-ctx-text"></span></div>
-      </div>
-      <button class="modal-x" onclick="closeM('m-log')">✕</button>
-    </div>
+<!-- ═══ VIEW: TRAINING LOGGEN ════════════════════════ -->
+<div id="view-training" class="view">
+  <div class="train-inner">
 
-    <div class="log-meta">
-      <div class="field log-meta-date" style="margin:0">
-        <label>Datum</label>
-        <input type="date" id="log-date">
-      </div>
-      <div class="field" style="margin:0">
-        <label>Kategorie</label>
-        <select id="log-cat" onchange="onLogChange()">
-          <option value="">— auswählen —</option>
-        </select>
-      </div>
-      <div class="field" style="margin:0">
-        <label>Standort</label>
-        <select id="log-loc" onchange="onLogChange()">
-          <option value="">— auswählen —</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="field" style="margin-bottom:14px">
-      <label>Stimmung</label>
-      <div class="mood-seg" id="log-mood-seg">
-        <button type="button" class="mood-seg-btn" data-mood="great" onclick="setLogMood('great')"><span class="mood-emo">😁</span>Großartig</button>
-        <button type="button" class="mood-seg-btn" data-mood="good"  onclick="setLogMood('good')"><span class="mood-emo">🙂</span>Gut</button>
-        <button type="button" class="mood-seg-btn" data-mood="ok"    onclick="setLogMood('ok')"><span class="mood-emo">😴</span>Ok</button>
-        <button type="button" class="mood-seg-btn" data-mood="bad"   onclick="setLogMood('bad')"><span class="mood-emo">🤒</span>Schlecht</button>
-      </div>
-      <input type="hidden" id="log-mood">
-    </div>
-
-    <!-- Cardio Input -->
-    <div id="log-cardio" style="display:none">
-      <hr class="log-sep">
-      <div class="field">
-        <label>Art</label>
-        <select id="log-cardio-type" onchange="onCardioTypeChange()">
-          <option value="">— auswählen —</option>
-          <option value="radfahren">Radfahren</option>
-          <option value="laufen">Laufen / Gehen</option>
-          <option value="stairmaster">Stairmaster</option>
-        </select>
-      </div>
-      <div class="cardio-grid">
-        <div class="field" style="margin:0">
-          <label>Dauer (min)</label>
-          <input type="number" id="log-dur" placeholder="30" min="0">
+    <!-- Sticky Top Bar -->
+    <div class="train-topbar">
+      <div>
+        <div class="train-topbar-title" id="log-title">Neues Training</div>
+        <div class="train-topbar-ctx" id="log-ctx" style="display:none">
+          <span class="ctx-dot" id="log-ctx-dot"></span>
+          <span id="log-ctx-text"></span>
         </div>
-        <div class="field" id="log-dist-field" style="margin:0">
-          <label>Distanz (km)</label>
-          <input type="number" id="log-dist" placeholder="15.0" step="0.1" min="0">
-        </div>
-        <div class="field" id="log-floors-field" style="display:none; margin:0">
-          <label>Stockwerke</label>
-          <input type="number" id="log-floors" placeholder="50" min="0">
+      </div>
+      <button class="btn btn-danger" id="btn-abort" onclick="abortTraining()" style="min-height:36px">✕ Abbrechen</button>
+    </div>
+
+    <div class="train-body">
+
+      <div class="log-meta" style="margin-bottom:14px">
+        <div class="field log-meta-date" style="margin:0">
+          <label>Datum</label>
+          <input type="date" id="log-date">
         </div>
         <div class="field" style="margin:0">
-          <label>Kalorien</label>
-          <input type="number" id="log-kcal" placeholder="260" min="0">
+          <label>Kategorie</label>
+          <select id="log-cat" onchange="onLogChange()">
+            <option value="">— auswählen —</option>
+          </select>
         </div>
-      </div><!-- /cardio-grid -->
-    </div><!-- /log-cardio -->
+        <div class="field" style="margin:0">
+          <label>Standort</label>
+          <select id="log-loc" onchange="onLogChange()">
+            <option value="">— auswählen —</option>
+          </select>
+        </div>
+      </div>
 
-    <!-- Strength Input -->
-    <div id="log-strength" style="display:none">
-      <hr class="log-sep">
-      <div id="log-ex-list"></div>
-      <button class="log-add-ex" onclick="addLogEx()">＋ Übung hinzufügen</button>
-    </div>
+      <div class="field" style="margin-bottom:14px">
+        <label>Stimmung</label>
+        <div class="mood-seg" id="log-mood-seg">
+          <button type="button" class="mood-seg-btn" data-mood="great" onclick="setLogMood('great')"><span class="mood-emo">😁</span>Großartig</button>
+          <button type="button" class="mood-seg-btn" data-mood="good"  onclick="setLogMood('good')"><span class="mood-emo">🙂</span>Gut</button>
+          <button type="button" class="mood-seg-btn" data-mood="ok"    onclick="setLogMood('ok')"><span class="mood-emo">😴</span>Ok</button>
+          <button type="button" class="mood-seg-btn" data-mood="bad"   onclick="setLogMood('bad')"><span class="mood-emo">🤒</span>Schlecht</button>
+        </div>
+        <input type="hidden" id="log-mood">
+      </div>
 
+      <!-- Cardio Input -->
+      <div id="log-cardio" style="display:none">
+        <hr class="log-sep">
+        <div class="field">
+          <label>Art</label>
+          <select id="log-cardio-type" onchange="onCardioTypeChange()">
+            <option value="">— auswählen —</option>
+            <option value="radfahren">Radfahren</option>
+            <option value="laufen">Laufen / Gehen</option>
+            <option value="stairmaster">Stairmaster</option>
+          </select>
+        </div>
+        <div class="cardio-grid">
+          <div class="field" style="margin:0">
+            <label>Dauer (min)</label>
+            <input type="number" id="log-dur" placeholder="30" min="0">
+          </div>
+          <div class="field" id="log-dist-field" style="margin:0">
+            <label>Distanz (km)</label>
+            <input type="number" id="log-dist" placeholder="15.0" step="0.1" min="0">
+          </div>
+          <div class="field" id="log-floors-field" style="display:none; margin:0">
+            <label>Stockwerke</label>
+            <input type="number" id="log-floors" placeholder="50" min="0">
+          </div>
+          <div class="field" style="margin:0">
+            <label>Kalorien</label>
+            <input type="number" id="log-kcal" placeholder="260" min="0">
+          </div>
+        </div><!-- /cardio-grid -->
+      </div><!-- /log-cardio -->
+
+      <!-- Strength Input -->
+      <div id="log-strength" style="display:none">
+        <hr class="log-sep">
+        <div id="log-ex-list"></div>
+        <button class="log-add-ex" onclick="addLogEx()">＋ Übung hinzufügen</button>
+      </div>
+
+    </div><!-- /train-body -->
+
+    <!-- Sticky Footer -->
     <div class="log-foot" id="log-footer">
       <div class="log-foot-top">
-        <button class="btn btn-danger" id="btn-abort" onclick="abortTraining()">✕ Abbrechen</button>
+        <button class="btn" id="btn-pause-session" onclick="pauseSession()" style="display:none">Pausieren</button>
         <span class="log-foot-sum" id="log-summary"></span>
       </div>
       <div class="log-foot-btns">
-        <button class="btn" id="btn-pause-session" onclick="pauseSession()" style="display:none">Pausieren</button>
         <button class="btn-fill" onclick="saveLog()">Abschließen</button>
       </div>
     </div>
-  </div><!-- /modal -->
-</div><!-- /overlay m-log -->
+
+  </div><!-- /train-inner -->
+</div><!-- /view-training -->
 
 <!-- ═══ MODAL: SESSION DETAIL ═════════════════════════ -->
 <div class="overlay" id="m-detail">
@@ -2108,8 +2168,8 @@ function deleteWeightEntry() {
 }
 
 // Attach auto-save listener to the log modal
-document.getElementById('m-log').addEventListener('input',  triggerAutoSave);
-document.getElementById('m-log').addEventListener('change', triggerAutoSave);
+document.getElementById('view-training').addEventListener('input',  triggerAutoSave);
+document.getElementById('view-training').addEventListener('change', triggerAutoSave);
 
 // ─── Exercise name autocomplete ───────────────────────
 let _activeExInput = null;
@@ -2271,12 +2331,12 @@ function openLog() {
   updateLogContext();
   updateLogSummary();
   updateModalButtons();
-  openM('m-log');
+  switchView('training');
 }
 
 function pauseSession() {
   saveActiveSession();
-  closeM('m-log');
+  switchView('dashboard');
   toast('Training pausiert — klicke "Fortsetzen" zum Weitermachen');
 }
 
@@ -2329,14 +2389,14 @@ function restoreActiveSession(active) {
   updateLogContext();
   updateLogSummary();
   updateModalButtons();
-  openM('m-log');
+  switchView('training');
 }
 
 function abortTraining() {
   // Editing an existing session, or no active draft → just close, no confirmation needed
-  if (editingId) { editingId = null; closeM('m-log'); return; }
+  if (editingId) { editingId = null; switchView('sessions'); return; }
   const active = loadActive();
-  if (!active) { closeM('m-log'); return; }
+  if (!active) { switchView('dashboard'); return; }
   openM('m-abort'); // styled confirm in place of native confirm() (Item 11)
 }
 
@@ -2344,7 +2404,7 @@ function confirmAbort() {
   clearActive();
   editingId = null;
   closeM('m-abort');
-  closeM('m-log');
+  switchView('dashboard');
   toast('Training abgebrochen');
 }
 
@@ -2645,12 +2705,11 @@ function saveLog() {
   }
   db.sessions.sort((a,b) => b.date.localeCompare(a.date));
   writeDB(db);
-
   // Detect PRs only for newly added (non-edited) strength sessions
   const newPRs = isEdit ? [] : detectNewPRs(session, db.sessions);
 
-  closeM('m-log');
   renderAll();
+  switchView('dashboard');
   if (newPRs.length) toastPR(newPRs);
   else toast('Training gespeichert ✓');
 }
@@ -3126,9 +3185,22 @@ function renderAll() {
 }
 
 // ─── VIEW SWITCHING ──────────────────────────────────
-const VIEWS = ['dashboard', 'progress', 'body', 'sessions', 'settings'];
+const VIEWS = ['dashboard', 'progress', 'body', 'sessions', 'settings', 'training'];
 
 function switchView(name) {
+  // Nav + FAB während Training ausblenden/einblenden
+  const isTraining = name === 'training';
+  const topNav     = document.querySelector('.top-nav');
+  const bottomNav  = document.getElementById('bottom-nav');
+  const fabWrap    = document.getElementById('fab-wrap');
+  const resumeBar  = document.getElementById('resume-bar');
+  const mobileTabs = document.querySelector('.mobile-tabs');
+  if (topNav)     topNav.style.display     = isTraining ? 'none' : '';
+  if (bottomNav)  bottomNav.style.display  = isTraining ? 'none' : '';
+  if (fabWrap)    fabWrap.style.display    = isTraining ? 'none' : '';
+  if (resumeBar)  resumeBar.style.display  = 'none'; // immer ausblenden beim View-Wechsel
+  if (mobileTabs) mobileTabs.style.display = isTraining ? 'none' : '';
+
   VIEWS.forEach(v => {
     const el = document.getElementById('view-' + v);
     if (el) el.classList.toggle('active', v === name);
@@ -3507,10 +3579,9 @@ function editSession(id) {
     });
   }
   updateLogSummary();
-  document.getElementById('btn-abort').style.display = 'none';
   document.getElementById('btn-pause-session').style.display = 'none';
   closeM('m-detail');
-  openM('m-log');
+  switchView('training');
 }
 
 function delSession(id) {

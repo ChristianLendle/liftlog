@@ -2455,6 +2455,81 @@ function removeLogEx(id) {
   triggerAutoSave();
 }
 
+// Detect new personal records contained in a freshly saved session.
+// For every strength exercise in `newSession`, the best set (highest weight,
+// on tie the higher rep count) is compared against the all-time best from all
+// OTHER sessions. Returns [{ exName, weight, reps }] for each exercise whose
+// best set beats the previous record. A first-ever exercise (no prior data)
+// is NOT counted as a PR to avoid spamming on brand-new movements.
+function detectNewPRs(newSession, allSessions) {
+  if (!newSession || newSession.type === 'cardio') return [];
+
+  const bestSet = ex => {
+    let best = null;
+    (ex.sets || []).forEach(set => {
+      const w = parseFloat(set.weight), r = parseInt(set.reps, 10);
+      if (!w || !r) return;
+      if (!best || w > best.weight || (w === best.weight && r > best.reps)) best = { weight: w, reps: r };
+    });
+    return best;
+  };
+  // Same keying as calcPRs so Big3 name variants (e.g. Bankdrücken / Bench Press) share a record
+  const prKey = name => {
+    const big3 = BIG3_PATTERNS.find(p => p.re.test(name));
+    return big3 ? 'big3:' + big3.label : 'ex:' + name.trim().toLowerCase();
+  };
+
+  // Historical best per exercise across all other sessions
+  const prevMax = {};
+  (allSessions || []).forEach(s => {
+    if (s.id === newSession.id) return;
+    (s.exercises || []).forEach(ex => {
+      if (ex.type === 'cardio') return;
+      const name = (ex.name || '').trim();
+      if (!name) return;
+      const best = bestSet(ex);
+      if (!best) return;
+      const key = prKey(name);
+      const cur = prevMax[key];
+      if (!cur || best.weight > cur.weight || (best.weight === cur.weight && best.reps > cur.reps)) prevMax[key] = best;
+    });
+  });
+
+  const prs = [];
+  (newSession.exercises || []).forEach(ex => {
+    if (ex.type === 'cardio') return;
+    const name = (ex.name || '').trim();
+    if (!name) return;
+    const best = bestSet(ex);
+    if (!best) return;
+    const prev = prevMax[prKey(name)];
+    if (prev && (best.weight > prev.weight || (best.weight === prev.weight && best.reps > prev.reps))) {
+      prs.push({ exName: ex.name, weight: best.weight, reps: best.reps });
+    }
+  });
+  return prs;
+}
+
+// Celebratory multi-line toast for one or more new PRs. Falls back to the
+// standard save confirmation if no PRs were detected.
+function toastPR(prs) {
+  const el = document.getElementById('toast');
+  el.style.background = 'var(--accent)';
+  el.style.color = '#ffffff';
+  el.style.pointerEvents = 'none';
+  el.style.textTransform = 'none';
+  el.style.textAlign = 'left';
+  const lines = prs.map(p => `<div style="font-size:.8rem">🏆 PR! ${escapeHtml(p.exName)} ${p.weight}kg × ${p.reps}</div>`).join('');
+  el.innerHTML = lines + `<div style="opacity:.85;font-weight:600;margin-top:3px">Training gespeichert ✓</div>`;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => {
+    el.classList.remove('show');
+    el.style.textTransform = '';
+    el.style.textAlign = '';
+  }, 4500);
+}
+
 function saveLog() {
   // Clear previous validation errors
   document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
@@ -2525,6 +2600,7 @@ function saveLog() {
   Object.keys(session).forEach(k => session[k] === undefined && delete session[k]);
 
   const db = loadDB();
+  const isEdit = !!editingId;
   if (editingId) {
     const idx = db.sessions.findIndex(s => s.id === editingId);
     if (idx !== -1) {
@@ -2540,9 +2616,14 @@ function saveLog() {
   }
   db.sessions.sort((a,b) => b.date.localeCompare(a.date));
   writeDB(db);
+
+  // Detect PRs only for newly added (non-edited) strength sessions
+  const newPRs = isEdit ? [] : detectNewPRs(session, db.sessions);
+
   closeM('m-log');
   renderAll();
-  toast('Training gespeichert ✓');
+  if (newPRs.length) toastPR(newPRs);
+  else toast('Training gespeichert ✓');
 }
 
 // ─────────────────────────────────────────────────────
@@ -2890,29 +2971,41 @@ const BIG3_PATTERNS = [
   { label: 'Kniebeuge',   re: /knie|squat/i },
 ];
 
+// All-time PR per strength exercise across every session.
+// Best = highest weight; on a tie the higher rep count wins.
+// Exercises are keyed case-insensitively; the display name is the most
+// recently logged spelling. Big3 entries are normalised to their canonical
+// label so e.g. "Bankdrücken" and "Bench Press" collapse into one card.
 function calcPRs(sessions) {
-  // prMap keyed by Big3 label
-  const prMap = { 'Bankdrücken': null, 'Kreuzheben': null, 'Kniebeuge': null };
+  const prMap = {}; // key -> { label, weight, reps, date, exName, isBig3, big3Order }
   sessions.forEach(s => {
     (s.exercises || []).forEach(ex => {
       if (ex.type === 'cardio') return;
-      // Find which Big3 pattern matches this exercise name
-      const match = BIG3_PATTERNS.find(p => p.re.test(ex.name));
-      if (!match) return;
+      const name = (ex.name || '').trim();
+      if (!name) return;
+      const big3Idx = BIG3_PATTERNS.findIndex(p => p.re.test(name));
+      const isBig3  = big3Idx !== -1;
+      const label   = isBig3 ? BIG3_PATTERNS[big3Idx].label : name;
+      const key     = isBig3 ? 'big3:' + label : 'ex:' + name.toLowerCase();
       (ex.sets || []).forEach(set => {
         const w = parseFloat(set.weight), r = parseInt(set.reps, 10);
         if (!w || !r) return;
-        const cur = prMap[match.label];
+        const cur = prMap[key];
         if (!cur || w > cur.weight || (w === cur.weight && r > cur.reps)) {
-          prMap[match.label] = { weight: w, reps: r, date: s.date, exName: ex.name };
+          prMap[key] = { label, weight: w, reps: r, date: s.date, exName: name, isBig3, big3Order: isBig3 ? big3Idx : 99 };
         }
       });
     });
   });
-  return BIG3_PATTERNS.map(p => ({
-    label: p.label,
-    ...(prMap[p.label] || { weight: null, reps: null, date: null, exName: null })
-  }));
+
+  const found = Object.values(prMap);
+  // Big3 first (in canonical order), then all other exercises alphabetically
+  const others = found.filter(p => !p.isBig3).sort((a, b) => a.label.localeCompare(b.label, 'de'));
+  const big3   = BIG3_PATTERNS.map((p, i) => {
+    const hit = found.find(f => f.isBig3 && f.label === p.label);
+    return hit || { label: p.label, weight: null, reps: null, date: null, exName: null, isBig3: true, big3Order: i };
+  });
+  return [...big3, ...others];
 }
 
 function renderPRs(sessions) {

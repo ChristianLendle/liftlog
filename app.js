@@ -1445,11 +1445,6 @@ function renderAll() {
   const db = loadDB();
   const st = calcStats(db.sessions);
 
-  // Header stats
-  document.getElementById('s-sessions').textContent  = st.sessions;
-  document.getElementById('s-exercises').textContent = st.exercises;
-  document.getElementById('s-volume').textContent    = st.tonnage;
-
   // Dashboard tiles
   const dashMonth = document.getElementById('dash-month');
   if (dashMonth) {

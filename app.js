@@ -34,12 +34,30 @@ const MOOD_KEY   = { '😁 Großartig': 'great', '🙂 Gut': 'good', '😴 Ok': 
 const CATEGORIES_KEY      = 'liftlog_categories_v1';
 const DEFAULT_CATEGORIES  = [];
 
+// Opake, stabile ID — beim Umbenennen bleibt die ID gleich, nur der Name ändert sich.
+function genCatId() {
+  return (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? 'c_' + crypto.randomUUID()
+    : 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
 function getCategories() {
   try {
     const stored = JSON.parse(localStorage.getItem(CATEGORIES_KEY));
     if (stored && Array.isArray(stored)) return stored;
   } catch {}
-  return DEFAULT_CATEGORIES.map(name => ({ name, enabled: true }));
+  return DEFAULT_CATEGORIES.map(name => ({ id: genCatId(), name, enabled: true }));
+}
+
+// Defensiv: weist Kategorien ohne ID einmalig eine zu und persistiert direkt
+// (ohne Sync, um keine Rekursion über syncAllUserData → getCategories auszulösen).
+function ensureCategoryIds() {
+  let cats;
+  try { cats = JSON.parse(localStorage.getItem(CATEGORIES_KEY)); } catch { cats = null; }
+  if (!Array.isArray(cats)) return;
+  let changed = false;
+  cats.forEach(c => { if (c && !c.id) { c.id = genCatId(); changed = true; } });
+  if (changed) localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
 }
 
 function saveCategories(cats) {
@@ -49,6 +67,17 @@ function saveCategories(cats) {
 
 function getEnabledCategories() {
   return getCategories().filter(c => c.enabled).map(c => c.name);
+}
+
+// Name ↔ ID auflösen (Pläne sind nach Kategorie-ID verschlüsselt, das Log-Modal
+// und Sessions arbeiten weiterhin mit dem Namen als Snapshot).
+function catIdByName(name) {
+  const c = getCategories().find(c => c.name === name);
+  return c ? c.id : null;
+}
+function catNameById(id) {
+  const c = getCategories().find(c => c.id === id);
+  return c ? c.name : id;
 }
 
 // ─────────────────────────────────────────────────────
@@ -106,11 +135,11 @@ function populateCategorySelects() {
   logCat.innerHTML = '<option value="">— auswählen —</option>' +
     enabled.map(n => `<option${n === logVal ? ' selected' : ''}>${n}</option>`).join('');
 
-  // Plan editor (show all, incl. disabled)
+  // Plan editor (show all, incl. disabled) — Value = stabile ID, Text = Name
   const planCat = document.getElementById('plan-cat');
   const planVal = planCat.value;
   planCat.innerHTML = '<option value="">— auswählen —</option>' +
-    all.map(c => `<option${c.name === planVal ? ' selected' : ''}>${c.name}</option>`).join('');
+    all.map(c => `<option value="${escAttr(c.id)}"${c.id === planVal ? ' selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
 }
 
 // ─────────────────────────────────────────────────────
@@ -774,8 +803,9 @@ function onCardioTypeChange() {
   }
 }
 
-function loadPlan(cat, loc) {
+function loadPlan(catName, loc) {
   const plans     = getPlans();
+  const cat       = catIdByName(catName) || catName;   // Pläne sind nach Kategorie-ID verschlüsselt
   const exercises = plans[cat]?.[loc] || plans[cat]?.['haidhof'] || [];
   document.getElementById('log-ex-list').innerHTML = '';
   logExCount = 0;
@@ -1998,6 +2028,8 @@ function settingsNav(id) {
   if (id === 'creds')  renderSyncPanel();
   if (id === 'cats')   loadCatEditor();
   if (id === 'locs')   loadLocEditor();
+  if (id === 'plans')     loadPlanOverview();
+  if (id === 'plan-edit') loadPlanEditor();
   if (id === 'streak') { const c = getCfg(); const s = document.getElementById('cfg-streak-min'); if (s) s.value = c.streakMin || 3; }
   if (id === 'invite') {
     const inp = document.getElementById('invite-link');
@@ -2182,29 +2214,36 @@ function shareStats() {
 }
 
 
+// Stift-Icon für „Bearbeiten"-Buttons in den Listen
+const EDIT_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+
 function loadCatEditor() {
   const cats = getCategories();
   const el   = document.getElementById('cat-list');
   el.innerHTML = cats.map(c => `
     <div class="toggle-row${c.enabled ? '' : ' off'}">
       <span class="tr-name">${escapeHtml(c.name)}</span>
-      <button class="tr-del" title="Löschen" data-act="deleteCat" data-arg="${escapeHtml(c.name)}">✕</button>
-      <button class="tr-switch${c.enabled ? '' : ' off'}" role="switch" aria-checked="${c.enabled}" aria-label="${escAttr(c.name)} ${c.enabled ? 'aktiv' : 'deaktiviert'}" data-act="toggleCat" data-arg="${escapeHtml(c.name)}"><span class="knob"></span></button>
+      <button class="tr-edit" title="Bearbeiten" data-act="editCat" data-arg="${escAttr(c.id)}">${EDIT_ICON}</button>
+      <button class="tr-del" title="Löschen" data-act="deleteCat" data-arg="${escAttr(c.id)}">✕</button>
+      <button class="tr-switch${c.enabled ? '' : ' off'}" role="switch" aria-checked="${c.enabled}" aria-label="${escAttr(c.name)} ${c.enabled ? 'aktiv' : 'deaktiviert'}" data-act="toggleCat" data-arg="${escAttr(c.id)}"><span class="knob"></span></button>
     </div>`).join('');
 }
 
-function toggleCat(name) {
+function toggleCat(id) {
   const cats = getCategories();
-  const idx  = cats.findIndex(c => c.name === name);
+  const idx  = cats.findIndex(c => c.id === id);
   if (idx >= 0) cats[idx].enabled = !cats[idx].enabled;
   saveCategories(cats);
   loadCatEditor();
   populateCategorySelects();
 }
 
-function deleteCat(name) {
+function deleteCat(id) {
   if (!confirm('Kategorie wirklich löschen?')) return;
-  saveCategories(getCategories().filter(c => c.name !== name));
+  saveCategories(getCategories().filter(c => c.id !== id));
+  // Zugehörige Pläne entfernen (nach Kategorie-ID verschlüsselt)
+  const plans = getPlans();
+  if (plans[id]) { delete plans[id]; savePlansToStorage(plans); }
   loadCatEditor();
   populateCategorySelects();
 }
@@ -2215,11 +2254,37 @@ function addCategory() {
   if (!name) return;
   const cats = getCategories();
   if (cats.some(c => c.name === name)) { toast('Existiert bereits', true); return; }
-  cats.push({ name, enabled: true });
+  cats.push({ id: genCatId(), name, enabled: true });
   saveCategories(cats);
   inp.value = '';
   loadCatEditor();
   populateCategorySelects();
+}
+
+let _editCatId = '';
+function editCat(id) {
+  _editCatId = id;
+  const cat = getCategories().find(c => c.id === id);
+  const inp = document.getElementById('cat-edit-name');
+  if (inp) inp.value = cat ? cat.name : '';
+  settingsNav('cat-edit');
+}
+
+function saveCatEdit() {
+  const inp  = document.getElementById('cat-edit-name');
+  const name = (inp.value || '').trim();
+  if (!name) { toast('Name darf nicht leer sein', true); return; }
+  const cats = getCategories();
+  const idx  = cats.findIndex(c => c.id === _editCatId);
+  if (idx < 0) { settingsNav('cats'); return; }
+  if (cats.some(c => c.id !== _editCatId && c.name === name)) { toast('Existiert bereits', true); return; }
+  // Nur der Name ändert sich — die ID bleibt, Pläne bleiben automatisch verknüpft.
+  cats[idx].name = name;
+  saveCategories(cats);
+  loadCatEditor();
+  populateCategorySelects();
+  toast('Gespeichert ✓');
+  settingsNav('cats');
 }
 
 function loadLocEditor() {
@@ -2228,6 +2293,7 @@ function loadLocEditor() {
   el.innerHTML = locs.map(l => `
     <div class="toggle-row${l.enabled ? '' : ' off'}">
       <span class="tr-name">${escapeHtml(l.label)}</span>
+      <button class="tr-edit" title="Bearbeiten" data-act="editLoc" data-arg="${escapeHtml(l.key)}">${EDIT_ICON}</button>
       <button class="tr-del" title="Löschen" data-act="deleteLoc" data-arg="${escapeHtml(l.key)}">✕</button>
       <button class="tr-switch${l.enabled ? '' : ' off'}" role="switch" aria-checked="${l.enabled}" aria-label="${escAttr(l.label)} ${l.enabled ? 'aktiv' : 'deaktiviert'}" data-act="toggleLoc" data-arg="${escapeHtml(l.key)}"><span class="knob"></span></button>
     </div>`).join('');
@@ -2260,6 +2326,30 @@ function addLocation() {
   document.getElementById('new-loc-label').value = '';
   loadLocEditor();
   populateLocationSelects();
+}
+
+let _editLocKey = '';
+function editLoc(key) {
+  _editLocKey = key;
+  const loc = getLocations().find(l => l.key === key);
+  const inp = document.getElementById('loc-edit-name');
+  if (inp) inp.value = loc ? loc.label : '';
+  settingsNav('loc-edit');
+}
+
+function saveLocEdit() {
+  const inp   = document.getElementById('loc-edit-name');
+  const label = (inp.value || '').trim();
+  if (!label) { toast('Name darf nicht leer sein', true); return; }
+  const locs = getLocations();
+  const idx  = locs.findIndex(l => l.key === _editLocKey);
+  if (idx < 0) { settingsNav('locs'); return; }
+  locs[idx].label = label;   // Schlüssel bleibt gleich → Pläne/Sessions bleiben verknüpft
+  saveLocations(locs);
+  loadLocEditor();
+  populateLocationSelects();
+  toast('Gespeichert ✓');
+  settingsNav('locs');
 }
 
 // Plan editor
@@ -2302,6 +2392,63 @@ function savePlanEditor() {
   plans[cat][loc] = exs;
   savePlansToStorage(plans);
   toast('Plan gespeichert ✓');
+  settingsNav('plans');
+}
+
+// ─── PLAN-ÜBERSICHT (Liste aller angelegten Pläne) ───────────────────────────
+function loadPlanOverview() {
+  const plans = getPlans();
+  const el    = document.getElementById('plan-list');
+  if (!el) return;
+  const rows = [];
+  Object.keys(plans).forEach(catId => {
+    const byLoc = plans[catId] || {};
+    Object.keys(byLoc).forEach(loc => {
+      const exs = byLoc[loc] || [];
+      if (!exs.length) return;
+      rows.push({ catId, loc, n: exs.length });
+    });
+  });
+  if (!rows.length) {
+    el.innerHTML = '<p style="font-size:.74rem;color:var(--muted2);padding:6px 4px;line-height:1.6">Noch keine Pläne angelegt. Füge unten deinen ersten Plan hinzu.</p>';
+    return;
+  }
+  el.innerHTML = rows.map(r => `
+    <div class="toggle-row">
+      <span class="tr-name">${escapeHtml(catNameById(r.catId))} · ${escapeHtml(locLabel(r.loc))} <span class="tr-sub">· ${r.n} Übung${r.n === 1 ? '' : 'en'}</span></span>
+      <button class="tr-edit" title="Bearbeiten" data-act="editPlan" data-arg="${escAttr(r.catId)}" data-arg2="${escAttr(r.loc)}">${EDIT_ICON}</button>
+      <button class="tr-del" title="Löschen" data-act="deletePlan" data-arg="${escAttr(r.catId)}" data-arg2="${escAttr(r.loc)}">✕</button>
+    </div>`).join('');
+}
+
+function addPlan() {
+  populateCategorySelects();
+  populateLocationSelects();
+  const cs = document.getElementById('plan-cat'); if (cs) cs.value = '';
+  const ls = document.getElementById('plan-loc'); if (ls) ls.value = '';
+  const t  = document.getElementById('plan-edit-title'); if (t) t.textContent = 'Neuer Plan';
+  settingsNav('plan-edit');
+}
+
+function editPlan(catId, loc) {
+  populateCategorySelects();
+  populateLocationSelects();
+  const cs = document.getElementById('plan-cat'); if (cs) cs.value = catId;
+  const ls = document.getElementById('plan-loc'); if (ls) ls.value = loc;
+  const t  = document.getElementById('plan-edit-title'); if (t) t.textContent = 'Plan bearbeiten';
+  settingsNav('plan-edit');
+}
+
+function deletePlan(catId, loc) {
+  if (!confirm('Plan wirklich löschen?')) return;
+  const plans = getPlans();
+  if (plans[catId]) {
+    delete plans[catId][loc];
+    if (!Object.keys(plans[catId]).length) delete plans[catId];
+  }
+  savePlansToStorage(plans);
+  loadPlanOverview();
+  toast('Plan gelöscht');
 }
 
 function showClearConfirm() {
@@ -2835,6 +2982,7 @@ async function loadApp() {
   await loadProfile();
   const remote = await fetchSupabase();
   restoreFromRemote(remote);
+  ensureCategoryIds();   // defensiv: jeder Kategorie eine stabile ID sichern
   // Selects nach Restore befüllen, damit User-Kategorien und -Standorte geladen sind
   populateCategorySelects();
   populateLocationSelects();

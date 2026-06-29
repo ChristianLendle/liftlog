@@ -6,32 +6,34 @@ const { sbMock } = require('./sb-mock');
 // Kategorien, Standorte oder Pläne (DEFAULT_* sind leer). Der Test-Mock-User hat
 // keine Remote-Daten, daher müssen Kategorien/Standorte/Pläne lokal geseedet
 // werden, damit OK-Push/Cardio + Sportpark Haidhof verfügbar sind.
+// Kategorien haben stabile IDs; Pläne sind nach Kategorie-ID × Standort-Key
+// verschlüsselt. Das Log-Modal wählt weiterhin nach Namen aus (Snapshot).
 const SEED = {
   categories: [
-    { name: 'OK-Push',    enabled: true },
-    { name: 'OK-Pull',    enabled: true },
-    { name: 'Legs',       enabled: true },
-    { name: 'Cardio',     enabled: true },
-    { name: 'Individual', enabled: true },
+    { id: 'cat-okpush',     name: 'OK-Push',    enabled: true },
+    { id: 'cat-okpull',     name: 'OK-Pull',    enabled: true },
+    { id: 'cat-legs',       name: 'Legs',       enabled: true },
+    { id: 'cat-cardio',     name: 'Cardio',     enabled: true },
+    { id: 'cat-individual', name: 'Individual', enabled: true },
   ],
   locations: [
     { key: 'haidhof',      label: 'Sportpark Haidhof',      enabled: true },
     { key: 'modern-coach', label: 'Modern Coach Deggendorf', enabled: true },
   ],
   plans: {
-    'OK-Push': {
+    'cat-okpush': {
       'haidhof':      ['Brustpresse', 'Schrägbank', 'Flys Kabel', 'Seitheben Maschine', 'Seitheben Kabel', 'KH Skullcrusher', 'Trizepsstrecker'],
       'modern-coach': ['Frei Bankdrücken', 'Pure Hart Schrägbank', 'Flys Kabel', 'Pull ups', 'TBar', 'KH Skullcrusher', 'Seitheben Kabel', 'Trizepsstrecker'],
     },
-    'OK-Pull': {
+    'cat-okpull': {
       'haidhof':      ['Pull ups', 'Lattzug', 'Seitheben KH', 'Schrägbank gym80', 'TBar', 'Triceps Extension', 'Reverse Flys', 'Flys Kabel sitzend', 'Curls Seil'],
       'modern-coach': ['TBar', 'Pull ups', 'Lattzug', 'Schrägbank', 'Überzüge', 'Rudern', 'Hammer Curls', 'Bizeps Curls'],
     },
-    'Legs': {
+    'cat-legs': {
       'haidhof':      ['Beinpresse', 'Beinstrecker', 'Bein Curl', 'Wade'],
       'modern-coach': ['Beinpresse', 'Beinstrecker', 'Bein Curl', 'Wade'],
     },
-    'Individual': {
+    'cat-individual': {
       'haidhof':      [],
       'modern-coach': [],
     },

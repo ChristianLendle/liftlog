@@ -276,6 +276,9 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .toggle-row.off .tr-name { color: var(--muted2); }
 .tr-del { background: none; border: none; color: var(--muted2); font-size: 1rem; line-height: 1; cursor: pointer; padding: 4px 6px; flex-shrink: 0; border-radius: 6px; }
 .tr-del:hover { color: var(--down); background: var(--surface2); }
+.tr-edit { background: none; border: none; color: var(--muted2); line-height: 1; cursor: pointer; padding: 4px 6px; flex-shrink: 0; border-radius: 6px; display: flex; align-items: center; }
+.tr-edit:hover { color: var(--accent); background: var(--surface2); }
+.tr-sub { color: var(--muted2); font-weight: 400; font-size: .72rem; }
 .tr-switch { width: 42px; height: 25px; border-radius: 13px; border: none; cursor: pointer; background: var(--accent); position: relative; flex-shrink: 0; transition: background .18s; }
 .tr-switch .knob { position: absolute; top: 2px; left: 19px; width: 21px; height: 21px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: left .18s; }
 .tr-switch.off { background: var(--border2); }
@@ -1218,11 +1221,28 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       </div>
     </div>
 
-    <!-- ════════════ TRAININGSPLÄNE ════════════ -->
+    <!-- ════════════ TRAININGSPLÄNE (ÜBERSICHT) ════════════ -->
     <div class="set-screen" id="set-scr-plans" data-parent="hub">
       <div class="set-topbar">
         <button class="set-back" data-act="settingsBack"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
         <span class="set-topbar-title">Trainingspläne</span>
+      </div>
+      <div class="panel">
+        <p style="font-size:.72rem;color:var(--muted2);margin-bottom:12px;line-height:1.6">
+          Pläne legen fest, welche Übungen beim Training pro Kategorie &amp; Standort vorgeschlagen werden.
+        </p>
+        <div id="plan-list"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn-fill" style="flex:1" data-act="addPlan">＋ Plan hinzufügen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ TRAININGSPLAN BEARBEITEN ════════════ -->
+    <div class="set-screen" id="set-scr-plan-edit" data-parent="plans">
+      <div class="set-topbar">
+        <button class="set-back" data-act="settingsBack"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title" id="plan-edit-title">Plan bearbeiten</span>
       </div>
       <div class="panel">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
@@ -1258,9 +1278,26 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <div class="panel">
         <p style="font-size:.7rem;color:var(--muted2);margin-bottom:10px;line-height:1.6">Deaktivierte Standorte werden im Training nicht angezeigt.</p>
         <div id="loc-list"></div>
-        <div style="display:flex;gap:6px;margin-top:10px">
-          <input type="text" id="new-loc-label" placeholder="z.B. Fitnessstudio Mitte" style="flex:1" data-enter="addLocation">
-          <button class="btn-fill" data-act="addLocation">+</button>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <input type="text" id="new-loc-label" placeholder="Neuer Standort…" style="flex:1" data-enter="addLocation">
+          <button class="btn-fill" data-act="addLocation">Hinzufügen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ STANDORT BEARBEITEN ════════════ -->
+    <div class="set-screen" id="set-scr-loc-edit" data-parent="locs">
+      <div class="set-topbar">
+        <button class="set-back" data-act="settingsBack"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Standort bearbeiten</span>
+      </div>
+      <div class="panel">
+        <div class="field">
+          <label>Name</label>
+          <input type="text" id="loc-edit-name" placeholder="Standortname" data-enter="saveLocEdit">
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px">
+          <button class="btn-fill" data-act="saveLocEdit">Speichern</button>
         </div>
       </div>
     </div>
@@ -1279,6 +1316,23 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         <div style="display:flex;gap:8px;margin-top:12px">
           <input type="text" id="new-cat-input" placeholder="Neue Kategorie…" style="flex:1" data-enter="addCategory">
           <button class="btn-fill" data-act="addCategory">Hinzufügen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ KATEGORIE BEARBEITEN ════════════ -->
+    <div class="set-screen" id="set-scr-cat-edit" data-parent="cats">
+      <div class="set-topbar">
+        <button class="set-back" data-act="settingsBack"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Kategorie bearbeiten</span>
+      </div>
+      <div class="panel">
+        <div class="field">
+          <label>Name</label>
+          <input type="text" id="cat-edit-name" placeholder="Kategoriename" data-enter="saveCatEdit">
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px">
+          <button class="btn-fill" data-act="saveCatEdit">Speichern</button>
         </div>
       </div>
     </div>

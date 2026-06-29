@@ -2,13 +2,52 @@
 const { test, expect } = require('@playwright/test');
 const { sbMock } = require('./sb-mock');
 
-// Clears active session and DB before each test.
+// Seit der User-Daten-Isolation (Commit 20b8ad9) starten neue/leere Nutzer ohne
+// Kategorien, Standorte oder Pläne (DEFAULT_* sind leer). Der Test-Mock-User hat
+// keine Remote-Daten, daher müssen Kategorien/Standorte/Pläne lokal geseedet
+// werden, damit OK-Push/Cardio + Sportpark Haidhof verfügbar sind.
+const SEED = {
+  categories: [
+    { name: 'OK-Push',    enabled: true },
+    { name: 'OK-Pull',    enabled: true },
+    { name: 'Legs',       enabled: true },
+    { name: 'Cardio',     enabled: true },
+    { name: 'Individual', enabled: true },
+  ],
+  locations: [
+    { key: 'haidhof',      label: 'Sportpark Haidhof',      enabled: true },
+    { key: 'modern-coach', label: 'Modern Coach Deggendorf', enabled: true },
+  ],
+  plans: {
+    'OK-Push': {
+      'haidhof':      ['Brustpresse', 'Schrägbank', 'Flys Kabel', 'Seitheben Maschine', 'Seitheben Kabel', 'KH Skullcrusher', 'Trizepsstrecker'],
+      'modern-coach': ['Frei Bankdrücken', 'Pure Hart Schrägbank', 'Flys Kabel', 'Pull ups', 'TBar', 'KH Skullcrusher', 'Seitheben Kabel', 'Trizepsstrecker'],
+    },
+    'OK-Pull': {
+      'haidhof':      ['Pull ups', 'Lattzug', 'Seitheben KH', 'Schrägbank gym80', 'TBar', 'Triceps Extension', 'Reverse Flys', 'Flys Kabel sitzend', 'Curls Seil'],
+      'modern-coach': ['TBar', 'Pull ups', 'Lattzug', 'Schrägbank', 'Überzüge', 'Rudern', 'Hammer Curls', 'Bizeps Curls'],
+    },
+    'Legs': {
+      'haidhof':      ['Beinpresse', 'Beinstrecker', 'Bein Curl', 'Wade'],
+      'modern-coach': ['Beinpresse', 'Beinstrecker', 'Bein Curl', 'Wade'],
+    },
+    'Individual': {
+      'haidhof':      [],
+      'modern-coach': [],
+    },
+  },
+};
+
+// Clears active session and seeds categories/locations/plans before each test.
 async function setup(page) {
   await page.addInitScript(sbMock); // bypass Supabase auth gate
-  await page.addInitScript(() => {
+  await page.addInitScript((seed) => {
     localStorage.removeItem('liftlog_active_v1');
     // Keep DB intact so we can verify saved sessions later
-  });
+    localStorage.setItem('liftlog_categories_v1', JSON.stringify(seed.categories));
+    localStorage.setItem('liftlog_locations_v1',  JSON.stringify(seed.locations));
+    localStorage.setItem('liftlog_plans_v1',      JSON.stringify(seed.plans));
+  }, SEED);
   await page.goto('/');
   await page.waitForSelector('#login-gate', { state: 'hidden' });
   await page.waitForSelector('#fab-pill');

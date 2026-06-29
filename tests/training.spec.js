@@ -128,7 +128,7 @@ test.describe('Training tracken', () => {
     // Session in der Sessions-Ansicht prüfen
     await page.click('#nav-sessions');
     // Mindestens eine Session-Karte sollte erscheinen
-    await expect(page.locator('#s-sessions')).toHaveText('1');
+    await expect(page.locator('#session-list .s-card')).toHaveCount(1);
   });
 
   test('Training pausieren — Modal schließt, Toast erscheint', async ({ page }) => {

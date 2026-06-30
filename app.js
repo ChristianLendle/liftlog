@@ -259,11 +259,119 @@ const _SB = supabase.createClient(
   'sb_publishable_8-pGUpzwqco3bKWemcdAhg_y3Cd6IDU'
 );
 
+// ─── ENERGY BALANCE: zentrale, justierbare Parameter (Spec §8) ────────────────
+const ENERGY_CONFIG = {
+  MET:                { low: 3.5, mod: 5.0, high: 6.0 },   // Krafttraining-Intensität
+  cutModerate:        0.80, cutAggressive:  0.72,           // Defizit-Offsets
+  bulkModerate:       1.10, bulkAggressive: 1.20,           // Surplus-Offsets
+  deficitFloorFactor: 1.1,                                  // Min-Zufuhr = BMR × Faktor
+  protein:            { cut: 2.2, maintain: 1.8, bulk: 1.8, plantMultiplier: 1.10 },
+  fatMinPerKg:        0.8,                                  // Hormonhaushalt
+  kcalPerKg:          7700,                                 // Gewichts-Kalibrierung
+  activityDefault:    1.3,                                  // Kaltstart-Aktivität
+  calibrationWindowDays: 21, calibrationMaxStep: 0.05,
+};
+
+// Profil-Defaults (Spec §2.3) — alle Felder optional, calibrationFactor lernend
+const DEFAULT_PROFILE = {
+  sex: null, birthYear: null, heightCm: null,
+  goal: null, goalIntensity: null, dietType: null,
+  activityBaseline: null, startWeight: null, startKfa: null,
+  startDate: null, calibrationFactor: 1.0,
+};
+
 const getCfg = () => {
   const stored = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
-  return { streakMin: stored.streakMin || 3 };
+  return {
+    ...stored,                                              // nichts verwerfen
+    streakMin: stored.streakMin || 3,
+    profile:   { ...DEFAULT_PROFILE, ...(stored.profile || {}) },
+  };
 };
 const setCfg  = c  => { localStorage.setItem(CFG_KEY, JSON.stringify(c)); syncAllUserData(); };
+
+// ─── PROFIL (cfg.profile) ─────────────────────────────────────────────────────
+const getProfile  = () => getCfg().profile;
+const saveProfile = (patch) => { const c = getCfg(); setCfg({ ...c, profile: { ...c.profile, ...patch } }); };
+
+// Aktuelles Gewicht / KFA aus dem Weight-Log (jüngster Eintrag), sonst Startwert
+function getCurrentWeight() {
+  const e = getWeightEntries().filter(x => x.weight != null && x.weight !== '')
+              .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (e.length) { const w = parseFloat(e[0].weight); if (!isNaN(w)) return w; }
+  const sw = getProfile().startWeight;
+  return (sw != null) ? parseFloat(sw) : null;
+}
+function getCurrentKfa() {
+  const e = getWeightEntries().filter(x => x.kfa != null && x.kfa !== '')
+              .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (e.length) { const k = parseFloat(e[0].kfa); if (!isNaN(k)) return k; }
+  const sk = getProfile().startKfa;
+  return (sk != null) ? parseFloat(sk) : null;
+}
+
+// ─── BERECHNUNGS-ENGINE (Spec §4) ─────────────────────────────────────────────
+// §4.1 Grundumsatz: Katch-McArdle wenn KFA bekannt, sonst Mifflin-St Jeor.
+function calcBMR(profile = getProfile(), weightKg = getCurrentWeight(), kfa = getCurrentKfa()) {
+  if (weightKg == null) return null;
+  if (kfa != null && !isNaN(kfa)) {
+    const lbm = weightKg * (1 - kfa / 100);
+    return Math.round(370 + 21.6 * lbm);
+  }
+  if (profile.heightCm == null || profile.birthYear == null || !profile.sex) return null;
+  const age  = new Date().getFullYear() - profile.birthYear;
+  const base = 10 * weightKg + 6.25 * profile.heightCm - 5 * age;
+  return Math.round(profile.sex === 'f' ? base - 161 : base + 5);
+}
+
+// §4.2 Erwarteter Tagesverbrauch (Kaltstart: BMR × Aktivität × calibrationFactor).
+// Der gleitende 7–14-Tage-Durchschnitt folgt in einer späteren Phase.
+function expectedDailyExpenditure(profile = getProfile()) {
+  const bmr = calcBMR(profile);
+  if (bmr == null) return null;
+  const act = profile.activityBaseline || ENERGY_CONFIG.activityDefault;
+  return Math.round(bmr * act * (profile.calibrationFactor || 1));
+}
+
+// §4.6 Kalorienziel aus erwartetem Verbrauch + Ziel-Offset, mit Sicherheits-Floor.
+function calcTargetKcal(profile = getProfile()) {
+  const E = expectedDailyExpenditure(profile), bmr = calcBMR(profile);
+  if (E == null || bmr == null) return null;
+  const C = ENERGY_CONFIG;
+  let offset = 1; // Halten / unbekannt
+  if (profile.goal === 'cut')  offset = profile.goalIntensity === 'aggressive' ? C.cutAggressive  : C.cutModerate;
+  if (profile.goal === 'bulk') offset = profile.goalIntensity === 'aggressive' ? C.bulkAggressive : C.bulkModerate;
+  return Math.round(Math.max(E * offset, bmr * C.deficitFloorFactor));
+}
+
+// §4.6 Makros aus Ziel + Ernährungsart (Protein 4 / Carbs 4 / Fett 9 kcal/g).
+function calcMacros(profile = getProfile(), weightKg = getCurrentWeight()) {
+  const target = calcTargetKcal(profile);
+  if (target == null || weightKg == null) return null;
+  const C = ENERGY_CONFIG;
+  let proteinPerKg = C.protein[profile.goal] ?? C.protein.maintain;
+  if (profile.dietType === 'vegetarian' || profile.dietType === 'vegan') proteinPerKg *= C.protein.plantMultiplier;
+  const protein = Math.round(proteinPerKg * weightKg);
+  const fat     = Math.round(C.fatMinPerKg * weightKg);
+  const carbs   = Math.max(0, Math.round((target - (protein * 4 + fat * 9)) / 4));
+  return { protein, fat, carbs, kcal: target };
+}
+
+// §3 Startgewicht: schreibt sofort einen Weight-Eintrag (heute) UND legt es im Profil ab,
+// damit es als erster Punkt im Verlauf erscheint und das Profil Start/Delta zeigen kann.
+function setStartWeight(weight, kfa = null) {
+  const w = parseFloat(weight);
+  if (isNaN(w)) return;
+  const date = new Date().toISOString().slice(0, 10);
+  const k    = (kfa != null && kfa !== '' && !isNaN(parseFloat(kfa))) ? parseFloat(kfa) : undefined;
+  const entries = getWeightEntries().filter(e => e.date !== date);
+  const entry = { date, weight: w, note: 'Startgewicht' };
+  if (k !== undefined) entry.kfa = k;
+  entries.push(entry);
+  entries.sort((a, b) => a.date.localeCompare(b.date));
+  saveWeightEntries(entries);                               // löst Sync aus
+  saveProfile({ startWeight: w, startKfa: k ?? null, startDate: date });
+}
 const loadDB  = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || { sessions: [] }; } catch { return { sessions: [] }; } };
 const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncAllUserData(); };
 
@@ -325,7 +433,16 @@ function restoreFromRemote(remote) {
   if (remote.plans      !== undefined) localStorage.setItem(PLANS_KEY,      JSON.stringify(remote.plans));
   if (remote.categories !== undefined) localStorage.setItem(CATEGORIES_KEY, JSON.stringify(remote.categories));
   if (remote.locations  !== undefined) localStorage.setItem(LOCATIONS_KEY,  JSON.stringify(remote.locations));
-  if (remote.cfg        !== undefined) localStorage.setItem(CFG_KEY,        JSON.stringify(remote.cfg));
+  if (remote.cfg        !== undefined) {
+    // Remote gewinnt – aber einen lokal gelernten calibrationFactor nie auf Default zurücksetzen (§2.4)
+    const merged   = { ...remote.cfg };
+    const localCal  = getCfg().profile?.calibrationFactor;
+    const remoteCal = remote.cfg?.profile?.calibrationFactor;
+    if (localCal != null && localCal !== 1.0 && (remoteCal == null || remoteCal === 1.0)) {
+      merged.profile = { ...(remote.cfg.profile || {}), calibrationFactor: localCal };
+    }
+    localStorage.setItem(CFG_KEY, JSON.stringify(merged));
+  }
 }
 
 async function fetchSupabase() {

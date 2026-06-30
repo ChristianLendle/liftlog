@@ -2072,6 +2072,7 @@ function loadCfgUI() {
     loadLocEditor();
     renderSyncPanel();
     renderProfileSection();
+    renderProfileSummary();
   } catch(e) {
     console.error('loadCfgUI error:', e);
   }
@@ -2092,6 +2093,8 @@ function settingsNav(id) {
   if (id === 'plans')     loadPlanOverview();
   if (id === 'plan-edit') loadPlanEditor();
   if (id === 'streak') { const c = getCfg(); const s = document.getElementById('cfg-streak-min'); if (s) s.value = c.streakMin || 3; }
+  if (id === 'grunddaten') loadGrunddatenEditor();
+  if (id === 'ziel')       loadZielEditor();
   if (id === 'invite') {
     const inp = document.getElementById('invite-link');
     if (inp) inp.value = APP_URL;
@@ -2110,6 +2113,77 @@ function settingsBack() {
   const cur = document.getElementById('set-scr-' + _setCur);
   const parent = (cur && cur.dataset.parent) || 'hub';
   settingsNav(parent);
+}
+
+// ─── PROFIL-UI: Grunddaten (Live-BMR, Spec §4.1) ──────────────────────────────
+const _setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); };
+const _fldNum = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : null; };
+const _fldStr = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : null; };
+
+function loadGrunddatenEditor() {
+  const p = getProfile();
+  _setVal('gd-sex',         p.sex);
+  _setVal('gd-birthyear',   p.birthYear);
+  _setVal('gd-height',      p.heightCm);
+  _setVal('gd-startweight', p.startWeight);
+  _setVal('gd-kfa',         p.startKfa);
+  recalcGrunddaten();
+}
+function recalcGrunddaten() {
+  const profile = { ...getProfile(), sex: _fldStr('gd-sex'), birthYear: _fldNum('gd-birthyear'), heightCm: _fldNum('gd-height') };
+  const weight  = _fldNum('gd-startweight') ?? getCurrentWeight();
+  const kfa     = _fldNum('gd-kfa') ?? getCurrentKfa();
+  const bmr = calcBMR(profile, weight, kfa);
+  const el = document.getElementById('gd-bmr');
+  if (el) el.textContent = bmr != null ? bmr.toLocaleString('de-DE') + ' kcal' : '—';
+}
+function saveGrunddaten() {
+  const sw = _fldNum('gd-startweight'), kfa = _fldNum('gd-kfa');
+  saveProfile({ sex: _fldStr('gd-sex'), birthYear: _fldNum('gd-birthyear'), heightCm: _fldNum('gd-height') });
+  const p = getProfile();
+  // Startgewicht nur schreiben, wenn gesetzt und verändert → legt Weight-Eintrag an (§3)
+  if (sw != null && (p.startWeight == null || sw !== p.startWeight || kfa !== p.startKfa)) {
+    setStartWeight(sw, kfa);
+  }
+  toast('Gespeichert ✓');
+  renderProfileSummary();
+  settingsBack();
+}
+
+// ─── PROFIL-UI: Ziel & Ernährung (Live-Tagesziel/Makros, Spec §4.6) ───────────
+function loadZielEditor() {
+  const p = getProfile();
+  _setVal('z-goal',      p.goal);
+  _setVal('z-intensity', p.goalIntensity || 'moderate');
+  _setVal('z-diet',      p.dietType);
+  recalcZiel();
+}
+function recalcZiel() {
+  const profile = { ...getProfile(), goal: _fldStr('z-goal'), goalIntensity: _fldStr('z-intensity'), dietType: _fldStr('z-diet') };
+  const target = calcTargetKcal(profile);
+  const macros = calcMacros(profile);
+  const t = document.getElementById('z-target');
+  if (t) t.textContent = target != null ? target.toLocaleString('de-DE') : '—';
+  const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = (v == null ? '—' : v); };
+  setTxt('z-mp', macros?.protein);
+  setTxt('z-mc', macros?.carbs);
+  setTxt('z-mf', macros?.fat);
+}
+function saveZiel() {
+  saveProfile({ goal: _fldStr('z-goal'), goalIntensity: _fldStr('z-intensity'), dietType: _fldStr('z-diet') });
+  toast('Gespeichert ✓');
+  renderProfileSummary();
+  settingsBack();
+}
+
+// ─── PROFIL-HUB: Zusammenfassungs-Werte (BMR + Ziel) ──────────────────────────
+const GOAL_LABELS = { cut: 'Abnehmen', maintain: 'Halten', bulk: 'Muskelaufbau' };
+function renderProfileSummary() {
+  const bmr   = calcBMR();
+  const bmrEl = document.getElementById('set-bmr-val');
+  if (bmrEl) bmrEl.textContent = bmr != null ? bmr.toLocaleString('de-DE') + ' kcal' : 'Einrichten';
+  const goalEl = document.getElementById('set-goal-val');
+  if (goalEl) { const g = getProfile().goal; goalEl.textContent = g ? GOAL_LABELS[g] : 'Einrichten'; }
 }
 
 // ─── FREUND EINLADEN (App-Link teilen) ────────────────────────────────────────

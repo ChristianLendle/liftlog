@@ -757,7 +757,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   <button class="top-nav-tab" id="nav-progress"  data-act="switchView" data-arg="progress">Fortschritt</button>
   <button class="top-nav-tab" id="nav-body"       data-act="switchView" data-arg="body">Körper</button>
   <button class="top-nav-tab" id="nav-sessions"   data-act="switchView" data-arg="sessions">Sessions</button>
-  <button class="top-nav-tab" id="nav-settings"  data-act="switchView" data-arg="settings">Einstellungen</button>
+  <button class="top-nav-tab" id="nav-settings"  data-act="switchView" data-arg="settings">Profil</button>
 </nav>
 
 <!-- ═══ RESUME BANNER (active session) ════════════════ -->
@@ -1009,7 +1009,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
     <!-- ════════════ HUB ════════════ -->
     <div class="set-screen active" id="set-scr-hub">
-      <div class="set-hub-title">Einstellungen</div>
+      <div class="set-hub-title">Profil</div>
 
       <!-- Profil-Karte -->
       <div class="set-profile-card">
@@ -1028,14 +1028,38 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         </button>
       </div>
 
-      <!-- Gruppe: Profil -->
-      <div class="set-group-label">Profil</div>
+      <!-- Gruppe: Körper & Ziel -->
+      <div class="set-group-label">Körper &amp; Ziel</div>
       <div class="set-card">
+        <button class="set-row" data-act="settingsNav" data-arg="grunddaten">
+          <span class="set-row-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/></svg></span>
+          <span class="set-row-lbl">Grunddaten</span>
+          <span style="flex:1"></span>
+          <span class="set-row-val" id="set-bmr-val">—</span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+        <button class="set-row" data-act="settingsNav" data-arg="ziel">
+          <span class="set-row-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/></svg></span>
+          <span class="set-row-lbl">Ziel &amp; Ernährung</span>
+          <span style="flex:1"></span>
+          <span class="set-row-val" id="set-goal-val">—</span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
         <button class="set-row" data-act="settingsNav" data-arg="streak">
           <span class="set-row-ic amber"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.5 3-2.5 4.5-2.5 7.5a2.5 2.5 0 0 0 5 0c0-1-.5-1.8-.5-2.5 1.6 1 3 2.8 3 5a5 5 0 1 1-10 0C7.5 8 12 7 12 3Z"/></svg></span>
           <span class="set-row-lbl">Streak-Ziel</span>
           <span style="flex:1"></span>
           <span class="set-row-val" id="set-streak-val">3 / Woche</span>
+          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+      </div>
+
+      <!-- Gruppe: Konto -->
+      <div class="set-group-label">Konto</div>
+      <div class="set-card">
+        <button class="set-row" data-act="settingsNav" data-arg="creds">
+          <span class="set-row-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <span style="flex:1"><span class="set-row-lbl">Konto &amp; Login</span><span class="set-row-sub">E-Mail · Passwort · Abmelden</span></span>
           <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </button>
         <button class="set-row" data-act="settingsNav" data-arg="export">
@@ -1047,8 +1071,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         </button>
       </div>
 
-      <!-- Gruppe: Trainingsplan -->
-      <div class="set-group-label">Trainingsplan</div>
+      <!-- Gruppe: Training -->
+      <div class="set-group-label">Training</div>
       <div class="set-card">
         <button class="set-row" data-act="settingsNav" data-arg="plans">
           <span class="set-row-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4"/><path d="M9 10h6"/><path d="M9 14h4"/></svg></span>
@@ -1071,6 +1095,68 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       </div>
 
       <div class="set-foot">PRSONAL · v2.4</div>
+    </div>
+
+    <!-- ════════════ GRUNDDATEN (Energiebilanz §2.3/§4.1) ════════════ -->
+    <div class="set-screen" id="set-scr-grunddaten" data-parent="hub">
+      <div class="set-topbar">
+        <button class="set-back" data-act="settingsBack"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Grunddaten</span>
+      </div>
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--accent-dim);border-radius:10px;padding:13px 15px;margin-bottom:16px">
+          <div>
+            <div style="font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted2)">Grundumsatz (BMR)</div>
+            <div style="font-size:.66rem;color:var(--muted2);margin-top:2px">rechnet live mit</div>
+          </div>
+          <div style="font-size:1.5rem;font-weight:700;letter-spacing:-.03em;color:var(--accent);font-variant-numeric:tabular-nums" id="gd-bmr">—</div>
+        </div>
+        <div class="field">
+          <label>Geschlecht</label>
+          <select id="gd-sex" data-change="recalcGrunddaten"><option value="">— auswählen —</option><option value="m">Mann</option><option value="f">Frau</option></select>
+        </div>
+        <div class="field"><label>Geburtsjahr</label><input type="number" id="gd-birthyear" inputmode="numeric" placeholder="z.B. 1995" min="1920" max="2025" data-input="recalcGrunddaten"></div>
+        <div class="field"><label>Größe (cm)</label><input type="number" id="gd-height" inputmode="numeric" placeholder="z.B. 182" min="100" max="250" data-input="recalcGrunddaten"></div>
+        <div class="field"><label>Startgewicht (kg)</label><input type="number" id="gd-startweight" inputmode="decimal" step="0.1" placeholder="z.B. 84.0" min="30" max="300" data-input="recalcGrunddaten"></div>
+        <div class="field" style="margin-bottom:10px"><label>Körperfett % &nbsp;<span style="text-transform:none;letter-spacing:0;color:var(--muted2);font-weight:500">— optional</span></label><input type="number" id="gd-kfa" inputmode="decimal" step="0.1" placeholder="optional" min="3" max="60" data-input="recalcGrunddaten"></div>
+        <p class="set-hint">Geschlecht, Jahrgang, Größe &amp; Gewicht füttern den Grundumsatz (Mifflin-St&nbsp;Jeor). Mit Körperfett rechnet die App genauer (Katch-McArdle). Das Startgewicht erscheint als erster Punkt im Gewichtsverlauf.</p>
+        <div style="display:flex;justify-content:flex-end;margin-top:4px"><button class="btn-fill" data-act="saveGrunddaten">Speichern</button></div>
+      </div>
+    </div>
+
+    <!-- ════════════ ZIEL & ERNÄHRUNG (§4.6) ════════════ -->
+    <div class="set-screen" id="set-scr-ziel" data-parent="hub">
+      <div class="set-topbar">
+        <button class="set-back" data-act="settingsBack"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
+        <span class="set-topbar-title">Ziel &amp; Ernährung</span>
+      </div>
+      <div class="panel">
+        <div class="field">
+          <label>Ziel</label>
+          <select id="z-goal" data-change="recalcZiel"><option value="">— auswählen —</option><option value="cut">Abnehmen</option><option value="maintain">Halten</option><option value="bulk">Muskelaufbau</option></select>
+        </div>
+        <div class="field">
+          <label>Intensität</label>
+          <select id="z-intensity" data-change="recalcZiel"><option value="moderate">Moderat</option><option value="aggressive">Aggressiv (Shredd / Totalitäre Masse)</option></select>
+        </div>
+        <div class="field" style="margin-bottom:14px">
+          <label>Ernährungsart</label>
+          <select id="z-diet" data-change="recalcZiel"><option value="">— auswählen —</option><option value="omnivore">Omnivor</option><option value="vegetarian">Vegetarisch</option><option value="vegan">Vegan</option></select>
+        </div>
+        <div style="background:var(--accent-dim);border-radius:10px;padding:14px 15px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted2)">Tagesziel</span>
+            <span style="font-size:1.5rem;font-weight:700;letter-spacing:-.03em;color:var(--accent);font-variant-numeric:tabular-nums"><span id="z-target">—</span> <span style="font-size:.72rem;color:var(--muted2)">kcal</span></span>
+          </div>
+          <div style="display:flex;gap:18px;margin-top:12px" id="z-macros">
+            <div><div style="font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)">Protein</div><div style="font-size:.92rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums"><span id="z-mp">—</span> g</div></div>
+            <div><div style="font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)">Carbs</div><div style="font-size:.92rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums"><span id="z-mc">—</span> g</div></div>
+            <div><div style="font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)">Fett</div><div style="font-size:.92rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums"><span id="z-mf">—</span> g</div></div>
+          </div>
+        </div>
+        <p class="set-hint">Ziel + Intensität setzen den Kalorien-Offset, die Ernährungsart die Protein-Korrektur. Solange Grunddaten (Größe/Gewicht) fehlen, bleibt das Tagesziel leer.</p>
+        <div style="display:flex;justify-content:flex-end;margin-top:4px"><button class="btn-fill" data-act="saveZiel">Speichern</button></div>
+      </div>
     </div>
 
     <!-- ════════════ PROFIL BEARBEITEN (Auswahl) ════════════ -->
@@ -1107,10 +1193,10 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     </div>
 
     <!-- ════════════ ZUGANGSDATEN ════════════ -->
-    <div class="set-screen" id="set-scr-creds" data-parent="edit">
+    <div class="set-screen" id="set-scr-creds" data-parent="hub">
       <div class="set-topbar">
         <button class="set-back" data-act="settingsBack"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
-        <span class="set-topbar-title">Zugangsdaten</span>
+        <span class="set-topbar-title">Konto &amp; Login</span>
       </div>
       <div class="panel">
         <div class="sec-label">Synchronisierung</div>
@@ -1381,7 +1467,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(225,20,20)"/>
   <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(270,20,20)"/>
   <rect x="18" y="4" width="4" height="6" rx="1.5" fill="currentColor" transform="rotate(315,20,20)"/>
-</svg></span>Einst.
+</svg></span>Profil
   </button>
 </nav>
 

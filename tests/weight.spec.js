@@ -2,6 +2,11 @@
 const { test, expect } = require('@playwright/test');
 const { sbMock } = require('./sb-mock');
 
+// Datum relativ zu "heute" (Europe/Berlin, wie in renderWeightChart), damit die
+// Fixtures immer im Standard-Zeitraum (aktueller Monat) liegen – sonst kippen die
+// Tests am Monatsersten, wenn hardcodierte Vormonats-Daten aus dem Bereich fallen.
+const TODAY = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+
 // Clears leftover data before each test.
 async function setup(page, { seedWeight = null } = {}) {
   await page.addInitScript(sbMock); // bypass Supabase auth gate
@@ -41,7 +46,7 @@ test.describe('Gewicht erfassen', () => {
     await page.click('text=Gewicht tracken');
 
     // Formular ausfüllen
-    await page.fill('#wt-date', '2026-06-12');
+    await page.fill('#wt-date', TODAY);
     await page.fill('#wt-kg', '82.5');
     await page.fill('#wt-kfa', '14.2');
     await page.locator('#m-weight').getByRole('button', { name: 'Speichern' }).click();
@@ -60,7 +65,7 @@ test.describe('Gewicht erfassen', () => {
 
     await page.click('#fab-pill');
     await page.click('text=Gewicht tracken');
-    await page.fill('#wt-date', '2026-06-12');
+    await page.fill('#wt-date', TODAY);
     await page.fill('#wt-kg', '80.0');
     // KFA leer lassen
     await page.locator('#m-weight').getByRole('button', { name: 'Speichern' }).click();
@@ -72,13 +77,13 @@ test.describe('Gewicht erfassen', () => {
 
   test('Bestehenden Eintrag bearbeiten — Löschen-Button erscheint', async ({ page }) => {
     await setup(page, {
-      seedWeight: { id: 'test-1', date: '2026-06-10', kg: 83.0, kfa: 15.0 },
+      seedWeight: { id: 'test-1', date: TODAY, kg: 83.0, kfa: 15.0 },
     });
 
     // Zur Körper-Ansicht wechseln damit der Eintrag geladen wird
     await page.click('#nav-body');
     // Eintrag über JS-Funktion im Edit-Modus öffnen
-    await page.evaluate(() => window.editWeightEntry('2026-06-10'));
+    await page.evaluate((d) => window.editWeightEntry(d), TODAY);
 
     await expect(page.locator('#m-weight')).toBeVisible();
     await expect(page.locator('#wt-modal-title')).toHaveText('Eintrag bearbeiten');
@@ -88,14 +93,14 @@ test.describe('Gewicht erfassen', () => {
 
   test('Eintrag löschen', async ({ page }) => {
     await setup(page, {
-      seedWeight: { id: 'test-1', date: '2026-06-10', kg: 83.0, kfa: null },
+      seedWeight: { id: 'test-1', date: TODAY, kg: 83.0, kfa: null },
     });
 
     await page.click('#nav-body');
     await expect(page.locator('#wt-stat-current')).toHaveText('83 kg');
 
     // Edit-Modal öffnen und löschen
-    await page.evaluate(() => window.editWeightEntry('2026-06-10'));
+    await page.evaluate((d) => window.editWeightEntry(d), TODAY);
     page.on('dialog', d => d.accept());
     await page.click('#wt-delete-btn');
 

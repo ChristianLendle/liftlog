@@ -439,6 +439,13 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .dash-trend-val.down { color: #d9542b; }
 .dash-trend-sub { font-size: 0.68rem; color: var(--muted); margin-top: 5px; }
 
+/* ─── GESUNDHEIT: BILANZ ───────────────────── */
+.bilanz-metric-row { display: flex; gap: 20px; flex-wrap: wrap; }
+.bilanz-metric { flex: 1; min-width: 130px; }
+.bilanz-metric-val { font-size: 1.6rem; font-weight: 700; color: var(--text); letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.bilanz-metric-lbl { font-size: 0.58rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.bilanz-note { font-size: 0.7rem; color: var(--muted); margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+
 /* ─── INFO TOOLTIP ─────────────────────────── */
 .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); color: var(--muted2); font-size: 0.6rem; font-weight: 700; cursor: pointer; flex-shrink: 0; font-style: normal; user-select: none; -webkit-tap-highlight-color: transparent; }
 .info-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -809,13 +816,18 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   <button class="top-nav-tab active" id="nav-dashboard" data-act="switchView" data-arg="dashboard">Dashboard</button>
   <button class="top-nav-tab" id="nav-train"      data-act="switchView" data-arg="sessions">Training</button>
   <button class="top-nav-tab" id="nav-ernaehrung" data-act="switchView" data-arg="ernaehrung">Essen</button>
-  <button class="top-nav-tab" id="nav-body"       data-act="switchView" data-arg="body">Körper</button>
+  <button class="top-nav-tab" id="nav-gesundheit" data-act="switchView" data-arg="bilanz">Gesundheit</button>
   <button class="top-nav-tab" id="nav-settings"  data-act="switchView" data-arg="settings">Profil</button>
 </nav>
 <!-- Segmented Control für den Training-Tab (Sessions | Fortschritt) -->
 <nav class="train-seg" id="train-seg" style="display:none">
   <button class="tseg" data-seg="sessions" data-act="switchView" data-arg="sessions">Sessions</button>
   <button class="tseg" data-seg="progress" data-act="switchView" data-arg="progress">Fortschritt</button>
+</nav>
+<!-- Segmented Control für den Gesundheit-Tab (Bilanz | Gewicht & KFA) -->
+<nav class="train-seg" id="health-seg" style="display:none">
+  <button class="tseg" data-seg="bilanz" data-act="switchView" data-arg="bilanz">Bilanz</button>
+  <button class="tseg" data-seg="body"   data-act="switchView" data-arg="body">Gewicht &amp; KFA</button>
 </nav>
 
 <!-- ═══ RESUME BANNER (active session) ════════════════ -->
@@ -1028,11 +1040,48 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   </div><!-- /view-inner -->
 </div><!-- /view-progress -->
 
-<!-- ── Körper ── -->
+<!-- ── Gesundheit: Bilanz ── -->
+<div id="view-bilanz" class="view">
+  <div class="view-inner">
+    <div id="bilanz-empty" class="panel chart-empty" style="display:none">
+      <div class="empty-title">Kein Kalorienziel</div>
+      <div class="empty-sub">Vervollständige dein Profil für Grunddaten &amp; Ziel.</div>
+      <button class="empty-cta" data-act="switchView" data-arg="settings">Profil öffnen →</button>
+    </div>
+    <div id="bilanz-content">
+      <div class="panel">
+        <div class="sec-label">Grundumsatz &amp; Verbrauch</div>
+        <div class="bilanz-metric-row">
+          <div class="bilanz-metric"><div class="bilanz-metric-val" id="bz-bmr">—</div><div class="bilanz-metric-lbl">BMR (Grundumsatz)</div></div>
+          <div class="bilanz-metric"><div class="bilanz-metric-val" id="bz-activity">—</div><div class="bilanz-metric-lbl">Aktivitätsfaktor</div></div>
+          <div class="bilanz-metric"><div class="bilanz-metric-val" id="bz-expend">—</div><div class="bilanz-metric-lbl">Erw. Tagesverbrauch</div></div>
+        </div>
+        <div class="bilanz-note" id="bz-calib-note"></div>
+      </div>
+
+      <div class="panel">
+        <div class="sec-label">Tagesziel</div>
+        <div class="bilanz-metric-row">
+          <div class="bilanz-metric"><div class="bilanz-metric-val" id="bz-target">—</div><div class="bilanz-metric-lbl">Kalorienziel</div></div>
+          <div class="bilanz-metric"><div class="bilanz-metric-val" id="bz-goal">—</div><div class="bilanz-metric-lbl">Ziel</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="sec-label">Verbrauch vs. Zufuhr · Heute</div>
+        <div class="energy-macro-row"><span class="energy-macro-name">Verbrauch</span><div class="energy-macro-bar"><i id="bz-bal-verbrauch" style="background:var(--push)"></i></div><span class="energy-macro-val" id="bz-bal-verbrauch-val">—</span></div>
+        <div class="energy-macro-row"><span class="energy-macro-name">Zufuhr</span><div class="energy-macro-bar"><i id="bz-bal-zufuhr" style="background:var(--pull)"></i></div><span class="energy-macro-val" id="bz-bal-zufuhr-val">—</span></div>
+        <div class="bilanz-note" id="bz-band-note"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Gesundheit: Gewicht & KFA ── -->
 <div id="view-body" class="view">
   <div class="view-inner">
     <div class="panel">
-      <div class="sec-label">Körpergewicht</div>
+      <div class="sec-label">Gewicht &amp; KFA</div>
 
       <!-- Date range -->
       <div style="display:flex;gap:8px;margin-bottom:18px">
@@ -1548,11 +1597,11 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   <path d="M13 6v9a3 3 0 0 0 3 3M16 6v12M19 6v9a3 3 0 0 1-3 3M16 21v13M27 6c-2 1.5-3 4.5-3 8.5s1 6 3 7.5v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg></span>Essen
   </button>
-  <button class="bottom-nav-tab" id="bnav-body" data-act="switchView" data-arg="body">
+  <button class="bottom-nav-tab" id="bnav-gesundheit" data-act="switchView" data-arg="bilanz">
     <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <path d="M20,32 C20,32 6,22 6,14 C6,10 9,7 13,7 C15.5,7 17.5,8.5 20,10.5 C22.5,8.5 24.5,7 27,7 C31,7 34,10 34,14 C34,22 20,32 20,32 Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
   <polyline points="9,19 12.5,19 14.5,14 16.5,23 19.5,16 21.5,19 31,19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
-</svg></span>Körper
+</svg></span>Gesundheit
   </button>
   <button class="bottom-nav-tab" id="bnav-settings" data-act="switchView" data-arg="settings">
     <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

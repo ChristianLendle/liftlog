@@ -2059,6 +2059,51 @@ function renderDashboardTrend() {
   host.innerHTML = `<div class="dash-trend-val ${dir}">${arrow} ${d.latest} kg</div><div class="dash-trend-sub">${diffTxt} · letzte 30 Tage</div>`;
 }
 
+// ─── GESUNDHEIT: BILANZ (Spec §9) ─────────────────────────────────────
+function renderBilanz() {
+  const content = document.getElementById('bilanz-content');
+  const empty   = document.getElementById('bilanz-empty');
+  if (!content) return;
+
+  const profile = getProfile();
+  const bmr     = calcBMR(profile);
+  const target  = calcTargetKcal(profile);
+  if (bmr == null || target == null) {
+    content.style.display = 'none';
+    if (empty) empty.style.display = 'flex';
+    return;
+  }
+  content.style.display = '';
+  if (empty) empty.style.display = 'none';
+
+  const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const setW   = (id, val, max) => { const el = document.getElementById(id); if (el) el.style.width = (max ? Math.min(100, Math.round(val / max * 100)) : 0) + '%'; };
+
+  const expend = expectedDailyExpenditure(profile);
+  const act    = profile.activityBaseline || ENERGY_CONFIG.activityDefault;
+
+  setTxt('bz-bmr', bmr.toLocaleString('de-DE') + ' kcal');
+  setTxt('bz-activity', '×' + act.toFixed(2).replace('.', ','));
+  setTxt('bz-expend', expend.toLocaleString('de-DE') + ' kcal');
+  setTxt('bz-calib-note', (profile.calibrationFactor && profile.calibrationFactor !== 1)
+    ? `Kalibriert ×${profile.calibrationFactor.toFixed(2)} anhand deines Gewichtsverlaufs.`
+    : 'Noch nicht kalibriert – Basis auf Formel + Aktivitätsfaktor.');
+
+  setTxt('bz-target', target.toLocaleString('de-DE') + ' kcal');
+  setTxt('bz-goal', profile.goal ? GOAL_LABELS[profile.goal] + (profile.goalIntensity === 'aggressive' ? ' (intensiv)' : '') : '—');
+
+  const today  = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+  const totals = getDayTotals(today);
+  const balMax = Math.max(expend, totals.kcal, 1);
+  setW('bz-bal-verbrauch', expend, balMax);
+  setW('bz-bal-zufuhr', totals.kcal, balMax);
+  setTxt('bz-bal-verbrauch-val', expend.toLocaleString('de-DE') + ' kcal');
+  setTxt('bz-bal-zufuhr-val', totals.kcal.toLocaleString('de-DE') + ' kcal');
+
+  const band = totals.confidence != null ? Math.round(totals.kcal * (1 - totals.confidence)) : null;
+  setTxt('bz-band-note', band ? `Zufuhr ± ${band} kcal (Datenqualität-Fehlerband)` : 'Noch keine Mahlzeiten heute geloggt.');
+}
+
 function renderAll() {
   const db = loadDB();
   const st = calcStats(db.sessions);
@@ -2105,7 +2150,7 @@ function renderAll() {
 }
 
 // ─── VIEW SWITCHING ──────────────────────────────────
-const VIEWS = ['dashboard', 'progress', 'body', 'sessions', 'settings', 'training', 'ernaehrung'];
+const VIEWS = ['dashboard', 'progress', 'body', 'sessions', 'settings', 'training', 'ernaehrung', 'bilanz'];
 
 function switchView(name) {
   // Nav + FAB während Training ausblenden/einblenden
@@ -2137,10 +2182,19 @@ function switchView(name) {
     trainSeg.style.display = (inTrain && !isTraining) ? '' : 'none';
     trainSeg.querySelectorAll('[data-seg]').forEach(b => b.classList.toggle('active', b.dataset.seg === name));
   }
+  // "Gesundheit"-Gruppe: Bilanz + Gewicht&KFA teilen sich einen Tab via Segmented Control
+  const inHealth = (name === 'bilanz' || name === 'body');
+  ['nav-gesundheit', 'bnav-gesundheit'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('active', inHealth); });
+  const healthSeg = document.getElementById('health-seg');
+  if (healthSeg) {
+    healthSeg.style.display = inHealth ? '' : 'none';
+    healthSeg.querySelectorAll('[data-seg]').forEach(b => b.classList.toggle('active', b.dataset.seg === name));
+  }
 
   // Trigger chart renders on first visit
   if (name === 'progress')  { renderDurChart(); init1RMSelect(); initProgressDefaults(); }
   if (name === 'body')      { renderWeightChart(); }
+  if (name === 'bilanz')    { renderBilanz(); }
   if (name === 'settings')  { setTimeout(loadCfgUI, 0); }
   if (name === 'ernaehrung'){ renderMealLog(); }
   if (name === 'dashboard'){ renderDashboardEnergy(); renderDashboardTraining(loadDB().sessions); renderDashboardTrend(); }

@@ -54,7 +54,7 @@ test.describe('Profil — Grunddaten & Ziel', () => {
     expect(stored.profile.sex).toBe('m');
     expect(stored.profile.heightCm).toBe(182);
     expect(stored.profile.startWeight).toBe(84);
-    expect(stored.weight.some(w => w.note === 'Startgewicht' && w.weight === 84)).toBe(true);
+    expect(stored.weight.some(w => w.kg === 84)).toBe(true);
   });
 
   test('Ziel: Tagesziel + Makros erscheinen und werden gespeichert', async ({ page }) => {

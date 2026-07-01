@@ -296,9 +296,9 @@ const saveProfile = (patch) => { const c = getCfg(); setCfg({ ...c, profile: { .
 
 // Aktuelles Gewicht / KFA aus dem Weight-Log (jüngster Eintrag), sonst Startwert
 function getCurrentWeight() {
-  const e = getWeightEntries().filter(x => x.weight != null && x.weight !== '')
+  const e = getWeightEntries().filter(x => x.kg != null && x.kg !== '')
               .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  if (e.length) { const w = parseFloat(e[0].weight); if (!isNaN(w)) return w; }
+  if (e.length) { const w = parseFloat(e[0].kg); if (!isNaN(w)) return w; }
   const sw = getProfile().startWeight;
   return (sw != null) ? parseFloat(sw) : null;
 }
@@ -365,7 +365,7 @@ function setStartWeight(weight, kfa = null) {
   const date = new Date().toISOString().slice(0, 10);
   const k    = (kfa != null && kfa !== '' && !isNaN(parseFloat(kfa))) ? parseFloat(kfa) : undefined;
   const entries = getWeightEntries().filter(e => e.date !== date);
-  const entry = { date, weight: w, note: 'Startgewicht' };
+  const entry = { date, kg: w };
   if (k !== undefined) entry.kfa = k;
   entries.push(entry);
   entries.sort((a, b) => a.date.localeCompare(b.date));
@@ -1947,6 +1947,118 @@ function renderPRs(sessions) {
   }).join('');
 }
 
+// ─── DASHBOARD: ENERGIE HEUTE (Spec §9) ──────────────────────────────
+function renderDashboardEnergy() {
+  const content = document.getElementById('dash-energy-content');
+  const empty   = document.getElementById('dash-energy-empty');
+  if (!content) return;
+
+  const profile = getProfile();
+  const target  = calcTargetKcal(profile);
+  const macros  = calcMacros(profile);
+  if (target == null || macros == null) {
+    content.style.display = 'none';
+    if (empty) empty.style.display = 'flex';
+    return;
+  }
+  content.style.display = '';
+  if (empty) empty.style.display = 'none';
+
+  const today  = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+  const totals = getDayTotals(today);
+  const expend = expectedDailyExpenditure(profile) || target;
+  const rest   = target - totals.kcal;
+  const over   = rest < 0;
+  const pct    = Math.min(100, Math.round((totals.kcal / target) * 100));
+
+  const R = 52, CIRC = 2 * Math.PI * R;
+  const ring = document.getElementById('dash-ring-fg');
+  if (ring) {
+    ring.style.strokeDasharray  = CIRC;
+    ring.style.strokeDashoffset = CIRC * (1 - pct / 100);
+    ring.classList.toggle('over', over);
+  }
+  const eatenEl  = document.getElementById('dash-kcal-eaten');
+  if (eatenEl) eatenEl.textContent = totals.kcal.toLocaleString('de-DE');
+  const targetEl = document.getElementById('dash-kcal-target');
+  if (targetEl) targetEl.textContent = target.toLocaleString('de-DE');
+  const restEl = document.getElementById('dash-kcal-rest');
+  if (restEl) {
+    restEl.textContent = (over ? '' : '+') + rest.toLocaleString('de-DE') + ' kcal';
+    restEl.classList.toggle('over', over);
+  }
+
+  const balMax = Math.max(expend, totals.kcal, 1);
+  const balBar = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = Math.min(100, Math.round((val / balMax) * 100)) + '%';
+  };
+  balBar('dash-bal-verbrauch', expend);
+  balBar('dash-bal-zufuhr', totals.kcal);
+  const balVerbEl = document.getElementById('dash-bal-verbrauch-val');
+  if (balVerbEl) balVerbEl.textContent = expend.toLocaleString('de-DE') + ' kcal';
+  const balZufEl = document.getElementById('dash-bal-zufuhr-val');
+  if (balZufEl) balZufEl.textContent = totals.kcal.toLocaleString('de-DE') + ' kcal';
+
+  const macroHost = document.getElementById('dash-macros');
+  if (macroHost) {
+    const row = (name, val, max, col) => {
+      const pctM = max ? Math.min(100, Math.round((val / max) * 100)) : 0;
+      return `<div class="energy-macro-row"><span class="energy-macro-name">${name}</span><div class="energy-macro-bar"><i style="width:${pctM}%;background:${col}"></i></div><span class="energy-macro-val">${val}/${max} g</span></div>`;
+    };
+    macroHost.innerHTML =
+      row('Protein', totals.protein, macros.protein, 'var(--push)') +
+      row('Carbs',   totals.carbs,   macros.carbs,   'var(--pull)') +
+      row('Fett',    totals.fat,     macros.fat,      'var(--cardio)');
+  }
+}
+
+// ─── DASHBOARD: LETZTES TRAINING ──────────────────────────────────────
+function renderDashboardTraining(sessions) {
+  const host    = document.getElementById('dash-training-card');
+  const content = document.getElementById('dash-training-content');
+  if (!content) return;
+  const last = sessions.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+  if (!last) {
+    if (host) { host.classList.remove('clickable'); delete host.dataset.act; delete host.dataset.arg; }
+    content.innerHTML = `<div class="dash-train-when" style="color:var(--muted2)">Noch kein Training</div><div class="dash-train-meta">Starte deine erste Session über den FAB.</div>`;
+    return;
+  }
+  if (host) { host.classList.add('clickable'); host.dataset.act = 'showDetail'; host.dataset.arg = last.id; }
+
+  const todayStr = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+  const y = new Date(todayStr + 'T12:00:00Z'); y.setUTCDate(y.getUTCDate() - 1);
+  const yesterdayStr = y.toISOString().slice(0, 10);
+  let when;
+  if (last.date === todayStr) when = 'Heute';
+  else if (last.date === yesterdayStr) when = 'Gestern';
+  else { const [yy, mo, dd] = last.date.split('-'); when = `${dd}.${mo}.`; }
+
+  const chip = typeChip(last);
+  const dur  = formatDurationHM(sessionDurationMinutes(last));
+  const exN  = (last.exercises || []).length;
+  const meta = [dur ? `⏱ ${dur}` : '', exN ? `${exN} Übungen` : ''].filter(Boolean).join(' · ');
+
+  content.innerHTML = `<span class="dash-train-cat" style="color:${chip.color};background:${chip.bg}">${last.category || ''}</span>
+    <div class="dash-train-when">${when}</div>
+    <div class="dash-train-meta">${meta}</div>`;
+}
+
+// ─── DASHBOARD: GEWICHTSTREND ─────────────────────────────────────────
+function renderDashboardTrend() {
+  const host = document.getElementById('dash-trend-content');
+  if (!host) return;
+  const d = calcWeightDelta30();
+  if (d === null) {
+    host.innerHTML = `<div class="dash-trend-val" style="color:var(--muted2)">—</div><div class="dash-trend-sub">keine Gewichtsdaten</div>`;
+    return;
+  }
+  const dir   = d.diff < 0 ? 'down' : (d.diff > 0 ? 'up' : '');
+  const arrow = d.diff < 0 ? '↓' : (d.diff > 0 ? '↑' : '→');
+  const diffTxt = (d.diff > 0 ? '+' : '') + d.diff + ' kg';
+  host.innerHTML = `<div class="dash-trend-val ${dir}">${arrow} ${d.latest} kg</div><div class="dash-trend-sub">${diffTxt} · letzte 30 Tage</div>`;
+}
+
 function renderAll() {
   const db = loadDB();
   const st = calcStats(db.sessions);
@@ -1976,24 +2088,9 @@ function renderAll() {
     const sub = document.getElementById('dash-streak-sub');
     if (sub) sub.textContent = streak === 0 ? 'noch kein Streak' : (streak === 1 ? '1 Woche' : streak + ' Wochen') + ' (min. ' + minN + '/Woche)';
   }
-  const wtDelta = calcWeightDelta30();
-  const dashWtVal = document.getElementById('dash-wt-delta-val');
-  if (dashWtVal) {
-    if (wtDelta === null) {
-      dashWtVal.textContent = '—';
-      const sub = document.getElementById('dash-wt-delta-sub');
-      if (sub) { sub.textContent = 'keine Daten'; sub.className = 'dash-tile-delta neutral'; }
-    } else {
-      dashWtVal.textContent = wtDelta.latest + ' kg';
-      const sub = document.getElementById('dash-wt-delta-sub');
-      if (sub) {
-        const d = wtDelta.diff;
-        if (d < 0)      { sub.textContent = '↓ ' + Math.abs(d) + ' kg (30 Tage)'; sub.className = 'dash-tile-delta up'; }
-        else if (d > 0) { sub.textContent = '↑ +' + d + ' kg (30 Tage)'; sub.className = 'dash-tile-delta down'; }
-        else            { sub.textContent = '= unverändert (30 Tage)'; sub.className = 'dash-tile-delta neutral'; }
-      }
-    }
-  }
+  renderDashboardEnergy();
+  renderDashboardTraining(db.sessions);
+  renderDashboardTrend();
 
   initHeatmapFilter(db.sessions);
   const _hmYear  = parseInt((document.getElementById('hm-year-sel')  || {}).value  || new Date().getFullYear());
@@ -2046,6 +2143,7 @@ function switchView(name) {
   if (name === 'body')      { renderWeightChart(); }
   if (name === 'settings')  { setTimeout(loadCfgUI, 0); }
   if (name === 'ernaehrung'){ renderMealLog(); }
+  if (name === 'dashboard'){ renderDashboardEnergy(); renderDashboardTraining(loadDB().sessions); renderDashboardTrend(); }
 
 }
 

@@ -387,7 +387,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 /* ─── DASHBOARD STATS ─────────────────────── */
-.dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+.dash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
 .dash-tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
 .dash-tile-val { font-size: 2rem; font-weight: 700; color: var(--accent); letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; }
 .dash-tile-lbl { font-size: 0.56rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
@@ -405,6 +405,39 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (max-width: 600px) {
   .dash-lower-grid { grid-template-columns: 1fr; }
 }
+
+/* ─── DASHBOARD: ENERGIE HEUTE ─────────────── */
+.energy-ring-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.energy-ring-wrap { position: relative; width: 132px; height: 132px; flex-shrink: 0; }
+.energy-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+.energy-ring-bg { fill: none; stroke: var(--surface2); stroke-width: 10; }
+.energy-ring-fg { fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .4s ease, stroke .3s ease; }
+.energy-ring-fg.over { stroke: var(--cardio); }
+.energy-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.energy-ring-val { font-size: 1.5rem; font-weight: 700; color: var(--text); letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.energy-ring-lbl { font-size: 0.6rem; color: var(--muted); margin-top: 4px; }
+.energy-side { flex: 1; min-width: 200px; }
+.energy-rest { font-size: 1.5rem; font-weight: 700; color: var(--accent); letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.energy-rest.over { color: #d9542b; }
+.energy-rest-lbl { font-size: 0.57rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 4px; margin-bottom: 14px; }
+.energy-macros { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.energy-macro-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.energy-macro-row:first-child { margin-top: 0; }
+.energy-macro-name { font-size: .6rem; font-weight: 700; color: var(--muted); width: 52px; flex-shrink: 0; }
+.energy-macro-bar { height: 6px; border-radius: 4px; background: var(--surface2); overflow: hidden; flex: 1; }
+.energy-macro-bar i { display: block; height: 100%; border-radius: 4px; }
+.energy-macro-val { font-size: .62rem; color: var(--muted2); width: 78px; text-align: right; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+.dash-mini-card { cursor: default; }
+.dash-mini-card.clickable { cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.dash-mini-card.clickable:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(28,43,74,.06), 0 10px 24px rgba(28,43,74,.10); }
+.dash-train-cat { font-size: 0.62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; display: inline-block; }
+.dash-train-when { font-size: 1.05rem; font-weight: 700; color: var(--text); margin-top: 8px; }
+.dash-train-meta { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+.dash-trend-val { font-size: 1.5rem; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.dash-trend-val.up   { color: var(--up); }
+.dash-trend-val.down { color: #d9542b; }
+.dash-trend-sub { font-size: 0.68rem; color: var(--muted); margin-top: 5px; }
 
 /* ─── INFO TOOLTIP ─────────────────────────── */
 .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); color: var(--muted2); font-size: 0.6rem; font-weight: 700; cursor: pointer; flex-shrink: 0; font-style: normal; user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -797,6 +830,49 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 <!-- ── Dashboard ── -->
 <div id="view-dashboard" class="view active">
   <div class="view-inner" style="max-width:1000px">
+
+    <!-- ENERGIE HEUTE -->
+    <div class="panel" id="dash-energy-card">
+      <div class="sec-label">Heute · Energie</div>
+      <div id="dash-energy-empty" class="chart-empty" style="display:none">
+        <div class="empty-title">Kein Kalorienziel</div>
+        <div class="empty-sub">Vervollständige dein Profil für Grunddaten &amp; Ziel.</div>
+        <button class="empty-cta" data-act="switchView" data-arg="settings">Profil öffnen →</button>
+      </div>
+      <div id="dash-energy-content">
+        <div class="energy-ring-row">
+          <div class="energy-ring-wrap">
+            <svg viewBox="0 0 120 120" class="energy-ring">
+              <circle cx="60" cy="60" r="52" class="energy-ring-bg"/>
+              <circle cx="60" cy="60" r="52" class="energy-ring-fg" id="dash-ring-fg"/>
+            </svg>
+            <div class="energy-ring-center">
+              <div class="energy-ring-val" id="dash-kcal-eaten">—</div>
+              <div class="energy-ring-lbl">von <span id="dash-kcal-target">—</span> kcal</div>
+            </div>
+          </div>
+          <div class="energy-side">
+            <div class="energy-rest" id="dash-kcal-rest">—</div>
+            <div class="energy-rest-lbl">Restbudget heute</div>
+            <div class="energy-macro-row"><span class="energy-macro-name">Verbrauch</span><div class="energy-macro-bar"><i id="dash-bal-verbrauch" style="background:var(--push)"></i></div><span class="energy-macro-val" id="dash-bal-verbrauch-val">—</span></div>
+            <div class="energy-macro-row"><span class="energy-macro-name">Zufuhr</span><div class="energy-macro-bar"><i id="dash-bal-zufuhr" style="background:var(--pull)"></i></div><span class="energy-macro-val" id="dash-bal-zufuhr-val">—</span></div>
+          </div>
+        </div>
+        <div class="energy-macros" id="dash-macros"></div>
+      </div>
+    </div>
+
+    <div class="dash-lower-grid" style="margin-bottom:14px">
+      <div class="panel dash-mini-card" id="dash-training-card">
+        <div class="sec-label" style="margin-bottom:8px">Training</div>
+        <div id="dash-training-content">—</div>
+      </div>
+      <div class="panel dash-mini-card">
+        <div class="sec-label" style="margin-bottom:8px">Gewichtstrend</div>
+        <div id="dash-trend-content">—</div>
+      </div>
+    </div>
+
     <div class="dash-grid">
       <div class="dash-tile">
         <div class="dash-tile-val" id="dash-month">—</div>
@@ -807,11 +883,6 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         <div class="dash-tile-val" id="dash-week">—</div>
         <div class="dash-tile-lbl">Diese Woche</div>
         <div class="dash-tile-delta neutral" id="dash-week-sub"></div>
-      </div>
-      <div class="dash-tile">
-        <div class="dash-tile-val" id="dash-wt-delta-val">—</div>
-        <div class="dash-tile-lbl">Gewicht (30 Tage)</div>
-        <div class="dash-tile-delta" id="dash-wt-delta-sub"></div>
       </div>
       <div class="dash-tile streak-tile">
         <div class="dash-tile-val" id="dash-streak">—</div>

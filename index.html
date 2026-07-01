@@ -180,6 +180,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .mood-seg-btn .mood-emo { font-size: 1.15rem; line-height: 1; }
 .mood-seg-btn:hover { border-color: var(--border2); }
 .mood-seg-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.intensity-seg { grid-template-columns: repeat(3, 1fr); }
 
 /* ─── LOG EXERCISE CARDS ─────────────────── */
 .log-sep { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
@@ -1803,6 +1804,15 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <!-- Strength Input -->
       <div id="log-strength" style="display:none">
         <hr class="log-sep">
+        <div class="field" style="margin-bottom:14px">
+          <label>Intensität</label>
+          <div class="mood-seg intensity-seg" id="log-intensity-seg">
+            <button type="button" class="mood-seg-btn" data-int="low" data-act="setLogIntensity" data-arg="low">Locker</button>
+            <button type="button" class="mood-seg-btn" data-int="mod" data-act="setLogIntensity" data-arg="mod">Normal</button>
+            <button type="button" class="mood-seg-btn" data-int="high" data-act="setLogIntensity" data-arg="high">Hart</button>
+          </div>
+          <input type="hidden" id="log-intensity" value="mod">
+        </div>
         <div id="log-ex-list"></div>
         <button class="log-add-ex" data-act="addLogEx">＋ Übung hinzufügen</button>
       </div>

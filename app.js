@@ -357,6 +357,57 @@ function calcMacros(profile = getProfile(), weightKg = getCurrentWeight()) {
   return { protein, fat, carbs, kcal: target };
 }
 
+// §4.3 Krafttraining-Verbrauch: nur Dauer + Gesamt-Intensität nötig, keine Übungsdaten.
+// Netto über Ruhe gerechnet (MET−1), da BMR die 24h-Grundlast bereits abdeckt.
+function strengthKcalNet(durationMin, weightKg, intensity = 'mod') {
+  if (!durationMin || !weightKg) return null;
+  const met = ENERGY_CONFIG.MET[intensity] || ENERGY_CONFIG.MET.mod;
+  return Math.round((met - 1) * 3.5 * weightKg / 200 * durationMin);
+}
+
+// §4.4 Cardio & NEAT (Subset ohne Watt/Steps – noch keine Datenquelle dafür):
+// Geräte-kcal > Laufen per Distanz > Dauer-MET-Fallback (Radfahren/Stairmaster ohne Distanz).
+function cardioKcalNet(cardio, weightKg) {
+  if (!cardio) return null;
+  if (cardio.calories) return { kcal: Math.round(cardio.calories), confidence: 0.5, source: 'device' };
+  if (cardio.type === 'laufen' && cardio.distance_km && weightKg) {
+    return { kcal: Math.round(weightKg * cardio.distance_km), confidence: 0.8, source: 'distance' };
+  }
+  if (cardio.duration_min && weightKg) {
+    const met = ENERGY_CONFIG.MET.mod;
+    return { kcal: Math.round((met - 1) * 3.5 * weightKg / 200 * cardio.duration_min), confidence: 0.6, source: 'met-fallback' };
+  }
+  return null;
+}
+
+// Netto-kcal + Confidence + Source einer beliebigen Session (§4.3 + §4.4).
+function sessionKcalNet(s, weightKg = getCurrentWeight()) {
+  if (!weightKg) return null;
+  if (s.type === 'cardio') return cardioKcalNet(s.cardio, weightKg);
+  const kcal = strengthKcalNet(sessionDurationMinutes(s), weightKg, s.intensity || 'mod');
+  return kcal == null ? null : { kcal, confidence: 0.6, source: 'strength' };
+}
+
+// Trainings-kcal eines Tages (netto), Confidence als gewichtetes Mittel wie getDayTotals.
+function getDayTrainingKcal(date, sessions = loadDB().sessions) {
+  let kcal = 0, cSum = 0, n = 0;
+  for (const s of sessions) {
+    if (s.date !== date) continue;
+    const r = sessionKcalNet(s);
+    if (!r) continue;
+    kcal += r.kcal; cSum += r.confidence; n++;
+  }
+  return { kcal, confidence: n ? Math.round((cSum / n) * 100) / 100 : null };
+}
+
+// §4.5 Tagesverbrauch (ECHT, für die Tagesbilanz) = BMR(24h) + Σ netto-Aktivität(Tag).
+// Nicht zu verwechseln mit expectedDailyExpenditure() (§4.2 Ziel-Baseline fürs Kalorienziel).
+function actualDailyExpenditure(date, profile = getProfile()) {
+  const bmr = calcBMR(profile);
+  if (bmr == null) return null;
+  return bmr + getDayTrainingKcal(date).kcal;
+}
+
 // §3 Startgewicht: schreibt sofort einen Weight-Eintrag (heute) UND legt es im Profil ab,
 // damit es als erster Punkt im Verlauf erscheint und das Profil Start/Delta zeigen kann.
 function setStartWeight(weight, kfa = null) {
@@ -865,7 +916,8 @@ function saveActiveSession() {
   const isCardio = cat === 'Cardio';
   const existing = loadActive();
   // Preserve startedAt from existing active session (don't reset on re-save)
-  const active = { startedAt: existing?.startedAt || nowBerlin(), date, cat, locKey, mood, isCardio };
+  const intensity = document.getElementById('log-intensity').value;
+  const active = { startedAt: existing?.startedAt || nowBerlin(), date, cat, locKey, mood, isCardio, intensity };
 
   if (isCardio) {
     active.cardio = {
@@ -1169,6 +1221,19 @@ function syncMoodSeg() {
     b.classList.toggle('active', b.dataset.mood === val));
 }
 
+// Intensität (Kraft-Session) — steuert §4.3 Verbrauchs-MET, gleiches Muster wie Mood
+function setLogIntensity(val) {
+  document.getElementById('log-intensity').value = val || 'mod';
+  syncIntensitySeg();
+  triggerAutoSave();
+}
+
+function syncIntensitySeg() {
+  const val = document.getElementById('log-intensity').value;
+  document.querySelectorAll('#log-intensity-seg .mood-seg-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.int === val));
+}
+
 // Header context line: colored dot in category color + "<Kategorie> · <Standort>"
 function updateLogContext() {
   const catSel = document.getElementById('log-cat');
@@ -1223,7 +1288,9 @@ function openLog() {
   document.getElementById('log-floors-field').style.display = 'none';
   document.getElementById('log-ex-list').innerHTML = '';
   logExCount = 0;
+  document.getElementById('log-intensity').value = 'mod';
   syncMoodSeg();
+  syncIntensitySeg();
   updateLogContext();
   updateLogSummary();
   updateModalButtons();
@@ -1259,6 +1326,7 @@ function restoreActiveSession(active) {
     document.getElementById('log-floors').value = c.floors || '';
     document.getElementById('log-kcal').value   = c.kcal   || '';
   } else if (!isCardio && active.exercises) {
+    document.getElementById('log-intensity').value = active.intensity || 'mod';
     document.getElementById('log-ex-list').innerHTML = '';
     logExCount = 0;
     active.exercises.forEach(ex => {
@@ -1282,6 +1350,7 @@ function restoreActiveSession(active) {
   }
 
   syncMoodSeg();
+  syncIntensitySeg();
   updateLogContext();
   updateLogSummary();
   updateModalButtons();
@@ -1563,8 +1632,10 @@ function saveLog() {
       toast('Dauer oder Distanz eingeben', true);
       return;
     }
-    session.cardio = { duration_min: durEl.value ? +durEl.value : null, distance_km: distEl.value ? +distEl.value : null, floors: floorsEl.value ? +floorsEl.value : null, calories: kcal ? +kcal : null };
+    const cardioType = document.getElementById('log-cardio-type').value;
+    session.cardio = { type: cardioType || null, duration_min: durEl.value ? +durEl.value : null, distance_km: distEl.value ? +distEl.value : null, floors: floorsEl.value ? +floorsEl.value : null, calories: kcal ? +kcal : null };
   } else {
+    session.intensity = document.getElementById('log-intensity').value || 'mod';
     let nameError = false;
     document.querySelectorAll('#log-ex-list .log-ex').forEach(block => {
       const nameEl = block.querySelector('.log-ex-name');
@@ -1966,7 +2037,7 @@ function renderDashboardEnergy() {
 
   const today  = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
   const totals = getDayTotals(today);
-  const expend = expectedDailyExpenditure(profile) || target;
+  const expend = actualDailyExpenditure(today, profile) || expectedDailyExpenditure(profile) || target;
   const rest   = target - totals.kcal;
   const over   = rest < 0;
   const pct    = Math.min(100, Math.round((totals.kcal / target) * 100));
@@ -2092,16 +2163,20 @@ function renderBilanz() {
   setTxt('bz-target', target.toLocaleString('de-DE') + ' kcal');
   setTxt('bz-goal', profile.goal ? GOAL_LABELS[profile.goal] + (profile.goalIntensity === 'aggressive' ? ' (intensiv)' : '') : '—');
 
-  const today  = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
-  const totals = getDayTotals(today);
-  const balMax = Math.max(expend, totals.kcal, 1);
-  setW('bz-bal-verbrauch', expend, balMax);
+  const today      = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+  const totals     = getDayTotals(today);
+  const trainInfo  = getDayTrainingKcal(today);
+  const actualExpend = actualDailyExpenditure(today, profile) || expend;
+  const balMax = Math.max(actualExpend, totals.kcal, 1);
+  setW('bz-bal-verbrauch', actualExpend, balMax);
   setW('bz-bal-zufuhr', totals.kcal, balMax);
-  setTxt('bz-bal-verbrauch-val', expend.toLocaleString('de-DE') + ' kcal');
+  setTxt('bz-bal-verbrauch-val', actualExpend.toLocaleString('de-DE') + ' kcal');
   setTxt('bz-bal-zufuhr-val', totals.kcal.toLocaleString('de-DE') + ' kcal');
 
   const band = totals.confidence != null ? Math.round(totals.kcal * (1 - totals.confidence)) : null;
-  setTxt('bz-band-note', band ? `Zufuhr ± ${band} kcal (Datenqualität-Fehlerband)` : 'Noch keine Mahlzeiten heute geloggt.');
+  const bandTxt  = band ? `Zufuhr ± ${band} kcal (Datenqualität-Fehlerband)` : 'Noch keine Mahlzeiten heute geloggt.';
+  const trainTxt = trainInfo.kcal > 0 ? ` · davon Training heute: +${trainInfo.kcal} kcal (netto)` : '';
+  setTxt('bz-band-note', bandTxt + trainTxt);
 }
 
 function renderAll() {
@@ -2534,8 +2609,10 @@ function editSession(id) {
   document.getElementById('log-cat').value   = s.category || '';
   document.getElementById('log-loc').value   = LOC_KEY[s.location] || s.location || '';
   document.getElementById('log-mood').value  = MOOD_KEY[s.mood] || s.mood || '';
+  document.getElementById('log-intensity').value = s.intensity || 'mod';
   onLogChange();
   syncMoodSeg();
+  syncIntensitySeg();
   if (s.type === 'cardio' && s.cardio) {
     const c = s.cardio;
     if (c.type) document.getElementById('log-cardio-type').value = c.type;

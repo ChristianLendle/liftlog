@@ -82,4 +82,21 @@ test.describe('Profil — Grunddaten & Ziel', () => {
     expect(goal).toBe('cut');
   });
 
+  test('Konto & Login: Gefahrenzone öffnet Löschen, Passwort-Modal verlangt aktuelles Passwort', async ({ page }) => {
+    await setup(page);
+    await page.click('[data-act="settingsNav"][data-arg="creds"]');
+    await expect(page.locator('#set-scr-creds')).toBeVisible();
+
+    // Gefahrenzone (Daten löschen) liegt jetzt unter Konto & Login
+    await page.click('#set-scr-creds [data-act="settingsNav"][data-arg="del"]');
+    await expect(page.locator('#set-scr-del')).toBeVisible();
+    await page.click('#set-scr-del [data-act="settingsBack"]');
+    await expect(page.locator('#set-scr-creds')).toBeVisible();      // zurück auf Konto & Login (nicht Chooser)
+
+    // Passwort-ändern-Modal hat das neue Feld "Aktuelles Passwort"
+    await page.click('[data-act="openPasswordChangeModal"]');
+    await expect(page.locator('#m-password-change')).toBeVisible();
+    await expect(page.locator('#pw-change-current')).toBeVisible();
+  });
+
 });

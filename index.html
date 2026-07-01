@@ -1182,14 +1182,6 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
           <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="var(--muted2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </button>
       </div>
-      <div class="set-group-label">Konto</div>
-      <div class="set-card">
-        <button class="set-row" data-act="settingsNav" data-arg="del">
-          <span class="set-row-ic danger"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></span>
-          <span style="flex:1"><span class="set-row-lbl danger">Daten löschen</span><span class="set-row-sub">Trainingsdaten von diesem Gerät entfernen</span></span>
-          <span class="set-row-chev"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="#E3B4B4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        </button>
-      </div>
     </div>
 
     <!-- ════════════ ZUGANGSDATEN ════════════ -->
@@ -1212,6 +1204,11 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
           <button class="btn" data-act="openPasswordChangeModal">Passwort ändern</button>
         </div>
         <p class="set-hint">Aus Sicherheitsgründen wirst du nach einer Änderung evtl. erneut zur Anmeldung aufgefordert. Diese Optionen funktionieren nur, wenn du angemeldet bist.</p>
+      </div>
+      <div class="panel" style="border:1px solid rgba(204,51,51,.3)">
+        <div class="sec-label" style="color:#cc4444">Gefahrenzone</div>
+        <p style="font-size:.72rem;color:var(--muted2);margin-bottom:12px;line-height:1.6">Alle Trainingsdaten von diesem Gerät unwiderruflich löschen. Dein Online-Konto bleibt bestehen.</p>
+        <button class="btn btn-danger" data-act="settingsNav" data-arg="del">Daten löschen</button>
       </div>
     </div>
 
@@ -1398,7 +1395,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     </div>
 
     <!-- ════════════ DATEN LÖSCHEN ════════════ -->
-    <div class="set-screen" id="set-scr-del" data-parent="edit">
+    <div class="set-screen" id="set-scr-del" data-parent="creds">
       <div class="set-topbar">
         <button class="set-back" data-act="settingsBack"><svg width="9" height="15" viewBox="0 0 10 17" fill="none"><path d="M8 1L2 8.5 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Zurück</button>
         <span class="set-topbar-title danger">Daten löschen</span>
@@ -1756,6 +1753,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <div class="modal-title">Passwort ändern</div>
       <button class="modal-x" data-act="closeM" data-arg="m-password-change">✕</button>
     </div>
+    <div class="field"><label>Aktuelles Passwort</label><input type="password" id="pw-change-current" placeholder="Aktuelles Passwort" autocomplete="current-password"></div>
     <div class="field"><label>Neues Passwort</label><input type="password" id="pw-change-new" placeholder="Passwort eingeben" autocomplete="new-password" data-input="pwChangeCheck" data-pass="value"></div>
     <div style="background:var(--surface);border:1px solid #E7EBF3;border-radius:10px;padding:12px 14px;margin:-2px 0 16px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(28,43,74,.04);font-size:.74rem">
       <div id="rule-len"  class="pw-rule">○ Mindestens 10 Zeichen</div>

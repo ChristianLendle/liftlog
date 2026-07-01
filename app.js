@@ -3179,6 +3179,7 @@ async function saveEmailChange() {
 }
 
 function openPasswordChangeModal() {
+  document.getElementById('pw-change-current').value     = '';
   document.getElementById('pw-change-new').value         = '';
   document.getElementById('pw-change-confirm').value     = '';
   document.getElementById('pw-change-msg').textContent   = '';
@@ -3187,13 +3188,21 @@ function openPasswordChangeModal() {
 }
 
 async function savePasswordChange() {
+  const curPw  = document.getElementById('pw-change-current').value;
   const newPw  = document.getElementById('pw-change-new').value;
   const confPw = document.getElementById('pw-change-confirm').value;
   const msg    = document.getElementById('pw-change-msg');
+  if (!curPw) { msg.textContent = '✗ Bitte aktuelles Passwort eingeben.'; msg.style.color = '#cc4444'; return; }
   const pwErr  = validatePw(newPw);
   if (pwErr) { msg.textContent = pwErr; msg.style.color = '#cc4444'; return; }
   if (newPw !== confPw) { msg.textContent = '✗ Passwörter stimmen nicht überein.'; msg.style.color = '#cc4444'; return; }
-  msg.textContent = 'Speichern…'; msg.style.color = 'var(--muted2)';
+  msg.textContent = 'Prüfe…'; msg.style.color = 'var(--muted2)';
+  // Re-Auth: aktuelles Passwort verifizieren, bevor wir es ändern
+  const { data: { user } } = await _SB.auth.getUser();
+  if (!user?.email) { msg.textContent = '✗ Nicht angemeldet.'; msg.style.color = '#cc4444'; return; }
+  const { error: reauthErr } = await _SB.auth.signInWithPassword({ email: user.email, password: curPw });
+  if (reauthErr) { msg.textContent = '✗ Aktuelles Passwort ist falsch.'; msg.style.color = '#cc4444'; return; }
+  msg.textContent = 'Speichern…';
   const { error } = await _SB.auth.updateUser({ password: newPw });
   if (error) { msg.textContent = '✗ ' + error.message; msg.style.color = '#cc4444'; return; }
   msg.textContent = '✓ Passwort geändert.'; msg.style.color = 'var(--up)';

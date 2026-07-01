@@ -310,6 +310,26 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .top-nav-tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted2); font-family: var(--font); font-size: 0.62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 11px 14px; cursor: pointer; margin-bottom: -1px; transition: all .12s; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
 .top-nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 .top-nav-tab:hover { color: var(--text); }
+/* Segmented Control für den Training-Tab (Sessions | Fortschritt) */
+.train-seg { display: flex; gap: 6px; padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.tseg { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); font-family: var(--font); font-size: 0.62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 7px 16px; border-radius: 999px; cursor: pointer; transition: all .12s; -webkit-tap-highlight-color: transparent; }
+.tseg.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tseg:hover { color: var(--text); }
+/* Ernährung */
+.meal-daybar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.meal-daynav { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border2); background: var(--surface); color: var(--accent); font-size: 1.1rem; font-weight: 700; cursor: pointer; }
+.meal-daylabel { font-size: 0.95rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.meal-group { margin-bottom: 12px; }
+.meal-group-hd { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.meal-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.meal-item:last-child { border-bottom: none; }
+.meal-add-row { padding: 10px 14px; }
+.meal-add-row button { background: none; border: none; color: var(--accent); font-family: var(--font); font-size: 0.72rem; font-weight: 700; letter-spacing: .04em; cursor: pointer; }
+.meal-del { background: none; border: none; color: var(--muted2); font-size: 0.9rem; cursor: pointer; padding: 4px 6px; border-radius: 6px; flex-shrink: 0; }
+.meal-del:hover { color: var(--down); }
+.meal-food-list { max-height: 200px; overflow-y: auto; margin: 4px 0 10px; }
+.meal-food-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; cursor: pointer; }
+.meal-food-row:hover { border-color: var(--accent); background: var(--accent-dim); }
 
 /* ─── VIEWS ──────────────────────────────── */
 .view { display: none; }
@@ -754,10 +774,15 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 <!-- ═══ TOP NAV ══════════════════════════════════════ -->
 <nav class="top-nav">
   <button class="top-nav-tab active" id="nav-dashboard" data-act="switchView" data-arg="dashboard">Dashboard</button>
-  <button class="top-nav-tab" id="nav-progress"  data-act="switchView" data-arg="progress">Fortschritt</button>
+  <button class="top-nav-tab" id="nav-train"      data-act="switchView" data-arg="sessions">Training</button>
+  <button class="top-nav-tab" id="nav-ernaehrung" data-act="switchView" data-arg="ernaehrung">Essen</button>
   <button class="top-nav-tab" id="nav-body"       data-act="switchView" data-arg="body">Körper</button>
-  <button class="top-nav-tab" id="nav-sessions"   data-act="switchView" data-arg="sessions">Sessions</button>
   <button class="top-nav-tab" id="nav-settings"  data-act="switchView" data-arg="settings">Profil</button>
+</nav>
+<!-- Segmented Control für den Training-Tab (Sessions | Fortschritt) -->
+<nav class="train-seg" id="train-seg" style="display:none">
+  <button class="tseg" data-seg="sessions" data-act="switchView" data-arg="sessions">Sessions</button>
+  <button class="tseg" data-seg="progress" data-act="switchView" data-arg="progress">Fortschritt</button>
 </nav>
 
 <!-- ═══ RESUME BANNER (active session) ════════════════ -->
@@ -1000,6 +1025,18 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ═══ VIEW: ERNÄHRUNG ══════════════════════════════ -->
+<div id="view-ernaehrung" class="view">
+  <div class="view-inner" style="max-width:640px">
+    <div class="meal-daybar">
+      <button class="meal-daynav" data-act="mealDayShift" data-argn="-1" aria-label="Vorheriger Tag">‹</button>
+      <div class="meal-daylabel" id="meal-day-label">Heute</div>
+      <button class="meal-daynav" data-act="mealDayShift" data-argn="1" aria-label="Nächster Tag">›</button>
+    </div>
+    <div id="meal-log"></div>
   </div>
 </div>
 
@@ -1430,27 +1467,21 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   <rect x="13" y="9" width="3" height="5" rx="1" fill="currentColor" opacity="0.5"/>
 </svg></span>Dashboard
   </button>
-  <button class="bottom-nav-tab" id="bnav-progress" data-act="switchView" data-arg="progress">
+  <button class="bottom-nav-tab" id="bnav-train" data-act="switchView" data-arg="sessions">
     <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <path d="M5,30 C9,27 13,17 20,13 C27,9 31,15 35,9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-  <line x1="4" y1="36" x2="36" y2="36" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
-</svg></span>Fortschritt
+  <path d="M6 15v10M10 12v16M30 12v16M34 15v10M10 20h20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>Training
+  </button>
+  <button class="bottom-nav-tab" id="bnav-ernaehrung" data-act="switchView" data-arg="ernaehrung">
+    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M13 6v9a3 3 0 0 0 3 3M16 6v12M19 6v9a3 3 0 0 1-3 3M16 21v13M27 6c-2 1.5-3 4.5-3 8.5s1 6 3 7.5v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>Essen
   </button>
   <button class="bottom-nav-tab" id="bnav-body" data-act="switchView" data-arg="body">
     <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <path d="M20,32 C20,32 6,22 6,14 C6,10 9,7 13,7 C15.5,7 17.5,8.5 20,10.5 C22.5,8.5 24.5,7 27,7 C31,7 34,10 34,14 C34,22 20,32 20,32 Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
   <polyline points="9,19 12.5,19 14.5,14 16.5,23 19.5,16 21.5,19 31,19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
 </svg></span>Körper
-  </button>
-  <button class="bottom-nav-tab" id="bnav-sessions" data-act="switchView" data-arg="sessions">
-    <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <rect x="8" y="6" width="24" height="30" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
-  <rect x="15" y="2" width="10" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
-  <line x1="13" y1="17" x2="27" y2="17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="13" y1="22" x2="27" y2="22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="13" y1="27" x2="20" y2="27" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-  <polyline points="21,25 24,29 29,22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-</svg></span>Sessions
   </button>
   <button class="bottom-nav-tab" id="bnav-settings" data-act="switchView" data-arg="settings">
     <span class="bnav-icon"><svg viewBox="0 0 40 40" width="26" height="26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -1479,6 +1510,9 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
     <button class="fab-item" data-act="openWeightModal">
       <span class="fab-item-ic" style="background:rgba(212,134,10,.14);color:var(--cardio)">⚖</span>Gewicht tracken
     </button>
+    <button class="fab-item" data-act="openMealFromMenu">
+      <span class="fab-item-ic" style="background:rgba(74,122,191,.16);color:var(--pull)">🍽</span>Mahlzeit loggen
+    </button>
   </div>
   <button class="fab-pill" id="fab-pill" data-act="onFabClick">
     <span class="fab-pill-ic">
@@ -1490,6 +1524,53 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   </button>
 </div>
 <div id="fab-backdrop" style="display:none;position:fixed;inset:0;z-index:99" data-act="closeFabMenu"></div>
+
+<!-- ═══ MODAL: MAHLZEIT HINZUFÜGEN ═══════════════════ -->
+<div class="overlay" id="m-meal-add">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hd">
+      <div class="modal-title" id="meal-add-title">Mahlzeit hinzufügen</div>
+      <button class="modal-x" data-act="closeM" data-arg="m-meal-add">✕</button>
+    </div>
+    <div class="field"><label>Mahlzeit</label>
+      <select id="meal-add-type"><option value="breakfast">Frühstück</option><option value="lunch">Mittag</option><option value="dinner">Abend</option><option value="snack">Snack</option></select>
+    </div>
+
+    <!-- Modus: Auswählen -->
+    <div id="meal-add-pick">
+      <div class="field"><label>Lebensmittel</label><input type="text" id="meal-add-search" placeholder="In deiner Food-DB suchen…" autocomplete="off" data-input="renderMealFoodList" data-pass="value"></div>
+      <div id="meal-food-list" class="meal-food-list"></div>
+      <button class="log-add-ex" data-act="mealAddShowManual">＋ Neues Lebensmittel manuell anlegen</button>
+    </div>
+
+    <!-- Modus: Manuell anlegen -->
+    <div id="meal-add-manual" style="display:none">
+      <div class="field"><label>Name</label><input type="text" id="mm-name" placeholder="z.B. Hähnchen-Reis-Bowl"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="field" style="margin:0"><label>kcal / 100 g</label><input type="number" id="mm-kcal" inputmode="decimal" min="0" placeholder="0"></div>
+        <div class="field" style="margin:0"><label>Protein / 100 g</label><input type="number" id="mm-p" inputmode="decimal" min="0" placeholder="0"></div>
+        <div class="field" style="margin:0"><label>Carbs / 100 g</label><input type="number" id="mm-c" inputmode="decimal" min="0" placeholder="0"></div>
+        <div class="field" style="margin:0"><label>Fett / 100 g</label><input type="number" id="mm-f" inputmode="decimal" min="0" placeholder="0"></div>
+      </div>
+      <div id="meal-add-manual-msg" style="font-size:.74rem;min-height:16px;margin:6px 0;color:#cc4444"></div>
+      <div style="display:flex;gap:8px"><button class="btn" data-act="mealAddShowPick">‹ Zurück</button><button class="btn-fill" style="flex:1" data-act="mealAddCreateManual">Anlegen &amp; wählen</button></div>
+    </div>
+
+    <!-- Modus: Menge -->
+    <div id="meal-add-qty" style="display:none">
+      <div style="margin-bottom:12px"><div id="meal-add-selname" style="font-weight:700;font-size:.9rem;color:var(--text)">—</div><div id="meal-add-selper" style="font-size:.72rem;color:var(--muted2);margin-top:2px">—</div></div>
+      <div class="field"><label>Menge (g)</label><input type="number" id="meal-add-grams" inputmode="decimal" min="0" value="100" data-input="recalcMealAdd" data-pass="value"></div>
+      <div style="background:var(--accent-dim);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted2)">Für <span id="meal-add-gramslbl">100</span> g</span>
+          <span style="font-size:1.4rem;font-weight:700;letter-spacing:-.03em;color:var(--accent);font-variant-numeric:tabular-nums"><span id="meal-add-kcal">—</span> <span style="font-size:.72rem;color:var(--muted2)">kcal</span></span>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:10px;font-size:.75rem;color:var(--muted)">P <b id="meal-add-p" style="color:var(--text)">—</b> g · C <b id="meal-add-c" style="color:var(--text)">—</b> g · F <b id="meal-add-f" style="color:var(--text)">—</b> g</div>
+      </div>
+      <div style="display:flex;gap:8px"><button class="btn" data-act="mealAddShowPick">‹ Zurück</button><button class="btn-fill" style="flex:1" data-act="mealAddConfirm">Hinzufügen</button></div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ VIEW: TRAINING LOGGEN ════════════════════════ -->
 <div id="view-training" class="view">

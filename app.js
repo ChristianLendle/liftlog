@@ -464,6 +464,148 @@ function getDayTotals(date) {
   t.confidence = list.length ? Math.round((cSum / list.length) * 100) / 100 : null;
   return t;
 }
+
+// ─── ERNÄHRUNG-UI: Meal-Log-Ansicht + Hinzufügen ──────────────────────────────
+const _mealToday = () => new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+let _mealDay = _mealToday();
+let _mealSel = null;                                    // im Add-Modal gewähltes Food
+const _escH = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+function _mealDayLabel(d) {
+  if (d === _mealToday()) return 'Heute';
+  const [y, m, day] = d.split('-');
+  return `${day}.${m}.${y}`;
+}
+function mealDayShift(n) {
+  const d = new Date(_mealDay + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n);  // UTC-Noon: DST-sicher
+  _mealDay = d.toISOString().slice(0, 10);
+  renderMealLog();
+}
+function renderMealLog() {
+  const host = document.getElementById('meal-log');
+  const lbl  = document.getElementById('meal-day-label');
+  if (lbl) lbl.textContent = _mealDayLabel(_mealDay);
+  if (!host) return;
+  const groups = getMealsForDay(_mealDay);
+  const totals = getDayTotals(_mealDay);
+  const target = calcTargetKcal();                      // null ohne Profil
+  const macros = calcMacros();
+  const rest   = target != null ? target - totals.kcal : null;
+  const band   = totals.confidence != null ? Math.round(totals.kcal * (1 - totals.confidence)) : null;
+
+  const bar = (val, max, col) => {
+    const pct = max ? Math.min(100, Math.round(val / max * 100)) : 0;
+    return `<div style="height:6px;border-radius:4px;background:#eceef3;overflow:hidden;flex:1"><i style="display:block;height:100%;width:${pct}%;background:${col};border-radius:4px"></i></div>`;
+  };
+  const macroRow = (name, val, max, col) =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="font-size:.6rem;font-weight:700;color:var(--muted);width:52px">${name}</span>${bar(val, max, col)}<span style="font-size:.62rem;color:var(--muted2);width:70px;text-align:right;font-variant-numeric:tabular-nums">${val}${max ? '/' + max : ''} g</span></div>`;
+
+  let html = `<div class="panel" style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end">
+      <div>
+        <div style="font-size:.57rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted2)">Gegessen</div>
+        <div style="font-size:1.6rem;font-weight:700;letter-spacing:-.03em;color:var(--text);font-variant-numeric:tabular-nums;margin-top:3px">${totals.kcal.toLocaleString('de-DE')} <span style="font-size:.8rem;color:var(--muted)">${target != null ? '/ ' + target.toLocaleString('de-DE') + ' ' : ''}kcal</span></div>
+      </div>
+      <div style="text-align:right;font-size:.66rem;font-weight:600;color:var(--accent2)">${rest != null ? 'Rest ' + rest.toLocaleString('de-DE') : ''}${band ? ' · ± ' + band : ''}</div>
+    </div>
+    ${macros ? macroRow('Protein', totals.protein, macros.protein, 'var(--push)') + macroRow('Carbs', totals.carbs, macros.carbs, 'var(--pull)') + macroRow('Fett', totals.fat, macros.fat, 'var(--cardio)') : ''}
+  </div>`;
+
+  for (const type of MEAL_TYPES) {
+    const items = groups[type];
+    const sum = items.reduce((s, m) => s + m.totals.kcal, 0);
+    html += `<div class="panel meal-group" style="padding:0">
+      <div class="meal-group-hd"><span style="font-weight:700;font-size:.82rem;color:var(--text)">${MEAL_LABELS[type]}</span><span style="font-size:.7rem;color:var(--muted)">${sum ? sum.toLocaleString('de-DE') + ' kcal' : ''}</span></div>`;
+    for (const m of items) {
+      const it = m.items[0] || {};
+      html += `<div class="meal-item"><div style="flex:1;min-width:0"><div style="font-size:.8rem;font-weight:600;color:var(--text)">${_escH(it.name)} · ${it.grams} g</div><div style="font-size:.66rem;color:var(--muted2)">${m.totals.kcal} kcal · ${m.totals.protein}P ${m.totals.carbs}C ${m.totals.fat}F</div></div><button class="meal-del" data-act="deleteMealEntryUI" data-arg="${m.id}" aria-label="Entfernen">✕</button></div>`;
+    }
+    html += `<div class="meal-add-row"><button data-act="openMealAdd" data-arg="${type}">＋ hinzufügen</button></div></div>`;
+  }
+  host.innerHTML = html;
+}
+
+function _mealAddMode(mode) {
+  document.getElementById('meal-add-pick').style.display   = mode === 'pick'   ? '' : 'none';
+  document.getElementById('meal-add-manual').style.display = mode === 'manual' ? '' : 'none';
+  document.getElementById('meal-add-qty').style.display    = mode === 'qty'    ? '' : 'none';
+}
+function openMealAdd(mealType) {
+  _mealSel = null;
+  const sel = document.getElementById('meal-add-type');
+  if (sel && mealType) sel.value = mealType;
+  document.getElementById('meal-add-search').value = '';
+  ['mm-name', 'mm-kcal', 'mm-p', 'mm-c', 'mm-f'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+  const msg = document.getElementById('meal-add-manual-msg'); if (msg) msg.textContent = '';
+  renderMealFoodList('');
+  _mealAddMode('pick');
+  openM('m-meal-add');
+}
+function openMealFromMenu() { closeFabMenu(); openMealAdd(); }
+
+function renderMealFoodList(q) {
+  const host = document.getElementById('meal-food-list');
+  if (!host) return;
+  const query = (q || '').trim().toLowerCase();
+  let db = getFoodDb();
+  if (query) db = db.filter(f => (f.name + ' ' + (f.brand || '')).toLowerCase().includes(query));
+  db = db.sort((a, b) => (Number(b.favorite) - Number(a.favorite)) || a.name.localeCompare(b.name)).slice(0, 30);
+  if (!db.length) {
+    host.innerHTML = `<div style="font-size:.72rem;color:var(--muted2);padding:8px 2px">${query ? 'Nichts gefunden.' : 'Noch keine Lebensmittel — leg unten eins an.'}</div>`;
+    return;
+  }
+  host.innerHTML = db.map(f =>
+    `<div class="meal-food-row" data-act="mealAddSelect" data-arg="${f.id}"><div style="min-width:0"><div style="font-size:.78rem;font-weight:600;color:var(--text)">${f.favorite ? '★ ' : ''}${_escH(f.name)}</div><div style="font-size:.64rem;color:var(--muted2)">${f.per100.kcal} kcal / 100 g${f.brand ? ' · ' + _escH(f.brand) : ''}</div></div><span style="font-weight:700;font-size:1rem;color:var(--accent)">＋</span></div>`
+  ).join('');
+}
+function mealAddSelect(id) {
+  const f = getFood(id);
+  if (!f) return;
+  _mealSel = f;
+  document.getElementById('meal-add-selname').textContent = f.name;
+  document.getElementById('meal-add-selper').textContent  = `${f.per100.kcal} kcal · ${f.per100.protein}P ${f.per100.carbs}C ${f.per100.fat}F / 100 g`;
+  document.getElementById('meal-add-grams').value = f.servingG || 100;
+  _mealAddMode('qty');
+  recalcMealAdd();
+}
+function recalcMealAdd() {
+  if (!_mealSel) return;
+  const grams = parseFloat(document.getElementById('meal-add-grams').value) || 0;
+  const m = scaleFood(_mealSel, grams);
+  document.getElementById('meal-add-gramslbl').textContent = grams;
+  document.getElementById('meal-add-kcal').textContent = m.kcal;
+  document.getElementById('meal-add-p').textContent = m.protein;
+  document.getElementById('meal-add-c').textContent = m.carbs;
+  document.getElementById('meal-add-f').textContent = m.fat;
+}
+function mealAddShowManual() { _mealAddMode('manual'); }
+function mealAddShowPick()   { _mealAddMode('pick'); renderMealFoodList(document.getElementById('meal-add-search').value); }
+function mealAddCreateManual() {
+  const msg  = document.getElementById('meal-add-manual-msg');
+  const name = document.getElementById('mm-name').value.trim();
+  if (!name) { msg.textContent = '✗ Name fehlt.'; return; }
+  const food = upsertFood(makeFood({
+    name,
+    per100: {
+      kcal:    document.getElementById('mm-kcal').value,
+      protein: document.getElementById('mm-p').value,
+      carbs:   document.getElementById('mm-c').value,
+      fat:     document.getElementById('mm-f').value,
+    },
+  }));
+  msg.textContent = '';
+  mealAddSelect(food.id);
+}
+function mealAddConfirm() {
+  if (!_mealSel) return;
+  const grams = parseFloat(document.getElementById('meal-add-grams').value) || 0;
+  if (grams <= 0) return;
+  addMealEntry({ date: _mealDay, mealType: document.getElementById('meal-add-type').value, foodId: _mealSel.id, grams });
+  closeM('m-meal-add');
+  renderMealLog();
+  toast('Hinzugefügt ✓');
+}
+function deleteMealEntryUI(id) { deleteMealEntry(id); renderMealLog(); }
 const loadDB  = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || { sessions: [] }; } catch { return { sessions: [] }; } };
 const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncAllUserData(); };
 
@@ -1737,7 +1879,7 @@ function renderAll() {
 }
 
 // ─── VIEW SWITCHING ──────────────────────────────────
-const VIEWS = ['dashboard', 'progress', 'body', 'sessions', 'settings', 'training'];
+const VIEWS = ['dashboard', 'progress', 'body', 'sessions', 'settings', 'training', 'ernaehrung'];
 
 function switchView(name) {
   // Nav + FAB während Training ausblenden/einblenden
@@ -1761,10 +1903,20 @@ function switchView(name) {
     const bot = document.getElementById('bnav-' + v);
     if (bot) bot.classList.toggle('active', v === name);
   });
+  // "Training"-Gruppe: Sessions + Fortschritt teilen sich einen Tab via Segmented Control
+  const inTrain = (name === 'sessions' || name === 'progress');
+  ['nav-train', 'bnav-train'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('active', inTrain); });
+  const trainSeg = document.getElementById('train-seg');
+  if (trainSeg) {
+    trainSeg.style.display = (inTrain && !isTraining) ? '' : 'none';
+    trainSeg.querySelectorAll('[data-seg]').forEach(b => b.classList.toggle('active', b.dataset.seg === name));
+  }
+
   // Trigger chart renders on first visit
-  if (name === 'progress') { renderDurChart(); init1RMSelect(); initProgressDefaults(); }
-  if (name === 'body')     { renderWeightChart(); }
-  if (name === 'settings') { setTimeout(loadCfgUI, 0); }
+  if (name === 'progress')  { renderDurChart(); init1RMSelect(); initProgressDefaults(); }
+  if (name === 'body')      { renderWeightChart(); }
+  if (name === 'settings')  { setTimeout(loadCfgUI, 0); }
+  if (name === 'ernaehrung'){ renderMealLog(); }
 
 }
 

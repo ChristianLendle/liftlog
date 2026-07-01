@@ -372,6 +372,98 @@ function setStartWeight(weight, kfa = null) {
   saveWeightEntries(entries);                               // löst Sync aus
   saveProfile({ startWeight: w, startKfa: k ?? null, startDate: date });
 }
+
+// ─── ERNÄHRUNG: Food-DB + Meal-Log (Spec §2.1/§2.2/§5) ────────────────────────
+// Zwei Ebenen strikt getrennt: Food-DB = wiederverwendbare Lebensmittel (pro 100 g),
+// Meal-Log = Tageseinträge, die Food-Werte beim Loggen DENORMALISIERT einfrieren.
+const MEALS_KEY  = 'liftlog_meals_v1';
+const FOODDB_KEY = 'liftlog_fooddb_v1';
+const getMeals   = () => { try { return JSON.parse(localStorage.getItem(MEALS_KEY)  || '[]'); } catch { return []; } };
+const saveMeals  = (m) => { localStorage.setItem(MEALS_KEY,  JSON.stringify(m)); syncAllUserData(); };
+const getFoodDb  = () => { try { return JSON.parse(localStorage.getItem(FOODDB_KEY) || '[]'); } catch { return []; } };
+const saveFoodDb = (f) => { localStorage.setItem(FOODDB_KEY, JSON.stringify(f)); syncAllUserData(); };
+
+const MEAL_TYPES  = ['breakfast', 'lunch', 'dinner', 'snack'];
+const MEAL_LABELS = { breakfast: 'Frühstück', lunch: 'Mittag', dinner: 'Abend', snack: 'Snack' };
+const _uuid = (p) => p + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
+
+// Food-DB-Eintrag (pro 100 g). Confidence: manuell 0.7, OFF-Barcode 0.9 (§4.7).
+function makeFood({ name, brand = null, per100, servingG = null, source = 'manual', barcode = null }) {
+  return {
+    id: _uuid('f_'), name, brand,
+    per100: { kcal: +per100.kcal || 0, protein: +per100.protein || 0, carbs: +per100.carbs || 0, fat: +per100.fat || 0 },
+    servingG: servingG != null && servingG !== '' ? +servingG : null,
+    source, barcode,
+    confidence: source === 'off' ? 0.9 : 0.7,
+    favorite: false,
+    createdAt: new Date().toISOString().slice(0, 10),
+  };
+}
+function getFood(id)   { return getFoodDb().find(f => f.id === id) || null; }
+function upsertFood(food) {
+  const db = getFoodDb();
+  const i = db.findIndex(f => f.id === food.id);
+  if (i >= 0) db[i] = food; else db.push(food);
+  saveFoodDb(db);
+  return food;
+}
+function deleteFood(id)  { saveFoodDb(getFoodDb().filter(f => f.id !== id)); }
+function toggleFoodFavorite(id) {
+  const db = getFoodDb(); const f = db.find(x => x.id === id);
+  if (f) { f.favorite = !f.favorite; saveFoodDb(db); }
+}
+
+// Nährwerte eines Foods auf eine Menge (g) skalieren.
+function scaleFood(food, grams) {
+  const k = (+grams || 0) / 100, p = food.per100;
+  return {
+    kcal:    Math.round(p.kcal * k),
+    protein: Math.round(p.protein * k * 10) / 10,
+    carbs:   Math.round(p.carbs   * k * 10) / 10,
+    fat:     Math.round(p.fat     * k * 10) / 10,
+  };
+}
+
+// Meal-Log-Eintrag: Werte werden eingefroren, damit spätere Food-DB-Änderungen alte Logs nicht verzerren (§2.2).
+function addMealEntry({ date, mealType, foodId, grams, time = null }) {
+  const food = getFood(foodId);
+  if (!food) return null;
+  const m = scaleFood(food, grams);
+  const entry = {
+    id: _uuid('m_'), date,
+    time: time || new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+    mealType,
+    items:  [{ foodId: food.id, name: food.name, grams: +grams, ...m }],
+    totals: { ...m },
+    confidence: food.confidence,
+    source: 'fooddb',
+  };
+  const meals = getMeals(); meals.push(entry); saveMeals(meals);
+  return entry;
+}
+function deleteMealEntry(id) { saveMeals(getMeals().filter(m => m.id !== id)); }
+
+// Einträge eines Tages, gruppiert nach Mahlzeit.
+function getMealsForDay(date) {
+  const byType = { breakfast: [], lunch: [], dinner: [], snack: [] };
+  for (const m of getMeals()) if (m.date === date) (byType[m.mealType] || byType.snack).push(m);
+  return byType;
+}
+// Tagessumme kcal + Makros; Confidence als gewichtetes Mittel (Fehlerband, §4.5/§4.6).
+function getDayTotals(date) {
+  const list = getMeals().filter(m => m.date === date);
+  const t = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  let cSum = 0;
+  for (const m of list) {
+    t.kcal += m.totals.kcal; t.protein += m.totals.protein; t.carbs += m.totals.carbs; t.fat += m.totals.fat;
+    cSum += (m.confidence || 0.7);
+  }
+  t.protein = Math.round(t.protein * 10) / 10;
+  t.carbs   = Math.round(t.carbs   * 10) / 10;
+  t.fat     = Math.round(t.fat     * 10) / 10;
+  t.confidence = list.length ? Math.round((cSum / list.length) * 100) / 100 : null;
+  return t;
+}
 const loadDB  = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || { sessions: [] }; } catch { return { sessions: [] }; } };
 const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncAllUserData(); };
 
@@ -389,6 +481,8 @@ async function syncAllUserData() {
       categories: getCategories(),
       locations:  getLocations(),
       cfg:        getCfg(),
+      meals:      getMeals(),
+      foodDb:     getFoodDb(),
     };
     await _SB.from('liftlog_data').upsert(
       { user_id: user.id, data: payload, updated_at: new Date().toISOString() },
@@ -442,6 +536,30 @@ function restoreFromRemote(remote) {
       merged.profile = { ...(remote.cfg.profile || {}), calibrationFactor: localCal };
     }
     localStorage.setItem(CFG_KEY, JSON.stringify(merged));
+  }
+
+  // ── Meals: ID-basierter Merge (wie Sessions; kein Verlust bei Offline-Nutzung) ──
+  if (Array.isArray(remote.meals)) {
+    const byId = {};
+    for (const m of getMeals())   byId[m.id] = m;
+    for (const m of remote.meals) byId[m.id] = m;
+    const merged = Object.values(byId).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    localStorage.setItem(MEALS_KEY, JSON.stringify(merged));
+  }
+
+  // ── Food-DB: Merge per id; bei Barcode-Kollision gewinnt Remote (§2.4) ──
+  if (Array.isArray(remote.foodDb)) {
+    const byId = {};
+    for (const f of getFoodDb())   byId[f.id] = f;
+    for (const f of remote.foodDb) byId[f.id] = f;          // gleiche id: Remote gewinnt
+    const out = [], usedBarcode = new Set();
+    for (const f of Object.values(byId)) {
+      if (!f.barcode) { out.push(f); continue; }
+      if (usedBarcode.has(f.barcode)) continue;
+      usedBarcode.add(f.barcode);
+      out.push(remote.foodDb.find(r => r.barcode === f.barcode) || f);   // Remote-Version bevorzugen
+    }
+    localStorage.setItem(FOODDB_KEY, JSON.stringify(out));
   }
 }
 

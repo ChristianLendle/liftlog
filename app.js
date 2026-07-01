@@ -465,6 +465,63 @@ function getDayTotals(date) {
   return t;
 }
 
+// ─── OPEN FOOD FACTS (Spec §5.2) — keyless Suche + Barcode, Treffer wird gecacht ──
+const OFF_BASE = 'https://world.openfoodfacts.org';
+
+function _offKcal(n) {
+  if (!n) return 0;
+  let kcal = parseFloat(n['energy-kcal_100g']);
+  if (isNaN(kcal)) { const kj = parseFloat(n['energy-kj_100g'] ?? n['energy_100g']); if (!isNaN(kj)) kcal = kj / 4.184; }
+  return isNaN(kcal) ? 0 : Math.round(kcal);
+}
+const _offNum = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : Math.round(n * 10) / 10; };
+
+// OFF-Produkt → Food-Objekt (noch nicht gespeichert). null ohne Namen.
+function offToFood(p) {
+  if (!p) return null;
+  const name = (p.product_name || p.generic_name || '').trim();
+  if (!name) return null;
+  const n = p.nutriments || {};
+  const kcal = _offKcal(n);
+  const sm = /([\d.,]+)\s*g/.exec(p.serving_size || '');
+  const food = makeFood({
+    name,
+    brand: (p.brands || '').split(',')[0].trim() || null,
+    per100: { kcal, protein: _offNum(n.proteins_100g), carbs: _offNum(n.carbohydrates_100g), fat: _offNum(n.fat_100g) },
+    servingG: sm ? parseFloat(sm[1].replace(',', '.')) : null,
+    source: 'off',
+    barcode: p.code || p._id || null,
+  });
+  food.incomplete = kcal === 0;      // ohne kcal → unvollständig, Nutzer soll ergänzen
+  return food;
+}
+// Beim Verwenden cachen; Duplikate per Barcode vermeiden.
+function cacheOffFood(food) {
+  if (food.barcode) { const ex = getFoodDb().find(f => f.barcode === food.barcode); if (ex) return ex; }
+  return upsertFood(food);
+}
+async function offSearch(query) {
+  const q = (query || '').trim();
+  if (!q) return [];
+  const url = `${OFF_BASE}/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=20&fields=code,product_name,generic_name,brands,nutriments,serving_size`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('OFF search ' + res.status);
+  const data = await res.json();
+  return (data.products || []).map(offToFood).filter(Boolean);
+}
+async function offByBarcode(code) {
+  const c = String(code || '').replace(/\D/g, '');
+  if (!c) return null;
+  const url = `${OFF_BASE}/api/v2/product/${c}.json?fields=code,product_name,generic_name,brands,nutriments,serving_size`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('OFF barcode ' + res.status);
+  const data = await res.json();
+  if (data.status !== 1 || !data.product) return null;
+  const f = offToFood(data.product);
+  if (f && !f.barcode) f.barcode = c;
+  return f;
+}
+
 // ─── ERNÄHRUNG-UI: Meal-Log-Ansicht + Hinzufügen ──────────────────────────────
 const _mealToday = () => new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
 let _mealDay = _mealToday();
@@ -537,6 +594,9 @@ function openMealAdd(mealType) {
   document.getElementById('meal-add-search').value = '';
   ['mm-name', 'mm-kcal', 'mm-p', 'mm-c', 'mm-f'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
   const msg = document.getElementById('meal-add-manual-msg'); if (msg) msg.textContent = '';
+  _offResults = [];
+  const offStatus = document.getElementById('meal-off-status'); if (offStatus) offStatus.textContent = '';
+  const offList = document.getElementById('meal-off-list'); if (offList) offList.innerHTML = '';
   renderMealFoodList('');
   _mealAddMode('pick');
   openM('m-meal-add');
@@ -606,6 +666,75 @@ function mealAddConfirm() {
   toast('Hinzugefügt ✓');
 }
 function deleteMealEntryUI(id) { deleteMealEntry(id); renderMealLog(); }
+
+// ── Open Food Facts: Suche im Add-Modal ──
+let _offResults = [];
+async function offSearchUI() {
+  const q      = document.getElementById('meal-add-search').value;
+  const status = document.getElementById('meal-off-status');
+  const list   = document.getElementById('meal-off-list');
+  if (!q.trim()) { status.textContent = ''; list.innerHTML = ''; return; }
+  status.textContent = 'Suche bei Open Food Facts…'; list.innerHTML = '';
+  try {
+    _offResults = await offSearch(q);
+    if (!_offResults.length) { status.textContent = 'Nichts bei Open Food Facts gefunden.'; return; }
+    status.textContent = `${_offResults.length} Treffer bei Open Food Facts:`;
+    list.innerHTML = _offResults.map((f, i) =>
+      `<div class="meal-food-row" data-act="mealAddSelectOff" data-argn="${i}"><div style="min-width:0"><div style="font-size:.78rem;font-weight:600;color:var(--text)">${_escH(f.name)}${f.incomplete ? ' <span style="color:var(--down);font-size:.62rem">(unvollständig)</span>' : ''}</div><div style="font-size:.64rem;color:var(--muted2)">${f.per100.kcal} kcal / 100 g${f.brand ? ' · ' + _escH(f.brand) : ''} · OFF</div></div><span style="font-weight:700;font-size:1rem;color:var(--accent)">＋</span></div>`
+    ).join('');
+  } catch (e) { status.textContent = 'Open Food Facts nicht erreichbar.'; }
+}
+function mealAddSelectOff(i) {
+  const f = _offResults[i];
+  if (!f) return;
+  mealAddSelect(cacheOffFood(f).id);   // OFF-Treffer cachen (Confidence 0.9), dann Menge wählen
+}
+
+// ── Barcode-Scanner (BarcodeDetector + Kamera, Fallback: Nummer eingeben) ──
+let _bcStream = null, _bcDetector = null, _bcRAF = null, _bcActive = false;
+async function openBarcodeScan() {
+  const status = document.getElementById('bc-status');
+  const wrap   = document.getElementById('bc-camera-wrap');
+  document.getElementById('bc-manual').value = '';
+  openM('m-barcode');
+  const supported = ('BarcodeDetector' in window) && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  if (!supported) { status.textContent = 'Kein Kamera-Scanner verfügbar — bitte Nummer eingeben.'; if (wrap) wrap.style.display = 'none'; return; }
+  if (wrap) wrap.style.display = '';
+  try {
+    _bcDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+    _bcStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = document.getElementById('bc-video');
+    video.srcObject = _bcStream; await video.play();
+    status.textContent = 'Barcode ins Bild halten…';
+    _bcActive = true; _bcScanLoop(video);
+  } catch (e) { status.textContent = 'Kamera nicht verfügbar — bitte Nummer eingeben.'; if (wrap) wrap.style.display = 'none'; }
+}
+async function _bcScanLoop(video) {
+  if (!_bcActive) return;
+  try { const codes = await _bcDetector.detect(video); if (codes && codes.length) { _bcActive = false; return barcodeFound(codes[0].rawValue); } } catch {}
+  _bcRAF = requestAnimationFrame(() => _bcScanLoop(video));
+}
+function _bcStop() {
+  _bcActive = false;
+  if (_bcRAF) cancelAnimationFrame(_bcRAF);
+  if (_bcStream) { _bcStream.getTracks().forEach(t => t.stop()); _bcStream = null; }
+}
+function closeBarcodeScan() { _bcStop(); closeM('m-barcode'); }
+function barcodeManualLookup() {
+  const v = document.getElementById('bc-manual').value;
+  if (v && v.replace(/\D/g, '')) barcodeFound(v);
+}
+async function barcodeFound(code) {
+  _bcStop();
+  const status = document.getElementById('bc-status');
+  if (status) status.textContent = 'Suche Produkt…';
+  try {
+    const food = await offByBarcode(code);
+    if (!food) { if (status) status.textContent = 'Produkt nicht gefunden. Nummer prüfen oder manuell anlegen.'; toast('Produkt nicht gefunden'); return; }
+    closeM('m-barcode');
+    mealAddSelect(cacheOffFood(food).id);   // zurück ins Add-Modal, Menge wählen
+  } catch (e) { if (status) status.textContent = 'Fehler bei der Abfrage.'; }
+}
 const loadDB  = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || { sessions: [] }; } catch { return { sessions: [] }; } };
 const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncAllUserData(); };
 

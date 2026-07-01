@@ -1538,8 +1538,14 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
     <!-- Modus: Auswählen -->
     <div id="meal-add-pick">
-      <div class="field"><label>Lebensmittel</label><input type="text" id="meal-add-search" placeholder="In deiner Food-DB suchen…" autocomplete="off" data-input="renderMealFoodList" data-pass="value"></div>
+      <div class="field"><label>Lebensmittel</label><input type="text" id="meal-add-search" placeholder="Suchen…" autocomplete="off" data-input="renderMealFoodList" data-pass="value" data-enter="offSearchUI"></div>
       <div id="meal-food-list" class="meal-food-list"></div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="btn" style="flex:1;gap:6px" data-act="offSearchUI">Online suchen</button>
+        <button class="btn" style="flex:1;gap:6px" data-act="openBarcodeScan">Barcode scannen</button>
+      </div>
+      <div id="meal-off-status" style="font-size:.72rem;color:var(--muted2);margin-bottom:6px"></div>
+      <div id="meal-off-list" class="meal-food-list"></div>
       <button class="log-add-ex" data-act="mealAddShowManual">＋ Neues Lebensmittel manuell anlegen</button>
     </div>
 
@@ -1568,6 +1574,28 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         <div style="display:flex;gap:16px;margin-top:10px;font-size:.75rem;color:var(--muted)">P <b id="meal-add-p" style="color:var(--text)">—</b> g · C <b id="meal-add-c" style="color:var(--text)">—</b> g · F <b id="meal-add-f" style="color:var(--text)">—</b> g</div>
       </div>
       <div style="display:flex;gap:8px"><button class="btn" data-act="mealAddShowPick">‹ Zurück</button><button class="btn-fill" style="flex:1" data-act="mealAddConfirm">Hinzufügen</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: BARCODE SCANNEN ════════════════════════ -->
+<div class="overlay" id="m-barcode">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-hd">
+      <div class="modal-title">Barcode scannen</div>
+      <button class="modal-x" data-act="closeBarcodeScan">✕</button>
+    </div>
+    <div id="bc-camera-wrap" style="position:relative;border-radius:12px;overflow:hidden;background:#0e1116;aspect-ratio:4/3;margin-bottom:12px">
+      <video id="bc-video" playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+      <div style="position:absolute;left:12%;right:12%;top:50%;height:2px;background:#7ee0a6;box-shadow:0 0 8px rgba(126,224,166,.8)"></div>
+    </div>
+    <div id="bc-status" style="font-size:.76rem;color:var(--muted);text-align:center;margin-bottom:12px">Barcode ins Bild halten…</div>
+    <div style="border-top:1px solid var(--border);padding-top:12px">
+      <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)">Kein Scanner? Nummer eingeben</label>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input type="text" id="bc-manual" inputmode="numeric" placeholder="z.B. 4008400202037" style="flex:1" data-enter="barcodeManualLookup">
+        <button class="btn-fill" data-act="barcodeManualLookup">Suchen</button>
+      </div>
     </div>
   </div>
 </div>

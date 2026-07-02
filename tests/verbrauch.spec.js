@@ -138,6 +138,42 @@ test.describe('Verbrauch-Engine — UI-Integration', () => {
     expect(saved.cardio.distance_km).toBe(8);
   });
 
+  test('Verbrauch wird beim Speichern eingefroren (§2.3) und bleibt bei späterer Gewichtsänderung stabil', async ({ page }) => {
+    await setup(page, { weight: [{ date: TODAY, kg: 80, kfa: null }] });
+    await page.click('#fab-pill');
+    await page.click('text=Neues Training');
+    await page.fill('#log-date', TODAY);
+    await page.selectOption('#log-cat', 'Cardio');
+    await page.selectOption('#log-cardio-type', 'laufen');
+    await page.fill('#log-dist', '10');
+    await page.fill('#log-dur', '50');
+    await page.click('text=Abschließen');
+
+    const first = await page.evaluate(() => JSON.parse(localStorage.getItem('liftlog_db_v1')).sessions[0]);
+    expect(first.burnedKcal).toBe(800); // 80kg * 10km
+    expect(first.burnConfidence).toBe(0.8);
+
+    // Gewicht ändert sich massiv NACH dem Speichern — die historische Session darf nicht driften.
+    const dayKcal = await page.evaluate((today) => {
+      const w = JSON.parse(localStorage.getItem('liftlog_weight_v1'));
+      w.push({ date: today, kg: 150, kfa: null });
+      localStorage.setItem('liftlog_weight_v1', JSON.stringify(w));
+      return window.getDayTrainingKcal(today).kcal;
+    }, TODAY);
+    expect(dayKcal).toBe(800);
+  });
+
+  test('Set-Häkchen (§7 Eingabe-Vereinfachung) wurde entfernt', async ({ page }) => {
+    await setup(page);
+    await page.click('#fab-pill');
+    await page.click('text=Neues Training');
+    await page.fill('#log-date', TODAY);
+    await page.selectOption('#log-cat', 'OK-Push');
+    await page.selectOption('#log-loc', 'Sportpark Haidhof');
+    await expect(page.locator('#log-ex-list')).not.toBeEmpty();
+    await expect(page.locator('.set-done')).toHaveCount(0);
+  });
+
   test('Dashboard-Bilanz-Balken zeigt BMR + Training, nicht nur die Baseline', async ({ page }) => {
     const session = { id: 's1', date: TODAY, type: 'cardio', category: 'Cardio', cardio: { type: 'laufen', distance_km: 10 } };
     await setup(page, { profile: PROFILE, weight: [{ date: TODAY, kg: 80, kfa: null }], sessions: [session] });

@@ -381,7 +381,12 @@ function cardioKcalNet(cardio, weightKg) {
 }
 
 // Netto-kcal + Confidence + Source einer beliebigen Session (§4.3 + §4.4).
+// Bereits gespeicherte Sessions tragen den beim Abschließen eingefrorenen Wert (§2.3) –
+// der wird bevorzugt, damit spätere Gewichtsänderungen historische Sessions nicht verzerren.
 function sessionKcalNet(s, weightKg = getCurrentWeight()) {
+  if (s.burnedKcal != null && s.burnConfidence != null) {
+    return { kcal: s.burnedKcal, confidence: s.burnConfidence, source: 'frozen' };
+  }
   if (!weightKg) return null;
   if (s.type === 'cardio') return cardioKcalNet(s.cardio, weightKg);
   const kcal = strengthKcalNet(sessionDurationMinutes(s), weightKg, s.intensity || 'mod');
@@ -1488,7 +1493,7 @@ function addLogEx(name = '') {
       <button class="log-ex-del" data-act="removeLogEx" data-arg="${id}" title="Übung entfernen">✕</button>
     </div>
     <div class="sets-hd">
-      <span class="set-n-lbl">#</span><span>kg</span><span>Wdh</span><span>✓</span>
+      <span class="set-n-lbl">#</span><span>kg</span><span>Wdh</span>
     </div>
     <div class="sets-rows" id="sr-${id}"></div>
     <button class="log-add-set" data-act="addLogSet" data-arg="sr-${id}">＋ Satz</button>
@@ -1522,18 +1527,9 @@ function addLogSet(rowsId) {
     <span class="set-n">${n}</span>
     <input type="number" class="set-input set-w" step="0.5" min="0" placeholder="${phW}" value="${prevW}">
     <input type="number" class="set-input set-r" min="0" placeholder="${phR}" value="${prevR}">
-    <button type="button" class="set-done" data-act="toggleSetDone" data-pass="this" aria-label="Satz erledigt">✓</button>
   `;
   wrap.appendChild(row);
   updateLogSummary();
-}
-
-// ✓ toggle — visual live-logging marker only, does not change saved data
-function toggleSetDone(btn) {
-  const on = !btn.classList.contains('done');
-  btn.classList.toggle('done', on);
-  const row = btn.closest('.sets-grid');
-  if (row) row.classList.toggle('done', on);
 }
 
 // All logged sets of the most recent session for an exercise name (Item 06 bonus).
@@ -1739,6 +1735,12 @@ function saveLog() {
     db.sessions.push(session);
     clearActive();
   }
+
+  // §2.3/§4.3 Verbrauch einfrieren (wie Meal-Log): sonst würde eine spätere
+  // Gewichtsänderung den historischen Trainings-Verbrauch rückwirkend verzerren.
+  const burn = sessionKcalNet(session);
+  if (burn) { session.burnedKcal = burn.kcal; session.burnConfidence = burn.confidence; }
+
   db.sessions.sort((a,b) => b.date.localeCompare(a.date));
   writeDB(db);
   // Detect PRs only for newly added (non-edited) strength sessions
@@ -2883,6 +2885,82 @@ function renderProfileSummary() {
   if (goalEl) { const g = getProfile().goal; goalEl.textContent = g ? GOAL_LABELS[g] : 'Einrichten'; }
 }
 
+// ─── ONBOARDING (Spec §3) — mehrstufig, jeder Schritt überspringbar ───────────
+const OB_STEPS = 5;
+let _obStep = 1;
+
+// Zeigt den Wizard nur direkt nach einer Registrierung (Marker aus regSubmit()),
+// nie bei normalen Logins bestehender Konten – konsumiert sich selbst (einmalig).
+function maybeOpenOnboarding() {
+  if (!localStorage.getItem('liftlog_pending_onboarding')) return;
+  localStorage.removeItem('liftlog_pending_onboarding');
+  openOnboarding();
+}
+
+function openOnboarding() {
+  const p = getProfile();
+  _setVal('ob-sex',       p.sex);
+  _setVal('ob-birthyear', p.birthYear);
+  _setVal('ob-height',    p.heightCm);
+  _setVal('ob-weight',    p.startWeight);
+  _setVal('ob-kfa',       p.startKfa);
+  _setVal('ob-goal',      p.goal);
+  _setVal('ob-intensity', p.goalIntensity || 'moderate');
+  _setVal('ob-diet',      p.dietType);
+  _setVal('ob-activity',  p.activityBaseline);
+  obGotoStep(1);
+  openM('m-onboarding');
+}
+
+function obGotoStep(n) {
+  _obStep = n;
+  for (let i = 1; i <= OB_STEPS; i++) {
+    const panel = document.getElementById('ob-step-' + i);
+    const dot   = document.getElementById('ob-step-dot-' + i);
+    if (panel) panel.style.display = i === n ? '' : 'none';
+    if (dot)   dot.className = 'reg-step' + (i < n ? ' done' : '') + (i === n ? ' active' : '');
+  }
+  const back = document.getElementById('ob-back-btn');
+  if (back) back.style.display = n === 1 ? 'none' : '';
+  const next = document.getElementById('ob-next-btn');
+  if (next) next.textContent = n === OB_STEPS ? 'Fertig ✓' : 'Weiter →';
+}
+
+// Persistiert nur, was im jeweiligen Schritt tatsächlich ausgefüllt wurde – jedes
+// Feld bleibt optional (§3), leere Felder überschreiben nichts.
+function _obSaveStep(n) {
+  if (n === 1) saveProfile({ sex: _fldStr('ob-sex'), birthYear: _fldNum('ob-birthyear'), heightCm: _fldNum('ob-height') });
+  if (n === 2) {
+    const w = _fldNum('ob-weight'), k = _fldNum('ob-kfa');
+    if (w != null) setStartWeight(w, k);
+  }
+  if (n === 3) saveProfile({ goal: _fldStr('ob-goal'), goalIntensity: _fldStr('ob-intensity') || 'moderate' });
+  if (n === 4) saveProfile({ dietType: _fldStr('ob-diet') });
+  if (n === 5) { const a = _fldNum('ob-activity'); if (a != null) saveProfile({ activityBaseline: a }); }
+}
+
+function obNext() {
+  _obSaveStep(_obStep);
+  if (_obStep >= OB_STEPS) { obFinish(); return; }
+  obGotoStep(_obStep + 1);
+}
+function obBack() {
+  if (_obStep > 1) obGotoStep(_obStep - 1);
+}
+function obFinish() {
+  closeM('m-onboarding');
+  renderDashboardEnergy();
+  renderProfileSummary();
+  toast('Profil eingerichtet ✓');
+}
+// Wizard vorzeitig schließen (✕) — behält bereits ausgefüllte Schritte.
+function obClose() {
+  _obSaveStep(_obStep);
+  closeM('m-onboarding');
+  renderDashboardEnergy();
+  renderProfileSummary();
+}
+
 // ─── FREUND EINLADEN (App-Link teilen) ────────────────────────────────────────
 function inviteLinkValue() {
   return APP_URL;
@@ -3687,6 +3765,9 @@ async function regSubmit() {
   };
   const { data: signUpData, error: signUpErr } = await _SB.auth.signUp({ email, password: pw, options: { data: profileMeta } });
   if (signUpErr) { msg.textContent = '✗ ' + signUpErr.message; msg.style.color = '#cc4444'; return; }
+  // §3 Onboarding: einmalig beim nächsten erfolgreichen loadApp() zeigen (auch wenn
+  // erst nach E-Mail-Bestätigung eingeloggt wird) – konsumiert sich selbst, siehe loadApp().
+  localStorage.setItem('liftlog_pending_onboarding', '1');
   const userId = signUpData.user?.id;
   if (!userId) {
     msg.textContent = '✓ Bestätigungsmail gesendet – bitte E-Mail prüfen.';
@@ -3799,6 +3880,7 @@ async function loadApp() {
   initBodyDates();
   renderSyncPanel();
   renderProfileSection();
+  maybeOpenOnboarding(); // §3 – nur beim allerersten Laden ohne bestehendes Energie-Profil
 }
 
 // ── Profile edit ──────────────────────────────────────

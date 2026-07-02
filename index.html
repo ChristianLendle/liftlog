@@ -148,8 +148,8 @@ header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); displa
 .modal-x:hover { color: var(--text); }
 
 /* Touch targets ≥44px — keep optical glyph size, expand hit area (Item 05) */
-.info-btn, .set-rm, .set-done { position: relative; }
-.info-btn::after, .set-rm::after, .set-done::after { content: ""; position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.info-btn, .set-rm { position: relative; }
+.info-btn::after, .set-rm::after { content: ""; position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
 
 /* ─── FORM ───────────────────────────────── */
 .field { margin-bottom: 12px; min-width: 0; }
@@ -181,6 +181,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .mood-seg-btn:hover { border-color: var(--border2); }
 .mood-seg-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .intensity-seg { grid-template-columns: repeat(3, 1fr); }
+.ob-step-title { font-size: .78rem; font-weight: 700; color: var(--text); margin-bottom: 14px; }
 
 /* ─── LOG EXERCISE CARDS ─────────────────── */
 .log-sep { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
@@ -194,18 +195,14 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .log-ex-prev-val { font-size: .82rem; font-weight: 700; color: var(--text); }
 .log-ex-del { background: none; border: none; color: var(--muted2); font-size: .85rem; cursor: pointer; padding: 5px 7px; border-radius: 7px; flex-shrink: 0; transition: all .12s; font-family: var(--font); line-height: 1; }
 .log-ex-del:hover { color: #cc3333; background: rgba(204,51,51,.08); }
-.sets-hd { display: grid; grid-template-columns: 26px 1fr 1fr 44px; gap: 7px; padding: 0 2px 6px; }
+.sets-hd { display: grid; grid-template-columns: 26px 1fr 1fr; gap: 7px; padding: 0 2px 6px; }
 .sets-hd span { font-size: .55rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); text-align: center; }
-.sets-grid { display: grid; grid-template-columns: 26px 1fr 1fr 44px; gap: 7px; align-items: center; margin-bottom: 6px; }
+.sets-grid { display: grid; grid-template-columns: 26px 1fr 1fr; gap: 7px; align-items: center; margin-bottom: 6px; }
 .set-n { font-size: .72rem; color: var(--muted2); font-weight: 700; text-align: center; }
 .set-n-lbl { text-align: center; }
 .set-input { padding: 8px; font-size: .82rem; text-align: center; border-radius: 8px; }
-.sets-grid.done .set-input { border-color: var(--up); background: rgba(30,122,74,.05); }
 .set-rm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.75rem; padding: 0; text-align: center; transition: color .12s; font-family: var(--font); }
 .set-rm:hover { color: #cc3333; }
-.set-done { min-height: 36px; border: 1px solid var(--border2); border-radius: 8px; background: var(--surface); color: var(--muted2); font-size: .9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .12s; font-family: var(--font); }
-.set-done:hover { border-color: var(--up); color: var(--up); }
-.set-done.done { background: var(--up); border-color: var(--up); color: #fff; }
 .log-add-set { background: var(--surface2); border: none; color: var(--accent); border-radius: 8px; padding: 8px; font-size: 0.64rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: all .12s; width: 100%; margin-top: 6px; }
 .log-add-set:hover { background: var(--accent-dim); }
 .log-add-ex { background: none; border: 1px dashed var(--border2); color: var(--muted2); border-radius: 12px; padding: 11px; font-size: 0.68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; font-family: var(--font); transition: all .12s; width: 100%; margin-top: 4px; }
@@ -548,7 +545,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   .modal { padding: 18px 16px; }
   .log-meta { grid-template-columns: 1fr 1fr; gap: 8px; }
   .log-meta .log-meta-date { grid-column: 1 / -1; }
-  .sets-hd, .sets-grid { grid-template-columns: 22px 1fr 1fr 40px; gap: 6px; }
+  .sets-hd, .sets-grid { grid-template-columns: 22px 1fr 1fr; gap: 6px; }
   /* iOS zoom fix: font-size >= 16px prevents auto-zoom on input focus */
   input, select, textarea { font-size: 16px !important; }
   .set-input { font-size: 16px !important; }
@@ -1877,6 +1874,77 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         <button class="btn btn-danger" id="wt-delete-btn" style="display:none" data-act="deleteWeightEntry">Löschen</button>
       </div>
       <button class="btn-fill" data-act="addWeightEntry">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: ONBOARDING (Spec §3) ══════════════════ -->
+<div class="overlay" id="m-onboarding">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hd">
+      <div class="modal-hd-col">
+        <div class="modal-title">Energie-Profil einrichten</div>
+        <div class="modal-ctx"><span class="ctx-dot" style="background:var(--accent)"></span><span>Alles optional — jederzeit überspringbar</span></div>
+      </div>
+      <button class="modal-x" data-act="obClose" title="Später einrichten">✕</button>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:0;margin:2px 0 20px">
+      <div class="reg-step active" id="ob-step-dot-1">1</div><div class="reg-step-line"></div>
+      <div class="reg-step" id="ob-step-dot-2">2</div><div class="reg-step-line"></div>
+      <div class="reg-step" id="ob-step-dot-3">3</div><div class="reg-step-line"></div>
+      <div class="reg-step" id="ob-step-dot-4">4</div><div class="reg-step-line"></div>
+      <div class="reg-step" id="ob-step-dot-5">5</div>
+    </div>
+
+    <!-- Schritt 1: Basis -->
+    <div id="ob-step-1">
+      <div class="ob-step-title">Basis für den Grundverbrauch</div>
+      <div class="field"><label>Geschlecht</label><select id="ob-sex"><option value="">— auswählen —</option><option value="m">Mann</option><option value="f">Frau</option></select></div>
+      <div class="field"><label>Geburtsjahr</label><input type="number" id="ob-birthyear" inputmode="numeric" placeholder="z.B. 1995" min="1920" max="2025"></div>
+      <div class="field" style="margin-bottom:0"><label>Größe (cm)</label><input type="number" id="ob-height" inputmode="numeric" placeholder="z.B. 182" min="100" max="250"></div>
+    </div>
+
+    <!-- Schritt 2: Startgewicht -->
+    <div id="ob-step-2" style="display:none">
+      <div class="ob-step-title">Startgewicht</div>
+      <div class="field"><label>Gewicht (kg)</label><input type="number" id="ob-weight" inputmode="decimal" step="0.1" placeholder="z.B. 84.0" min="30" max="300"></div>
+      <div class="field" style="margin-bottom:0"><label>Körperfett % &nbsp;<span style="text-transform:none;letter-spacing:0;color:var(--muted2);font-weight:500">— optional</span></label><input type="number" id="ob-kfa" inputmode="decimal" step="0.1" placeholder="optional" min="3" max="60"></div>
+      <p class="set-hint">Erscheint als erster Punkt in deinem Gewichtsverlauf.</p>
+    </div>
+
+    <!-- Schritt 3: Ziel -->
+    <div id="ob-step-3" style="display:none">
+      <div class="ob-step-title">Ziel</div>
+      <div class="field"><label>Ziel</label><select id="ob-goal"><option value="">— auswählen —</option><option value="cut">Abnehmen</option><option value="maintain">Halten</option><option value="bulk">Muskelaufbau</option></select></div>
+      <div class="field" style="margin-bottom:0"><label>Intensität</label><select id="ob-intensity"><option value="moderate">Moderat</option><option value="aggressive">Aggressiv (Shredd / Totalitäre Masse)</option></select></div>
+    </div>
+
+    <!-- Schritt 4: Ernährungsart -->
+    <div id="ob-step-4" style="display:none">
+      <div class="ob-step-title">Ernährungsart</div>
+      <div class="field" style="margin-bottom:0"><label>Ernährungsart</label><select id="ob-diet"><option value="">— auswählen —</option><option value="omnivore">Alles-Esser</option><option value="vegetarian">Vegetarisch</option><option value="vegan">Vegan</option></select></div>
+    </div>
+
+    <!-- Schritt 5: Aktivität -->
+    <div id="ob-step-5" style="display:none">
+      <div class="ob-step-title">Grobe Aktivität</div>
+      <div class="field" style="margin-bottom:0">
+        <label>Alltagsaktivität</label>
+        <select id="ob-activity">
+          <option value="">— auswählen —</option>
+          <option value="1.2">Sitzend (Bürojob, wenig Bewegung)</option>
+          <option value="1.375">Leicht aktiv (gelegentlich unterwegs)</option>
+          <option value="1.55">Aktiv (viel Bewegung im Alltag)</option>
+        </select>
+      </div>
+      <p class="set-hint">Nur ein Startwert — wird später durch echte Trainings-Logs präzisiert.</p>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;gap:8px;margin-top:22px">
+      <button class="btn" id="ob-back-btn" style="display:none" data-act="obBack">← Zurück</button>
+      <div style="flex:1"></div>
+      <button class="btn-fill" id="ob-next-btn" data-act="obNext">Weiter →</button>
     </div>
   </div>
 </div>

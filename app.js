@@ -259,11 +259,700 @@ const _SB = supabase.createClient(
   'sb_publishable_8-pGUpzwqco3bKWemcdAhg_y3Cd6IDU'
 );
 
+// ─── ENERGY BALANCE: zentrale, justierbare Parameter (Spec §8) ────────────────
+const ENERGY_CONFIG = {
+  MET:                { low: 3.5, mod: 5.0, high: 6.0 },   // Krafttraining-Intensität
+  cutModerate:        0.80, cutAggressive:  0.72,           // Defizit-Offsets
+  bulkModerate:       1.10, bulkAggressive: 1.20,           // Surplus-Offsets
+  deficitFloorFactor: 1.1,                                  // Min-Zufuhr = BMR × Faktor
+  protein:            { cut: 2.2, maintain: 1.8, bulk: 1.8, plantMultiplier: 1.10 },
+  fatMinPerKg:        0.8,                                  // Hormonhaushalt
+  kcalPerKg:          7700,                                 // Gewichts-Kalibrierung
+  activityDefault:    1.3,                                  // Kaltstart-Aktivität
+  calibrationWindowDays: 21, calibrationMaxStep: 0.05,
+};
+
+// Profil-Defaults (Spec §2.3) — alle Felder optional, calibrationFactor lernend
+const DEFAULT_PROFILE = {
+  sex: null, birthYear: null, heightCm: null,
+  goal: null, goalIntensity: null, dietType: null,
+  activityBaseline: null, startWeight: null, startKfa: null,
+  startDate: null, calibrationFactor: 1.0, lastCalibrationDate: null,
+};
+
 const getCfg = () => {
   const stored = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
-  return { streakMin: stored.streakMin || 3 };
+  return {
+    ...stored,                                              // nichts verwerfen
+    streakMin: stored.streakMin || 3,
+    profile:   { ...DEFAULT_PROFILE, ...(stored.profile || {}) },
+  };
 };
 const setCfg  = c  => { localStorage.setItem(CFG_KEY, JSON.stringify(c)); syncAllUserData(); };
+
+// ─── PROFIL (cfg.profile) ─────────────────────────────────────────────────────
+const getProfile  = () => getCfg().profile;
+const saveProfile = (patch) => { const c = getCfg(); setCfg({ ...c, profile: { ...c.profile, ...patch } }); };
+
+// Aktuelles Gewicht / KFA aus dem Weight-Log (jüngster Eintrag), sonst Startwert
+function getCurrentWeight() {
+  const e = getWeightEntries().filter(x => x.kg != null && x.kg !== '')
+              .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (e.length) { const w = parseFloat(e[0].kg); if (!isNaN(w)) return w; }
+  const sw = getProfile().startWeight;
+  return (sw != null) ? parseFloat(sw) : null;
+}
+function getCurrentKfa() {
+  const e = getWeightEntries().filter(x => x.kfa != null && x.kfa !== '')
+              .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (e.length) { const k = parseFloat(e[0].kfa); if (!isNaN(k)) return k; }
+  const sk = getProfile().startKfa;
+  return (sk != null) ? parseFloat(sk) : null;
+}
+
+// ─── BERECHNUNGS-ENGINE (Spec §4) ─────────────────────────────────────────────
+// §4.1 Grundumsatz: Katch-McArdle wenn KFA bekannt, sonst Mifflin-St Jeor.
+function calcBMR(profile = getProfile(), weightKg = getCurrentWeight(), kfa = getCurrentKfa()) {
+  if (weightKg == null) return null;
+  if (kfa != null && !isNaN(kfa)) {
+    const lbm = weightKg * (1 - kfa / 100);
+    return Math.round(370 + 21.6 * lbm);
+  }
+  if (profile.heightCm == null || profile.birthYear == null || !profile.sex) return null;
+  const age  = new Date().getFullYear() - profile.birthYear;
+  const base = 10 * weightKg + 6.25 * profile.heightCm - 5 * age;
+  return Math.round(profile.sex === 'f' ? base - 161 : base + 5);
+}
+
+// §4.2 Erwarteter Tagesverbrauch (Kaltstart: BMR × Aktivität × calibrationFactor).
+// Der gleitende 7–14-Tage-Durchschnitt folgt in einer späteren Phase.
+function expectedDailyExpenditure(profile = getProfile()) {
+  const bmr = calcBMR(profile);
+  if (bmr == null) return null;
+  const act = profile.activityBaseline || ENERGY_CONFIG.activityDefault;
+  return Math.round(bmr * act * (profile.calibrationFactor || 1));
+}
+
+// §4.6 Kalorienziel aus erwartetem Verbrauch + Ziel-Offset, mit Sicherheits-Floor.
+function calcTargetKcal(profile = getProfile()) {
+  const E = expectedDailyExpenditure(profile), bmr = calcBMR(profile);
+  if (E == null || bmr == null) return null;
+  const C = ENERGY_CONFIG;
+  let offset = 1; // Halten / unbekannt
+  if (profile.goal === 'cut')  offset = profile.goalIntensity === 'aggressive' ? C.cutAggressive  : C.cutModerate;
+  if (profile.goal === 'bulk') offset = profile.goalIntensity === 'aggressive' ? C.bulkAggressive : C.bulkModerate;
+  return Math.round(Math.max(E * offset, bmr * C.deficitFloorFactor));
+}
+
+// §4.6 Makros aus Ziel + Ernährungsart (Protein 4 / Carbs 4 / Fett 9 kcal/g).
+function calcMacros(profile = getProfile(), weightKg = getCurrentWeight()) {
+  const target = calcTargetKcal(profile);
+  if (target == null || weightKg == null) return null;
+  const C = ENERGY_CONFIG;
+  let proteinPerKg = C.protein[profile.goal] ?? C.protein.maintain;
+  if (profile.dietType === 'vegetarian' || profile.dietType === 'vegan') proteinPerKg *= C.protein.plantMultiplier;
+  const protein = Math.round(proteinPerKg * weightKg);
+  const fat     = Math.round(C.fatMinPerKg * weightKg);
+  const carbs   = Math.max(0, Math.round((target - (protein * 4 + fat * 9)) / 4));
+  return { protein, fat, carbs, kcal: target };
+}
+
+// §4.3 Krafttraining-Verbrauch: nur Dauer + Gesamt-Intensität nötig, keine Übungsdaten.
+// Netto über Ruhe gerechnet (MET−1), da BMR die 24h-Grundlast bereits abdeckt.
+function strengthKcalNet(durationMin, weightKg, intensity = 'mod') {
+  if (!durationMin || !weightKg) return null;
+  const met = ENERGY_CONFIG.MET[intensity] || ENERGY_CONFIG.MET.mod;
+  return Math.round((met - 1) * 3.5 * weightKg / 200 * durationMin);
+}
+
+// §4.4 Cardio & NEAT (Subset ohne Watt/Steps – noch keine Datenquelle dafür):
+// Geräte-kcal > Laufen per Distanz > Dauer-MET-Fallback (Radfahren/Stairmaster ohne Distanz).
+function cardioKcalNet(cardio, weightKg) {
+  if (!cardio) return null;
+  if (cardio.calories) return { kcal: Math.round(cardio.calories), confidence: 0.5, source: 'device' };
+  if (cardio.type === 'laufen' && cardio.distance_km && weightKg) {
+    return { kcal: Math.round(weightKg * cardio.distance_km), confidence: 0.8, source: 'distance' };
+  }
+  if (cardio.duration_min && weightKg) {
+    const met = ENERGY_CONFIG.MET.mod;
+    return { kcal: Math.round((met - 1) * 3.5 * weightKg / 200 * cardio.duration_min), confidence: 0.6, source: 'met-fallback' };
+  }
+  return null;
+}
+
+// Netto-kcal + Confidence + Source einer beliebigen Session (§4.3 + §4.4).
+// Bereits gespeicherte Sessions tragen den beim Abschließen eingefrorenen Wert (§2.3) –
+// der wird bevorzugt, damit spätere Gewichtsänderungen historische Sessions nicht verzerren.
+function sessionKcalNet(s, weightKg = getCurrentWeight()) {
+  if (s.burnedKcal != null && s.burnConfidence != null) {
+    return { kcal: s.burnedKcal, confidence: s.burnConfidence, source: 'frozen' };
+  }
+  if (!weightKg) return null;
+  if (s.type === 'cardio') return cardioKcalNet(s.cardio, weightKg);
+  const kcal = strengthKcalNet(sessionDurationMinutes(s), weightKg, s.intensity || 'mod');
+  return kcal == null ? null : { kcal, confidence: 0.6, source: 'strength' };
+}
+
+// Trainings-kcal eines Tages (netto), Confidence als gewichtetes Mittel wie getDayTotals.
+function getDayTrainingKcal(date, sessions = loadDB().sessions) {
+  let kcal = 0, cSum = 0, n = 0;
+  for (const s of sessions) {
+    if (s.date !== date) continue;
+    const r = sessionKcalNet(s);
+    if (!r) continue;
+    kcal += r.kcal; cSum += r.confidence; n++;
+  }
+  return { kcal, confidence: n ? Math.round((cSum / n) * 100) / 100 : null };
+}
+
+// §4.5 Tagesverbrauch (ECHT, für die Tagesbilanz) = BMR(24h) + Σ netto-Aktivität(Tag).
+// Nicht zu verwechseln mit expectedDailyExpenditure() (§4.2 Ziel-Baseline fürs Kalorienziel).
+function actualDailyExpenditure(date, profile = getProfile()) {
+  const bmr = calcBMR(profile);
+  if (bmr == null) return null;
+  return bmr + getDayTrainingKcal(date).kcal;
+}
+
+function _addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+function _daysBetween(a, b) {
+  return Math.round((new Date(b + 'T12:00:00Z') - new Date(a + 'T12:00:00Z')) / 86400000);
+}
+// Linearer Trend (kg/Tag) über Gewichts-Log-Punkte – glättet Tagesrauschen (Wasser/Glykogen)
+// besser als ein reiner Erst-/Letzter-Wert-Vergleich (least-squares Steigung).
+function _weightTrendSlope(entries) {
+  const x0 = new Date(entries[0].date + 'T12:00:00Z').getTime();
+  const pts = entries.map(e => ({ x: (new Date(e.date + 'T12:00:00Z').getTime() - x0) / 86400000, y: e.kg }));
+  const n = pts.length;
+  const sumX  = pts.reduce((s, p) => s + p.x, 0);
+  const sumY  = pts.reduce((s, p) => s + p.y, 0);
+  const sumXY = pts.reduce((s, p) => s + p.x * p.y, 0);
+  const sumXX = pts.reduce((s, p) => s + p.x * p.x, 0);
+  const denom = n * sumXX - sumX * sumX;
+  return denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
+}
+
+// §4.7 Selbst-Kalibrierung: gleicht die erwartete (Bilanz-basierte) mit der tatsächlichen
+// (geglätteter Gewichts-Trend) KG-Änderung über ein rollendes Fenster ab und justiert
+// profile.calibrationFactor gedämpft (max. calibrationMaxStep pro Update). Läuft höchstens
+// 1x pro Fenster; braucht genug Gewichts- UND Ernährungs-Logs, sonst kein Update (null).
+function calibrateProfile(profile = getProfile()) {
+  const C = ENERGY_CONFIG;
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+
+  if (profile.lastCalibrationDate && _daysBetween(profile.lastCalibrationDate, today) < C.calibrationWindowDays) {
+    return null; // Fenster noch nicht voll
+  }
+
+  const windowStart = _addDays(today, -C.calibrationWindowDays);
+
+  // Tatsächliche KG-Änderung: linearer Trend aus dem Gewichts-Log im Fenster
+  const entries = getWeightEntries()
+    .filter(e => e.date >= windowStart && e.date <= today && e.kg != null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (entries.length < 4) return null; // zu wenig Datenpunkte für einen stabilen Trend
+  const actualDeltaKg = _weightTrendSlope(entries) * C.calibrationWindowDays;
+
+  // Erwartete KG-Änderung: Σ Tagesbilanz im Fenster (nur Tage mit geloggter Zufuhr) / 7700
+  let bilanzSum = 0, loggedDays = 0;
+  for (let d = windowStart; d <= today; d = _addDays(d, 1)) {
+    const totals = getDayTotals(d);
+    if (totals.confidence == null) continue; // kein Meal-Log an dem Tag → überspringen
+    const verbrauch = actualDailyExpenditure(d, profile);
+    if (verbrauch == null) continue;
+    bilanzSum += (verbrauch - totals.kcal);
+    loggedDays++;
+  }
+  if (loggedDays < 7) return null; // zu wenig geloggte Tage für ein belastbares Signal
+  const expectedDeltaKg = -bilanzSum / C.kcalPerKg; // Bilanz positiv = Defizit → erwarteter Verlust
+
+  // Abweichung → relativer Korrekturschritt auf die unkalibrierte Baseline, gedämpft
+  const deviationKcalTotal = (actualDeltaKg - expectedDeltaKg) * C.kcalPerKg;
+  const baseExpend = calcBMR(profile) * (profile.activityBaseline || C.activityDefault);
+  if (!baseExpend) return null;
+  const relError = -(deviationKcalTotal / C.calibrationWindowDays) / baseExpend;
+  const step = Math.max(-C.calibrationMaxStep, Math.min(C.calibrationMaxStep, relError));
+  const newFactor = Math.max(0.7, Math.min(1.3, (profile.calibrationFactor || 1) * (1 + step)));
+
+  saveProfile({ calibrationFactor: Math.round(newFactor * 1000) / 1000, lastCalibrationDate: today });
+  return newFactor;
+}
+
+// §3 Startgewicht: schreibt sofort einen Weight-Eintrag (heute) UND legt es im Profil ab,
+// damit es als erster Punkt im Verlauf erscheint und das Profil Start/Delta zeigen kann.
+function setStartWeight(weight, kfa = null) {
+  const w = parseFloat(weight);
+  if (isNaN(w)) return;
+  const date = new Date().toISOString().slice(0, 10);
+  const k    = (kfa != null && kfa !== '' && !isNaN(parseFloat(kfa))) ? parseFloat(kfa) : undefined;
+  const entries = getWeightEntries().filter(e => e.date !== date);
+  const entry = { date, kg: w };
+  if (k !== undefined) entry.kfa = k;
+  entries.push(entry);
+  entries.sort((a, b) => a.date.localeCompare(b.date));
+  saveWeightEntries(entries);                               // löst Sync aus
+  saveProfile({ startWeight: w, startKfa: k ?? null, startDate: date });
+}
+
+// ─── ERNÄHRUNG: Food-DB + Meal-Log (Spec §2.1/§2.2/§5) ────────────────────────
+// Zwei Ebenen strikt getrennt: Food-DB = wiederverwendbare Lebensmittel (pro 100 g),
+// Meal-Log = Tageseinträge, die Food-Werte beim Loggen DENORMALISIERT einfrieren.
+const MEALS_KEY  = 'liftlog_meals_v1';
+const FOODDB_KEY = 'liftlog_fooddb_v1';
+const getMeals   = () => { try { return JSON.parse(localStorage.getItem(MEALS_KEY)  || '[]'); } catch { return []; } };
+const saveMeals  = (m) => { localStorage.setItem(MEALS_KEY,  JSON.stringify(m)); syncAllUserData(); };
+const getFoodDb  = () => { try { return JSON.parse(localStorage.getItem(FOODDB_KEY) || '[]'); } catch { return []; } };
+const saveFoodDb = (f) => { localStorage.setItem(FOODDB_KEY, JSON.stringify(f)); syncAllUserData(); };
+
+const MEAL_TYPES  = ['breakfast', 'lunch', 'dinner', 'snack'];
+const MEAL_LABELS = { breakfast: 'Frühstück', lunch: 'Mittag', dinner: 'Abend', snack: 'Snack' };
+const _uuid = (p) => p + (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
+
+// Food-DB-Eintrag (pro 100 g). Confidence: manuell 0.7, OFF-Barcode 0.9 (§4.7).
+function makeFood({ name, brand = null, per100, servingG = null, source = 'manual', barcode = null }) {
+  return {
+    id: _uuid('f_'), name, brand,
+    per100: { kcal: +per100.kcal || 0, protein: +per100.protein || 0, carbs: +per100.carbs || 0, fat: +per100.fat || 0 },
+    servingG: servingG != null && servingG !== '' ? +servingG : null,
+    source, barcode,
+    confidence: source === 'off' ? 0.9 : 0.7,
+    favorite: false,
+    createdAt: new Date().toISOString().slice(0, 10),
+  };
+}
+function getFood(id)   { return getFoodDb().find(f => f.id === id) || null; }
+function upsertFood(food) {
+  const db = getFoodDb();
+  const i = db.findIndex(f => f.id === food.id);
+  if (i >= 0) db[i] = food; else db.push(food);
+  saveFoodDb(db);
+  return food;
+}
+function deleteFood(id)  { saveFoodDb(getFoodDb().filter(f => f.id !== id)); }
+function toggleFoodFavorite(id) {
+  const db = getFoodDb(); const f = db.find(x => x.id === id);
+  if (f) { f.favorite = !f.favorite; saveFoodDb(db); }
+}
+
+// Nährwerte eines Foods auf eine Menge (g) skalieren.
+function scaleFood(food, grams) {
+  const k = (+grams || 0) / 100, p = food.per100;
+  return {
+    kcal:    Math.round(p.kcal * k),
+    protein: Math.round(p.protein * k * 10) / 10,
+    carbs:   Math.round(p.carbs   * k * 10) / 10,
+    fat:     Math.round(p.fat     * k * 10) / 10,
+  };
+}
+
+// Meal-Log-Eintrag: Werte werden eingefroren, damit spätere Food-DB-Änderungen alte Logs nicht verzerren (§2.2).
+function addMealEntry({ date, mealType, foodId, grams, time = null }) {
+  const food = getFood(foodId);
+  if (!food) return null;
+  const m = scaleFood(food, grams);
+  const entry = {
+    id: _uuid('m_'), date,
+    time: time || new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+    mealType,
+    items:  [{ foodId: food.id, name: food.name, grams: +grams, ...m }],
+    totals: { ...m },
+    confidence: food.confidence,
+    source: 'fooddb',
+  };
+  const meals = getMeals(); meals.push(entry); saveMeals(meals);
+  return entry;
+}
+function deleteMealEntry(id) { saveMeals(getMeals().filter(m => m.id !== id)); }
+
+// Einträge eines Tages, gruppiert nach Mahlzeit.
+function getMealsForDay(date) {
+  const byType = { breakfast: [], lunch: [], dinner: [], snack: [] };
+  for (const m of getMeals()) if (m.date === date) (byType[m.mealType] || byType.snack).push(m);
+  return byType;
+}
+// Tagessumme kcal + Makros; Confidence als gewichtetes Mittel (Fehlerband, §4.5/§4.6).
+function getDayTotals(date) {
+  const list = getMeals().filter(m => m.date === date);
+  const t = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  let cSum = 0;
+  for (const m of list) {
+    t.kcal += m.totals.kcal; t.protein += m.totals.protein; t.carbs += m.totals.carbs; t.fat += m.totals.fat;
+    cSum += (m.confidence || 0.7);
+  }
+  t.protein = Math.round(t.protein * 10) / 10;
+  t.carbs   = Math.round(t.carbs   * 10) / 10;
+  t.fat     = Math.round(t.fat     * 10) / 10;
+  t.confidence = list.length ? Math.round((cSum / list.length) * 100) / 100 : null;
+  return t;
+}
+
+// ─── OPEN FOOD FACTS (Spec §5.2) — keyless Suche + Barcode, Treffer wird gecacht ──
+const OFF_BASE = 'https://world.openfoodfacts.org';
+
+function _offKcal(n) {
+  if (!n) return 0;
+  let kcal = parseFloat(n['energy-kcal_100g']);
+  if (isNaN(kcal)) { const kj = parseFloat(n['energy-kj_100g'] ?? n['energy_100g']); if (!isNaN(kj)) kcal = kj / 4.184; }
+  return isNaN(kcal) ? 0 : Math.round(kcal);
+}
+const _offNum = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : Math.round(n * 10) / 10; };
+
+// OFF-Produkt → Food-Objekt (noch nicht gespeichert). null ohne Namen.
+function offToFood(p) {
+  if (!p) return null;
+  const name = (p.product_name || p.generic_name || '').trim();
+  if (!name) return null;
+  const n = p.nutriments || {};
+  const kcal = _offKcal(n);
+  const sm = /([\d.,]+)\s*g/.exec(p.serving_size || '');
+  const food = makeFood({
+    name,
+    brand: (p.brands || '').split(',')[0].trim() || null,
+    per100: { kcal, protein: _offNum(n.proteins_100g), carbs: _offNum(n.carbohydrates_100g), fat: _offNum(n.fat_100g) },
+    servingG: sm ? parseFloat(sm[1].replace(',', '.')) : null,
+    source: 'off',
+    barcode: p.code || p._id || null,
+  });
+  food.incomplete = kcal === 0;      // ohne kcal → unvollständig, Nutzer soll ergänzen
+  return food;
+}
+// Beim Verwenden cachen; Duplikate per Barcode vermeiden.
+function cacheOffFood(food) {
+  if (food.barcode) { const ex = getFoodDb().find(f => f.barcode === food.barcode); if (ex) return ex; }
+  return upsertFood(food);
+}
+async function offSearch(query) {
+  const q = (query || '').trim();
+  if (!q) return [];
+  const url = `${OFF_BASE}/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=20&fields=code,product_name,generic_name,brands,nutriments,serving_size`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('OFF search ' + res.status);
+  const data = await res.json();
+  return (data.products || []).map(offToFood).filter(Boolean);
+}
+async function offByBarcode(code) {
+  const c = String(code || '').replace(/\D/g, '');
+  if (!c) return null;
+  const url = `${OFF_BASE}/api/v2/product/${c}.json?fields=code,product_name,generic_name,brands,nutriments,serving_size`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('OFF barcode ' + res.status);
+  const data = await res.json();
+  if (data.status !== 1 || !data.product) return null;
+  const f = offToFood(data.product);
+  if (f && !f.barcode) f.barcode = c;
+  return f;
+}
+
+// ─── ERNÄHRUNG-UI: Meal-Log-Ansicht + Hinzufügen ──────────────────────────────
+const _mealToday = () => new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+let _mealDay = _mealToday();
+let _mealSel = null;                                    // im Add-Modal gewähltes Food
+const _escH = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+function _mealDayLabel(d) {
+  if (d === _mealToday()) return 'Heute';
+  const [y, m, day] = d.split('-');
+  return `${day}.${m}.${y}`;
+}
+function mealDayShift(n) {
+  const d = new Date(_mealDay + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n);  // UTC-Noon: DST-sicher
+  _mealDay = d.toISOString().slice(0, 10);
+  renderMealLog();
+}
+function renderMealLog() {
+  const host = document.getElementById('meal-log');
+  const lbl  = document.getElementById('meal-day-label');
+  if (lbl) lbl.textContent = _mealDayLabel(_mealDay);
+  if (!host) return;
+  const groups = getMealsForDay(_mealDay);
+  const totals = getDayTotals(_mealDay);
+  const target = calcTargetKcal();                      // null ohne Profil
+  const macros = calcMacros();
+  const rest   = target != null ? target - totals.kcal : null;
+  const band   = totals.confidence != null ? Math.round(totals.kcal * (1 - totals.confidence)) : null;
+
+  const bar = (val, max, col) => {
+    const pct = max ? Math.min(100, Math.round(val / max * 100)) : 0;
+    return `<div style="height:6px;border-radius:4px;background:#eceef3;overflow:hidden;flex:1"><i style="display:block;height:100%;width:${pct}%;background:${col};border-radius:4px"></i></div>`;
+  };
+  const macroRow = (name, val, max, col) =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="font-size:.6rem;font-weight:700;color:var(--muted);width:52px">${name}</span>${bar(val, max, col)}<span style="font-size:.62rem;color:var(--muted2);width:70px;text-align:right;font-variant-numeric:tabular-nums">${val}${max ? '/' + max : ''} g</span></div>`;
+
+  let html = `<div class="panel" style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end">
+      <div>
+        <div style="font-size:.57rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted2)">Gegessen</div>
+        <div style="font-size:1.6rem;font-weight:700;letter-spacing:-.03em;color:var(--text);font-variant-numeric:tabular-nums;margin-top:3px">${totals.kcal.toLocaleString('de-DE')} <span style="font-size:.8rem;color:var(--muted)">${target != null ? '/ ' + target.toLocaleString('de-DE') + ' ' : ''}kcal</span></div>
+      </div>
+      <div style="text-align:right;font-size:.66rem;font-weight:600;color:var(--accent2)">${rest != null ? 'Rest ' + rest.toLocaleString('de-DE') : ''}${band ? ' · ± ' + band : ''}</div>
+    </div>
+    ${macros ? macroRow('Protein', totals.protein, macros.protein, 'var(--push)') + macroRow('Carbs', totals.carbs, macros.carbs, 'var(--pull)') + macroRow('Fett', totals.fat, macros.fat, 'var(--cardio)') : ''}
+  </div>`;
+
+  for (const type of MEAL_TYPES) {
+    const items = groups[type];
+    const sum = items.reduce((s, m) => s + m.totals.kcal, 0);
+    html += `<div class="panel meal-group" style="padding:0">
+      <div class="meal-group-hd"><span style="font-weight:700;font-size:.82rem;color:var(--text)">${MEAL_LABELS[type]}</span><span style="font-size:.7rem;color:var(--muted)">${sum ? sum.toLocaleString('de-DE') + ' kcal' : ''}</span></div>`;
+    for (const m of items) {
+      const it = m.items[0] || {};
+      html += `<div class="meal-item"><div style="flex:1;min-width:0"><div style="font-size:.8rem;font-weight:600;color:var(--text)">${_escH(it.name)} · ${it.grams} g</div><div style="font-size:.66rem;color:var(--muted2)">${m.totals.kcal} kcal · ${m.totals.protein}P ${m.totals.carbs}C ${m.totals.fat}F</div></div><button class="meal-del" data-act="deleteMealEntryUI" data-arg="${m.id}" aria-label="Entfernen">✕</button></div>`;
+    }
+    html += `<div class="meal-add-row"><button data-act="openMealAdd" data-arg="${type}">＋ hinzufügen</button></div></div>`;
+  }
+  host.innerHTML = html;
+}
+
+function _mealAddMode(mode) {
+  document.getElementById('meal-add-pick').style.display   = mode === 'pick'   ? '' : 'none';
+  document.getElementById('meal-add-manual').style.display = mode === 'manual' ? '' : 'none';
+  document.getElementById('meal-add-qty').style.display    = mode === 'qty'    ? '' : 'none';
+}
+function openMealAdd(mealType) {
+  _mealSel = null;
+  const sel = document.getElementById('meal-add-type');
+  if (sel && mealType) sel.value = mealType;
+  document.getElementById('meal-add-search').value = '';
+  ['mm-name', 'mm-kcal', 'mm-p', 'mm-c', 'mm-f'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+  const msg = document.getElementById('meal-add-manual-msg'); if (msg) msg.textContent = '';
+  _offResults = [];
+  const offStatus = document.getElementById('meal-off-status'); if (offStatus) offStatus.textContent = '';
+  const offList = document.getElementById('meal-off-list'); if (offList) offList.innerHTML = '';
+  renderMealFoodList('');
+  _mealAddMode('pick');
+  openM('m-meal-add');
+}
+function openMealFromMenu() { closeFabMenu(); openMealAdd(); }
+
+function renderMealFoodList(q) {
+  const host = document.getElementById('meal-food-list');
+  if (!host) return;
+  const query = (q || '').trim().toLowerCase();
+  let db = getFoodDb();
+  if (query) db = db.filter(f => (f.name + ' ' + (f.brand || '')).toLowerCase().includes(query));
+  db = db.sort((a, b) => (Number(b.favorite) - Number(a.favorite)) || a.name.localeCompare(b.name)).slice(0, 30);
+  if (!db.length) {
+    host.innerHTML = `<div style="font-size:.72rem;color:var(--muted2);padding:8px 2px">${query ? 'Nichts gefunden.' : 'Noch keine Lebensmittel — leg unten eins an.'}</div>`;
+    return;
+  }
+  host.innerHTML = db.map(f =>
+    `<div class="meal-food-row" data-act="mealAddSelect" data-arg="${f.id}"><div style="min-width:0"><div style="font-size:.78rem;font-weight:600;color:var(--text)">${f.favorite ? '★ ' : ''}${_escH(f.name)}</div><div style="font-size:.64rem;color:var(--muted2)">${f.per100.kcal} kcal / 100 g${f.brand ? ' · ' + _escH(f.brand) : ''}</div></div><span style="font-weight:700;font-size:1rem;color:var(--accent)">＋</span></div>`
+  ).join('');
+}
+function mealAddSelect(id) {
+  const f = getFood(id);
+  if (!f) return;
+  _mealSel = f;
+  document.getElementById('meal-add-selname').textContent = f.name;
+  document.getElementById('meal-add-selper').textContent  = `${f.per100.kcal} kcal · ${f.per100.protein}P ${f.per100.carbs}C ${f.per100.fat}F / 100 g`;
+  document.getElementById('meal-add-grams').value = f.servingG || 100;
+  _mealAddMode('qty');
+  recalcMealAdd();
+}
+function recalcMealAdd() {
+  if (!_mealSel) return;
+  const grams = parseFloat(document.getElementById('meal-add-grams').value) || 0;
+  const m = scaleFood(_mealSel, grams);
+  document.getElementById('meal-add-gramslbl').textContent = grams;
+  document.getElementById('meal-add-kcal').textContent = m.kcal;
+  document.getElementById('meal-add-p').textContent = m.protein;
+  document.getElementById('meal-add-c').textContent = m.carbs;
+  document.getElementById('meal-add-f').textContent = m.fat;
+}
+function mealAddShowManual() { _mealAddMode('manual'); }
+function mealAddShowPick()   { _mealAddMode('pick'); renderMealFoodList(document.getElementById('meal-add-search').value); }
+function mealAddCreateManual() {
+  const msg  = document.getElementById('meal-add-manual-msg');
+  const name = document.getElementById('mm-name').value.trim();
+  if (!name) { msg.textContent = '✗ Name fehlt.'; return; }
+  const food = upsertFood(makeFood({
+    name,
+    per100: {
+      kcal:    document.getElementById('mm-kcal').value,
+      protein: document.getElementById('mm-p').value,
+      carbs:   document.getElementById('mm-c').value,
+      fat:     document.getElementById('mm-f').value,
+    },
+  }));
+  msg.textContent = '';
+  mealAddSelect(food.id);
+}
+function mealAddConfirm() {
+  if (!_mealSel) return;
+  const grams = parseFloat(document.getElementById('meal-add-grams').value) || 0;
+  if (grams <= 0) return;
+  addMealEntry({ date: _mealDay, mealType: document.getElementById('meal-add-type').value, foodId: _mealSel.id, grams });
+  closeM('m-meal-add');
+  renderMealLog();
+  toast('Hinzugefügt ✓');
+}
+function deleteMealEntryUI(id) { deleteMealEntry(id); renderMealLog(); }
+
+// ── Open Food Facts: Suche im Add-Modal ──
+let _offResults = [];
+async function offSearchUI() {
+  const q      = document.getElementById('meal-add-search').value;
+  const status = document.getElementById('meal-off-status');
+  const list   = document.getElementById('meal-off-list');
+  if (!q.trim()) { status.textContent = ''; list.innerHTML = ''; return; }
+  status.textContent = 'Suche bei Open Food Facts…'; list.innerHTML = '';
+  try {
+    _offResults = await offSearch(q);
+    if (!_offResults.length) { status.textContent = 'Nichts bei Open Food Facts gefunden.'; return; }
+    status.textContent = `${_offResults.length} Treffer bei Open Food Facts:`;
+    list.innerHTML = _offResults.map((f, i) =>
+      `<div class="meal-food-row" data-act="mealAddSelectOff" data-argn="${i}"><div style="min-width:0"><div style="font-size:.78rem;font-weight:600;color:var(--text)">${_escH(f.name)}${f.incomplete ? ' <span style="color:var(--down);font-size:.62rem">(unvollständig)</span>' : ''}</div><div style="font-size:.64rem;color:var(--muted2)">${f.per100.kcal} kcal / 100 g${f.brand ? ' · ' + _escH(f.brand) : ''} · OFF</div></div><span style="font-weight:700;font-size:1rem;color:var(--accent)">＋</span></div>`
+    ).join('');
+  } catch (e) { status.textContent = 'Open Food Facts nicht erreichbar.'; }
+}
+function mealAddSelectOff(i) {
+  const f = _offResults[i];
+  if (!f) return;
+  mealAddSelect(cacheOffFood(f).id);   // OFF-Treffer cachen (Confidence 0.9), dann Menge wählen
+}
+
+// ── Barcode-Scanner (BarcodeDetector + Kamera, Fallback: Nummer eingeben) ──
+let _bcStream = null, _bcDetector = null, _bcRAF = null, _bcActive = false;
+async function openBarcodeScan() {
+  const status = document.getElementById('bc-status');
+  const wrap   = document.getElementById('bc-camera-wrap');
+  document.getElementById('bc-manual').value = '';
+  openM('m-barcode');
+  const supported = ('BarcodeDetector' in window) && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  if (!supported) { status.textContent = 'Kein Kamera-Scanner verfügbar — bitte Nummer eingeben.'; if (wrap) wrap.style.display = 'none'; return; }
+  if (wrap) wrap.style.display = '';
+  try {
+    _bcDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+    _bcStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = document.getElementById('bc-video');
+    video.srcObject = _bcStream; await video.play();
+    status.textContent = 'Barcode ins Bild halten…';
+    _bcActive = true; _bcScanLoop(video);
+  } catch (e) { status.textContent = 'Kamera nicht verfügbar — bitte Nummer eingeben.'; if (wrap) wrap.style.display = 'none'; }
+}
+async function _bcScanLoop(video) {
+  if (!_bcActive) return;
+  try { const codes = await _bcDetector.detect(video); if (codes && codes.length) { _bcActive = false; return barcodeFound(codes[0].rawValue); } } catch {}
+  _bcRAF = requestAnimationFrame(() => _bcScanLoop(video));
+}
+function _bcStop() {
+  _bcActive = false;
+  if (_bcRAF) cancelAnimationFrame(_bcRAF);
+  if (_bcStream) { _bcStream.getTracks().forEach(t => t.stop()); _bcStream = null; }
+}
+function closeBarcodeScan() { _bcStop(); closeM('m-barcode'); }
+function barcodeManualLookup() {
+  const v = document.getElementById('bc-manual').value;
+  if (v && v.replace(/\D/g, '')) barcodeFound(v);
+}
+async function barcodeFound(code) {
+  _bcStop();
+  const status = document.getElementById('bc-status');
+  if (status) status.textContent = 'Suche Produkt…';
+  try {
+    const food = await offByBarcode(code);
+    if (!food) { if (status) status.textContent = 'Produkt nicht gefunden. Nummer prüfen oder manuell anlegen.'; toast('Produkt nicht gefunden'); return; }
+    closeM('m-barcode');
+    mealAddSelect(cacheOffFood(food).id);   // zurück ins Add-Modal, Menge wählen
+  } catch (e) { if (status) status.textContent = 'Fehler bei der Abfrage.'; }
+}
+// ─── FOOD-DB VERWALTUNG (Spec §9: Liste, bearbeiten, Favoriten) ───────────────
+let _fooddbEditingId = null;
+
+function openFoodDbManager() {
+  const search = document.getElementById('fooddb-search');
+  if (search) search.value = '';
+  _fooddbEditingId = null;
+  renderFoodDbManager('');
+  openM('m-fooddb');
+}
+
+function renderFoodDbManager(query) {
+  const q   = (query ?? document.getElementById('fooddb-search')?.value ?? '').toLowerCase().trim();
+  const all = getFoodDb();
+  const list = all
+    .filter(f => !q || f.name.toLowerCase().includes(q) || (f.brand || '').toLowerCase().includes(q))
+    .sort((a, b) => (Number(b.favorite) - Number(a.favorite)) || a.name.localeCompare(b.name, 'de'));
+
+  const countEl = document.getElementById('fooddb-count-text');
+  if (countEl) countEl.textContent = all.length + (all.length === 1 ? ' Eintrag' : ' Einträge');
+
+  const host  = document.getElementById('fooddb-list');
+  const empty = document.getElementById('fooddb-empty');
+  if (!host) return;
+  if (!list.length) { host.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
+  if (empty) empty.style.display = 'none';
+
+  host.innerHTML = list.map(f => f.id === _fooddbEditingId ? _fooddbEditRow(f) : _fooddbViewRow(f)).join('');
+}
+
+function _fooddbViewRow(f) {
+  const src = f.source === 'off' ? 'Open Food Facts' : 'Manuell';
+  return `<div class="fooddb-row">
+    <button class="fooddb-fav ${f.favorite ? 'active' : ''}" data-act="toggleFoodDbFavorite" data-arg="${f.id}" aria-label="Favorit">★</button>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:.82rem;font-weight:600;color:var(--text)">${_escH(f.name)}${f.brand ? ' <span style="color:var(--muted2);font-weight:400">· ' + _escH(f.brand) + '</span>' : ''}</div>
+      <div style="font-size:.64rem;color:var(--muted2)">${f.per100.kcal} kcal · ${f.per100.protein}P ${f.per100.carbs}C ${f.per100.fat}F / 100g · ${src}</div>
+    </div>
+    <button class="fooddb-ic-btn" data-act="editFoodDbEntry" data-arg="${f.id}" aria-label="Bearbeiten">✎</button>
+    <button class="fooddb-ic-btn danger" data-act="deleteFoodDbEntry" data-arg="${f.id}" aria-label="Löschen">✕</button>
+  </div>`;
+}
+
+function _fooddbEditRow(f) {
+  return `<div class="fooddb-row fooddb-row-edit">
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+      <input type="text" id="fde-name" placeholder="Name" value="${_escH(f.name)}">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+        <input type="number" id="fde-kcal" placeholder="kcal" value="${f.per100.kcal}" min="0">
+        <input type="number" id="fde-p" placeholder="P g" value="${f.per100.protein}" min="0" step="0.1">
+        <input type="number" id="fde-c" placeholder="C g" value="${f.per100.carbs}" min="0" step="0.1">
+        <input type="number" id="fde-f" placeholder="F g" value="${f.per100.fat}" min="0" step="0.1">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:2px">
+        <button class="btn" data-act="cancelEditFoodDbEntry">Abbrechen</button>
+        <button class="btn-fill" data-act="saveFoodDbEntry" data-arg="${f.id}">Speichern</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleFoodDbFavorite(id) { toggleFoodFavorite(id); renderFoodDbManager(); }
+function editFoodDbEntry(id)      { _fooddbEditingId = id; renderFoodDbManager(); }
+function cancelEditFoodDbEntry()  { _fooddbEditingId = null; renderFoodDbManager(); }
+
+function saveFoodDbEntry(id) {
+  const f = getFood(id);
+  if (!f) return;
+  const name = document.getElementById('fde-name').value.trim();
+  if (!name) { toast('Name erforderlich', true); return; }
+  f.name = name;
+  f.per100 = {
+    kcal:    +document.getElementById('fde-kcal').value || 0,
+    protein: +document.getElementById('fde-p').value || 0,
+    carbs:   +document.getElementById('fde-c').value || 0,
+    fat:     +document.getElementById('fde-f').value || 0,
+  };
+  upsertFood(f);
+  _fooddbEditingId = null;
+  renderFoodDbManager();
+  toast('Gespeichert ✓');
+}
+
+// Löschen mit Undo statt Bestätigungs-Dialog (weniger Reibung, wie delSession).
+// Bereits geloggte Mahlzeiten sind unabhängig (Werte eingefroren, §2.2) – Löschen ist sicher.
+function deleteFoodDbEntry(id) {
+  const f = getFood(id);
+  if (!f) return;
+  deleteFood(id);
+  if (_fooddbEditingId === id) _fooddbEditingId = null;
+  renderFoodDbManager();
+  toastUndo('Lebensmittel gelöscht', () => { upsertFood(f); renderFoodDbManager(); });
+}
+
 const loadDB  = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || { sessions: [] }; } catch { return { sessions: [] }; } };
 const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncAllUserData(); };
 
@@ -281,6 +970,8 @@ async function syncAllUserData() {
       categories: getCategories(),
       locations:  getLocations(),
       cfg:        getCfg(),
+      meals:      getMeals(),
+      foodDb:     getFoodDb(),
     };
     await _SB.from('liftlog_data').upsert(
       { user_id: user.id, data: payload, updated_at: new Date().toISOString() },
@@ -325,7 +1016,40 @@ function restoreFromRemote(remote) {
   if (remote.plans      !== undefined) localStorage.setItem(PLANS_KEY,      JSON.stringify(remote.plans));
   if (remote.categories !== undefined) localStorage.setItem(CATEGORIES_KEY, JSON.stringify(remote.categories));
   if (remote.locations  !== undefined) localStorage.setItem(LOCATIONS_KEY,  JSON.stringify(remote.locations));
-  if (remote.cfg        !== undefined) localStorage.setItem(CFG_KEY,        JSON.stringify(remote.cfg));
+  if (remote.cfg        !== undefined) {
+    // Remote gewinnt – aber einen lokal gelernten calibrationFactor nie auf Default zurücksetzen (§2.4)
+    const merged   = { ...remote.cfg };
+    const localCal  = getCfg().profile?.calibrationFactor;
+    const remoteCal = remote.cfg?.profile?.calibrationFactor;
+    if (localCal != null && localCal !== 1.0 && (remoteCal == null || remoteCal === 1.0)) {
+      merged.profile = { ...(remote.cfg.profile || {}), calibrationFactor: localCal };
+    }
+    localStorage.setItem(CFG_KEY, JSON.stringify(merged));
+  }
+
+  // ── Meals: ID-basierter Merge (wie Sessions; kein Verlust bei Offline-Nutzung) ──
+  if (Array.isArray(remote.meals)) {
+    const byId = {};
+    for (const m of getMeals())   byId[m.id] = m;
+    for (const m of remote.meals) byId[m.id] = m;
+    const merged = Object.values(byId).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    localStorage.setItem(MEALS_KEY, JSON.stringify(merged));
+  }
+
+  // ── Food-DB: Merge per id; bei Barcode-Kollision gewinnt Remote (§2.4) ──
+  if (Array.isArray(remote.foodDb)) {
+    const byId = {};
+    for (const f of getFoodDb())   byId[f.id] = f;
+    for (const f of remote.foodDb) byId[f.id] = f;          // gleiche id: Remote gewinnt
+    const out = [], usedBarcode = new Set();
+    for (const f of Object.values(byId)) {
+      if (!f.barcode) { out.push(f); continue; }
+      if (usedBarcode.has(f.barcode)) continue;
+      usedBarcode.add(f.barcode);
+      out.push(remote.foodDb.find(r => r.barcode === f.barcode) || f);   // Remote-Version bevorzugen
+    }
+    localStorage.setItem(FOODDB_KEY, JSON.stringify(out));
+  }
 }
 
 async function fetchSupabase() {
@@ -359,7 +1083,8 @@ function saveActiveSession() {
   const isCardio = cat === 'Cardio';
   const existing = loadActive();
   // Preserve startedAt from existing active session (don't reset on re-save)
-  const active = { startedAt: existing?.startedAt || nowBerlin(), date, cat, locKey, mood, isCardio };
+  const intensity = document.getElementById('log-intensity').value;
+  const active = { startedAt: existing?.startedAt || nowBerlin(), date, cat, locKey, mood, isCardio, intensity };
 
   if (isCardio) {
     active.cardio = {
@@ -663,6 +1388,19 @@ function syncMoodSeg() {
     b.classList.toggle('active', b.dataset.mood === val));
 }
 
+// Intensität (Kraft-Session) — steuert §4.3 Verbrauchs-MET, gleiches Muster wie Mood
+function setLogIntensity(val) {
+  document.getElementById('log-intensity').value = val || 'mod';
+  syncIntensitySeg();
+  triggerAutoSave();
+}
+
+function syncIntensitySeg() {
+  const val = document.getElementById('log-intensity').value;
+  document.querySelectorAll('#log-intensity-seg .mood-seg-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.int === val));
+}
+
 // Header context line: colored dot in category color + "<Kategorie> · <Standort>"
 function updateLogContext() {
   const catSel = document.getElementById('log-cat');
@@ -717,7 +1455,9 @@ function openLog() {
   document.getElementById('log-floors-field').style.display = 'none';
   document.getElementById('log-ex-list').innerHTML = '';
   logExCount = 0;
+  document.getElementById('log-intensity').value = 'mod';
   syncMoodSeg();
+  syncIntensitySeg();
   updateLogContext();
   updateLogSummary();
   updateModalButtons();
@@ -753,6 +1493,7 @@ function restoreActiveSession(active) {
     document.getElementById('log-floors').value = c.floors || '';
     document.getElementById('log-kcal').value   = c.kcal   || '';
   } else if (!isCardio && active.exercises) {
+    document.getElementById('log-intensity').value = active.intensity || 'mod';
     document.getElementById('log-ex-list').innerHTML = '';
     logExCount = 0;
     active.exercises.forEach(ex => {
@@ -776,6 +1517,7 @@ function restoreActiveSession(active) {
   }
 
   syncMoodSeg();
+  syncIntensitySeg();
   updateLogContext();
   updateLogSummary();
   updateModalButtons();
@@ -845,7 +1587,7 @@ function addLogEx(name = '') {
       <button class="log-ex-del" data-act="removeLogEx" data-arg="${id}" title="Übung entfernen">✕</button>
     </div>
     <div class="sets-hd">
-      <span class="set-n-lbl">#</span><span>kg</span><span>Wdh</span><span>✓</span>
+      <span class="set-n-lbl">#</span><span>kg</span><span>Wdh</span>
     </div>
     <div class="sets-rows" id="sr-${id}"></div>
     <button class="log-add-set" data-act="addLogSet" data-arg="sr-${id}">＋ Satz</button>
@@ -879,18 +1621,9 @@ function addLogSet(rowsId) {
     <span class="set-n">${n}</span>
     <input type="number" class="set-input set-w" step="0.5" min="0" placeholder="${phW}" value="${prevW}">
     <input type="number" class="set-input set-r" min="0" placeholder="${phR}" value="${prevR}">
-    <button type="button" class="set-done" data-act="toggleSetDone" data-pass="this" aria-label="Satz erledigt">✓</button>
   `;
   wrap.appendChild(row);
   updateLogSummary();
-}
-
-// ✓ toggle — visual live-logging marker only, does not change saved data
-function toggleSetDone(btn) {
-  const on = !btn.classList.contains('done');
-  btn.classList.toggle('done', on);
-  const row = btn.closest('.sets-grid');
-  if (row) row.classList.toggle('done', on);
 }
 
 // All logged sets of the most recent session for an exercise name (Item 06 bonus).
@@ -1057,8 +1790,10 @@ function saveLog() {
       toast('Dauer oder Distanz eingeben', true);
       return;
     }
-    session.cardio = { duration_min: durEl.value ? +durEl.value : null, distance_km: distEl.value ? +distEl.value : null, floors: floorsEl.value ? +floorsEl.value : null, calories: kcal ? +kcal : null };
+    const cardioType = document.getElementById('log-cardio-type').value;
+    session.cardio = { type: cardioType || null, duration_min: durEl.value ? +durEl.value : null, distance_km: distEl.value ? +distEl.value : null, floors: floorsEl.value ? +floorsEl.value : null, calories: kcal ? +kcal : null };
   } else {
+    session.intensity = document.getElementById('log-intensity').value || 'mod';
     let nameError = false;
     document.querySelectorAll('#log-ex-list .log-ex').forEach(block => {
       const nameEl = block.querySelector('.log-ex-name');
@@ -1094,6 +1829,12 @@ function saveLog() {
     db.sessions.push(session);
     clearActive();
   }
+
+  // §2.3/§4.3 Verbrauch einfrieren (wie Meal-Log): sonst würde eine spätere
+  // Gewichtsänderung den historischen Trainings-Verbrauch rückwirkend verzerren.
+  const burn = sessionKcalNet(session);
+  if (burn) { session.burnedKcal = burn.kcal; session.burnConfidence = burn.confidence; }
+
   db.sessions.sort((a,b) => b.date.localeCompare(a.date));
   writeDB(db);
   // Detect PRs only for newly added (non-edited) strength sessions
@@ -1441,6 +2182,168 @@ function renderPRs(sessions) {
   }).join('');
 }
 
+// ─── DASHBOARD: ENERGIE HEUTE (Spec §9) ──────────────────────────────
+function renderDashboardEnergy() {
+  const content = document.getElementById('dash-energy-content');
+  const empty   = document.getElementById('dash-energy-empty');
+  if (!content) return;
+
+  const profile = getProfile();
+  const target  = calcTargetKcal(profile);
+  const macros  = calcMacros(profile);
+  if (target == null || macros == null) {
+    content.style.display = 'none';
+    if (empty) empty.style.display = 'flex';
+    return;
+  }
+  content.style.display = '';
+  if (empty) empty.style.display = 'none';
+
+  const today  = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+  const totals = getDayTotals(today);
+  const expend = actualDailyExpenditure(today, profile) || expectedDailyExpenditure(profile) || target;
+  const rest   = target - totals.kcal;
+  const over   = rest < 0;
+  const pct    = Math.min(100, Math.round((totals.kcal / target) * 100));
+
+  const R = 52, CIRC = 2 * Math.PI * R;
+  const ring = document.getElementById('dash-ring-fg');
+  if (ring) {
+    ring.style.strokeDasharray  = CIRC;
+    ring.style.strokeDashoffset = CIRC * (1 - pct / 100);
+    ring.classList.toggle('over', over);
+  }
+  const eatenEl  = document.getElementById('dash-kcal-eaten');
+  if (eatenEl) eatenEl.textContent = totals.kcal.toLocaleString('de-DE');
+  const targetEl = document.getElementById('dash-kcal-target');
+  if (targetEl) targetEl.textContent = target.toLocaleString('de-DE');
+  const restEl = document.getElementById('dash-kcal-rest');
+  if (restEl) {
+    restEl.textContent = (over ? '' : '+') + rest.toLocaleString('de-DE') + ' kcal';
+    restEl.classList.toggle('over', over);
+  }
+
+  const balMax = Math.max(expend, totals.kcal, 1);
+  const balBar = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = Math.min(100, Math.round((val / balMax) * 100)) + '%';
+  };
+  balBar('dash-bal-verbrauch', expend);
+  balBar('dash-bal-zufuhr', totals.kcal);
+  const balVerbEl = document.getElementById('dash-bal-verbrauch-val');
+  if (balVerbEl) balVerbEl.textContent = expend.toLocaleString('de-DE') + ' kcal';
+  const balZufEl = document.getElementById('dash-bal-zufuhr-val');
+  if (balZufEl) balZufEl.textContent = totals.kcal.toLocaleString('de-DE') + ' kcal';
+
+  const macroHost = document.getElementById('dash-macros');
+  if (macroHost) {
+    const row = (name, val, max, col) => {
+      const pctM = max ? Math.min(100, Math.round((val / max) * 100)) : 0;
+      return `<div class="energy-macro-row"><span class="energy-macro-name">${name}</span><div class="energy-macro-bar"><i style="width:${pctM}%;background:${col}"></i></div><span class="energy-macro-val">${val}/${max} g</span></div>`;
+    };
+    macroHost.innerHTML =
+      row('Protein', totals.protein, macros.protein, 'var(--push)') +
+      row('Carbs',   totals.carbs,   macros.carbs,   'var(--pull)') +
+      row('Fett',    totals.fat,     macros.fat,      'var(--cardio)');
+  }
+}
+
+// ─── DASHBOARD: LETZTES TRAINING ──────────────────────────────────────
+function renderDashboardTraining(sessions) {
+  const host    = document.getElementById('dash-training-card');
+  const content = document.getElementById('dash-training-content');
+  if (!content) return;
+  const last = sessions.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+  if (!last) {
+    if (host) { host.classList.remove('clickable'); delete host.dataset.act; delete host.dataset.arg; }
+    content.innerHTML = `<div class="dash-train-when" style="color:var(--muted2)">Noch kein Training</div><div class="dash-train-meta">Starte deine erste Session über den FAB.</div>`;
+    return;
+  }
+  if (host) { host.classList.add('clickable'); host.dataset.act = 'showDetail'; host.dataset.arg = last.id; }
+
+  const todayStr = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+  const y = new Date(todayStr + 'T12:00:00Z'); y.setUTCDate(y.getUTCDate() - 1);
+  const yesterdayStr = y.toISOString().slice(0, 10);
+  let when;
+  if (last.date === todayStr) when = 'Heute';
+  else if (last.date === yesterdayStr) when = 'Gestern';
+  else { const [yy, mo, dd] = last.date.split('-'); when = `${dd}.${mo}.`; }
+
+  const chip = typeChip(last);
+  const dur  = formatDurationHM(sessionDurationMinutes(last));
+  const exN  = (last.exercises || []).length;
+  const meta = [dur ? `⏱ ${dur}` : '', exN ? `${exN} Übungen` : ''].filter(Boolean).join(' · ');
+
+  content.innerHTML = `<span class="dash-train-cat" style="color:${chip.color};background:${chip.bg}">${last.category || ''}</span>
+    <div class="dash-train-when">${when}</div>
+    <div class="dash-train-meta">${meta}</div>`;
+}
+
+// ─── DASHBOARD: GEWICHTSTREND ─────────────────────────────────────────
+function renderDashboardTrend() {
+  const host = document.getElementById('dash-trend-content');
+  if (!host) return;
+  const d = calcWeightDelta30();
+  if (d === null) {
+    host.innerHTML = `<div class="dash-trend-val" style="color:var(--muted2)">—</div><div class="dash-trend-sub">keine Gewichtsdaten</div>`;
+    return;
+  }
+  const dir   = d.diff < 0 ? 'down' : (d.diff > 0 ? 'up' : '');
+  const arrow = d.diff < 0 ? '↓' : (d.diff > 0 ? '↑' : '→');
+  const diffTxt = (d.diff > 0 ? '+' : '') + d.diff + ' kg';
+  host.innerHTML = `<div class="dash-trend-val ${dir}">${arrow} ${d.latest} kg</div><div class="dash-trend-sub">${diffTxt} · letzte 30 Tage</div>`;
+}
+
+// ─── GESUNDHEIT: BILANZ (Spec §9) ─────────────────────────────────────
+function renderBilanz() {
+  const content = document.getElementById('bilanz-content');
+  const empty   = document.getElementById('bilanz-empty');
+  if (!content) return;
+
+  const profile = getProfile();
+  const bmr     = calcBMR(profile);
+  const target  = calcTargetKcal(profile);
+  if (bmr == null || target == null) {
+    content.style.display = 'none';
+    if (empty) empty.style.display = 'flex';
+    return;
+  }
+  content.style.display = '';
+  if (empty) empty.style.display = 'none';
+
+  const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const setW   = (id, val, max) => { const el = document.getElementById(id); if (el) el.style.width = (max ? Math.min(100, Math.round(val / max * 100)) : 0) + '%'; };
+
+  const expend = expectedDailyExpenditure(profile);
+  const act    = profile.activityBaseline || ENERGY_CONFIG.activityDefault;
+
+  setTxt('bz-bmr', bmr.toLocaleString('de-DE') + ' kcal');
+  setTxt('bz-activity', '×' + act.toFixed(2).replace('.', ','));
+  setTxt('bz-expend', expend.toLocaleString('de-DE') + ' kcal');
+  const lastCalibTxt = profile.lastCalibrationDate ? ` (zuletzt ${profile.lastCalibrationDate.split('-').reverse().join('.')})` : '';
+  setTxt('bz-calib-note', (profile.calibrationFactor && profile.calibrationFactor !== 1)
+    ? `Kalibriert ×${profile.calibrationFactor.toFixed(2)} anhand deines Gewichtsverlaufs${lastCalibTxt}.`
+    : 'Noch nicht kalibriert – Basis auf Formel + Aktivitätsfaktor.');
+
+  setTxt('bz-target', target.toLocaleString('de-DE') + ' kcal');
+  setTxt('bz-goal', profile.goal ? GOAL_LABELS[profile.goal] + (profile.goalIntensity === 'aggressive' ? ' (intensiv)' : '') : '—');
+
+  const today      = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+  const totals     = getDayTotals(today);
+  const trainInfo  = getDayTrainingKcal(today);
+  const actualExpend = actualDailyExpenditure(today, profile) || expend;
+  const balMax = Math.max(actualExpend, totals.kcal, 1);
+  setW('bz-bal-verbrauch', actualExpend, balMax);
+  setW('bz-bal-zufuhr', totals.kcal, balMax);
+  setTxt('bz-bal-verbrauch-val', actualExpend.toLocaleString('de-DE') + ' kcal');
+  setTxt('bz-bal-zufuhr-val', totals.kcal.toLocaleString('de-DE') + ' kcal');
+
+  const band = totals.confidence != null ? Math.round(totals.kcal * (1 - totals.confidence)) : null;
+  const bandTxt  = band ? `Zufuhr ± ${band} kcal (Datenqualität-Fehlerband)` : 'Noch keine Mahlzeiten heute geloggt.';
+  const trainTxt = trainInfo.kcal > 0 ? ` · davon Training heute: +${trainInfo.kcal} kcal (netto)` : '';
+  setTxt('bz-band-note', bandTxt + trainTxt);
+}
+
 function renderAll() {
   const db = loadDB();
   const st = calcStats(db.sessions);
@@ -1470,24 +2373,9 @@ function renderAll() {
     const sub = document.getElementById('dash-streak-sub');
     if (sub) sub.textContent = streak === 0 ? 'noch kein Streak' : (streak === 1 ? '1 Woche' : streak + ' Wochen') + ' (min. ' + minN + '/Woche)';
   }
-  const wtDelta = calcWeightDelta30();
-  const dashWtVal = document.getElementById('dash-wt-delta-val');
-  if (dashWtVal) {
-    if (wtDelta === null) {
-      dashWtVal.textContent = '—';
-      const sub = document.getElementById('dash-wt-delta-sub');
-      if (sub) { sub.textContent = 'keine Daten'; sub.className = 'dash-tile-delta neutral'; }
-    } else {
-      dashWtVal.textContent = wtDelta.latest + ' kg';
-      const sub = document.getElementById('dash-wt-delta-sub');
-      if (sub) {
-        const d = wtDelta.diff;
-        if (d < 0)      { sub.textContent = '↓ ' + Math.abs(d) + ' kg (30 Tage)'; sub.className = 'dash-tile-delta up'; }
-        else if (d > 0) { sub.textContent = '↑ +' + d + ' kg (30 Tage)'; sub.className = 'dash-tile-delta down'; }
-        else            { sub.textContent = '= unverändert (30 Tage)'; sub.className = 'dash-tile-delta neutral'; }
-      }
-    }
-  }
+  renderDashboardEnergy();
+  renderDashboardTraining(db.sessions);
+  renderDashboardTrend();
 
   initHeatmapFilter(db.sessions);
   const _hmYear  = parseInt((document.getElementById('hm-year-sel')  || {}).value  || new Date().getFullYear());
@@ -1502,7 +2390,7 @@ function renderAll() {
 }
 
 // ─── VIEW SWITCHING ──────────────────────────────────
-const VIEWS = ['dashboard', 'progress', 'body', 'sessions', 'settings', 'training'];
+const VIEWS = ['dashboard', 'progress', 'body', 'sessions', 'settings', 'training', 'ernaehrung', 'bilanz'];
 
 function switchView(name) {
   // Nav + FAB während Training ausblenden/einblenden
@@ -1526,10 +2414,30 @@ function switchView(name) {
     const bot = document.getElementById('bnav-' + v);
     if (bot) bot.classList.toggle('active', v === name);
   });
+  // "Training"-Gruppe: Sessions + Fortschritt teilen sich einen Tab via Segmented Control
+  const inTrain = (name === 'sessions' || name === 'progress');
+  ['nav-train', 'bnav-train'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('active', inTrain); });
+  const trainSeg = document.getElementById('train-seg');
+  if (trainSeg) {
+    trainSeg.style.display = (inTrain && !isTraining) ? '' : 'none';
+    trainSeg.querySelectorAll('[data-seg]').forEach(b => b.classList.toggle('active', b.dataset.seg === name));
+  }
+  // "Gesundheit"-Gruppe: Bilanz + Gewicht&KFA teilen sich einen Tab via Segmented Control
+  const inHealth = (name === 'bilanz' || name === 'body');
+  ['nav-gesundheit', 'bnav-gesundheit'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('active', inHealth); });
+  const healthSeg = document.getElementById('health-seg');
+  if (healthSeg) {
+    healthSeg.style.display = inHealth ? '' : 'none';
+    healthSeg.querySelectorAll('[data-seg]').forEach(b => b.classList.toggle('active', b.dataset.seg === name));
+  }
+
   // Trigger chart renders on first visit
-  if (name === 'progress') { renderDurChart(); init1RMSelect(); initProgressDefaults(); }
-  if (name === 'body')     { renderWeightChart(); }
-  if (name === 'settings') { setTimeout(loadCfgUI, 0); }
+  if (name === 'progress')  { renderDurChart(); init1RMSelect(); initProgressDefaults(); }
+  if (name === 'body')      { renderWeightChart(); }
+  if (name === 'bilanz')    { renderBilanz(); }
+  if (name === 'settings')  { setTimeout(loadCfgUI, 0); }
+  if (name === 'ernaehrung'){ renderMealLog(); }
+  if (name === 'dashboard'){ renderDashboardEnergy(); renderDashboardTraining(loadDB().sessions); renderDashboardTrend(); }
 
 }
 
@@ -1866,8 +2774,10 @@ function editSession(id) {
   document.getElementById('log-cat').value   = s.category || '';
   document.getElementById('log-loc').value   = LOC_KEY[s.location] || s.location || '';
   document.getElementById('log-mood').value  = MOOD_KEY[s.mood] || s.mood || '';
+  document.getElementById('log-intensity').value = s.intensity || 'mod';
   onLogChange();
   syncMoodSeg();
+  syncIntensitySeg();
   if (s.type === 'cardio' && s.cardio) {
     const c = s.cardio;
     if (c.type) document.getElementById('log-cardio-type').value = c.type;
@@ -1955,6 +2865,7 @@ function loadCfgUI() {
     loadLocEditor();
     renderSyncPanel();
     renderProfileSection();
+    renderProfileSummary();
   } catch(e) {
     console.error('loadCfgUI error:', e);
   }
@@ -1975,6 +2886,8 @@ function settingsNav(id) {
   if (id === 'plans')     loadPlanOverview();
   if (id === 'plan-edit') loadPlanEditor();
   if (id === 'streak') { const c = getCfg(); const s = document.getElementById('cfg-streak-min'); if (s) s.value = c.streakMin || 3; }
+  if (id === 'grunddaten') loadGrunddatenEditor();
+  if (id === 'ziel')       loadZielEditor();
   if (id === 'invite') {
     const inp = document.getElementById('invite-link');
     if (inp) inp.value = APP_URL;
@@ -1993,6 +2906,153 @@ function settingsBack() {
   const cur = document.getElementById('set-scr-' + _setCur);
   const parent = (cur && cur.dataset.parent) || 'hub';
   settingsNav(parent);
+}
+
+// ─── PROFIL-UI: Grunddaten (Live-BMR, Spec §4.1) ──────────────────────────────
+const _setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); };
+const _fldNum = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : null; };
+const _fldStr = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : null; };
+
+function loadGrunddatenEditor() {
+  const p = getProfile();
+  _setVal('gd-sex',         p.sex);
+  _setVal('gd-birthyear',   p.birthYear);
+  _setVal('gd-height',      p.heightCm);
+  _setVal('gd-startweight', p.startWeight);
+  _setVal('gd-kfa',         p.startKfa);
+  recalcGrunddaten();
+}
+function recalcGrunddaten() {
+  const profile = { ...getProfile(), sex: _fldStr('gd-sex'), birthYear: _fldNum('gd-birthyear'), heightCm: _fldNum('gd-height') };
+  const weight  = _fldNum('gd-startweight') ?? getCurrentWeight();
+  const kfa     = _fldNum('gd-kfa') ?? getCurrentKfa();
+  const bmr = calcBMR(profile, weight, kfa);
+  const el = document.getElementById('gd-bmr');
+  if (el) el.textContent = bmr != null ? bmr.toLocaleString('de-DE') + ' kcal' : '—';
+}
+function saveGrunddaten() {
+  const sw = _fldNum('gd-startweight'), kfa = _fldNum('gd-kfa');
+  saveProfile({ sex: _fldStr('gd-sex'), birthYear: _fldNum('gd-birthyear'), heightCm: _fldNum('gd-height') });
+  const p = getProfile();
+  // Startgewicht nur schreiben, wenn gesetzt und verändert → legt Weight-Eintrag an (§3)
+  if (sw != null && (p.startWeight == null || sw !== p.startWeight || kfa !== p.startKfa)) {
+    setStartWeight(sw, kfa);
+  }
+  toast('Gespeichert ✓');
+  renderProfileSummary();
+  settingsBack();
+}
+
+// ─── PROFIL-UI: Ziel & Ernährung (Live-Tagesziel/Makros, Spec §4.6) ───────────
+function loadZielEditor() {
+  const p = getProfile();
+  _setVal('z-goal',      p.goal);
+  _setVal('z-intensity', p.goalIntensity || 'moderate');
+  _setVal('z-diet',      p.dietType);
+  recalcZiel();
+}
+function recalcZiel() {
+  const profile = { ...getProfile(), goal: _fldStr('z-goal'), goalIntensity: _fldStr('z-intensity'), dietType: _fldStr('z-diet') };
+  const target = calcTargetKcal(profile);
+  const macros = calcMacros(profile);
+  const t = document.getElementById('z-target');
+  if (t) t.textContent = target != null ? target.toLocaleString('de-DE') : '—';
+  const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = (v == null ? '—' : v); };
+  setTxt('z-mp', macros?.protein);
+  setTxt('z-mc', macros?.carbs);
+  setTxt('z-mf', macros?.fat);
+}
+function saveZiel() {
+  saveProfile({ goal: _fldStr('z-goal'), goalIntensity: _fldStr('z-intensity'), dietType: _fldStr('z-diet') });
+  toast('Gespeichert ✓');
+  renderProfileSummary();
+  settingsBack();
+}
+
+// ─── PROFIL-HUB: Zusammenfassungs-Werte (BMR + Ziel) ──────────────────────────
+const GOAL_LABELS = { cut: 'Abnehmen', maintain: 'Halten', bulk: 'Muskelaufbau' };
+function renderProfileSummary() {
+  const bmr   = calcBMR();
+  const bmrEl = document.getElementById('set-bmr-val');
+  if (bmrEl) bmrEl.textContent = bmr != null ? bmr.toLocaleString('de-DE') + ' kcal' : 'Einrichten';
+  const goalEl = document.getElementById('set-goal-val');
+  if (goalEl) { const g = getProfile().goal; goalEl.textContent = g ? GOAL_LABELS[g] : 'Einrichten'; }
+}
+
+// ─── ONBOARDING (Spec §3) — mehrstufig, jeder Schritt überspringbar ───────────
+const OB_STEPS = 5;
+let _obStep = 1;
+
+// Zeigt den Wizard nur direkt nach einer Registrierung (Marker aus regSubmit()),
+// nie bei normalen Logins bestehender Konten – konsumiert sich selbst (einmalig).
+function maybeOpenOnboarding() {
+  if (!localStorage.getItem('liftlog_pending_onboarding')) return;
+  localStorage.removeItem('liftlog_pending_onboarding');
+  openOnboarding();
+}
+
+function openOnboarding() {
+  const p = getProfile();
+  _setVal('ob-sex',       p.sex);
+  _setVal('ob-birthyear', p.birthYear);
+  _setVal('ob-height',    p.heightCm);
+  _setVal('ob-weight',    p.startWeight);
+  _setVal('ob-kfa',       p.startKfa);
+  _setVal('ob-goal',      p.goal);
+  _setVal('ob-intensity', p.goalIntensity || 'moderate');
+  _setVal('ob-diet',      p.dietType);
+  _setVal('ob-activity',  p.activityBaseline);
+  obGotoStep(1);
+  openM('m-onboarding');
+}
+
+function obGotoStep(n) {
+  _obStep = n;
+  for (let i = 1; i <= OB_STEPS; i++) {
+    const panel = document.getElementById('ob-step-' + i);
+    const dot   = document.getElementById('ob-step-dot-' + i);
+    if (panel) panel.style.display = i === n ? '' : 'none';
+    if (dot)   dot.className = 'reg-step' + (i < n ? ' done' : '') + (i === n ? ' active' : '');
+  }
+  const back = document.getElementById('ob-back-btn');
+  if (back) back.style.display = n === 1 ? 'none' : '';
+  const next = document.getElementById('ob-next-btn');
+  if (next) next.textContent = n === OB_STEPS ? 'Fertig ✓' : 'Weiter →';
+}
+
+// Persistiert nur, was im jeweiligen Schritt tatsächlich ausgefüllt wurde – jedes
+// Feld bleibt optional (§3), leere Felder überschreiben nichts.
+function _obSaveStep(n) {
+  if (n === 1) saveProfile({ sex: _fldStr('ob-sex'), birthYear: _fldNum('ob-birthyear'), heightCm: _fldNum('ob-height') });
+  if (n === 2) {
+    const w = _fldNum('ob-weight'), k = _fldNum('ob-kfa');
+    if (w != null) setStartWeight(w, k);
+  }
+  if (n === 3) saveProfile({ goal: _fldStr('ob-goal'), goalIntensity: _fldStr('ob-intensity') || 'moderate' });
+  if (n === 4) saveProfile({ dietType: _fldStr('ob-diet') });
+  if (n === 5) { const a = _fldNum('ob-activity'); if (a != null) saveProfile({ activityBaseline: a }); }
+}
+
+function obNext() {
+  _obSaveStep(_obStep);
+  if (_obStep >= OB_STEPS) { obFinish(); return; }
+  obGotoStep(_obStep + 1);
+}
+function obBack() {
+  if (_obStep > 1) obGotoStep(_obStep - 1);
+}
+function obFinish() {
+  closeM('m-onboarding');
+  renderDashboardEnergy();
+  renderProfileSummary();
+  toast('Profil eingerichtet ✓');
+}
+// Wizard vorzeitig schließen (✕) — behält bereits ausgefüllte Schritte.
+function obClose() {
+  _obSaveStep(_obStep);
+  closeM('m-onboarding');
+  renderDashboardEnergy();
+  renderProfileSummary();
 }
 
 // ─── FREUND EINLADEN (App-Link teilen) ────────────────────────────────────────
@@ -2799,6 +3859,9 @@ async function regSubmit() {
   };
   const { data: signUpData, error: signUpErr } = await _SB.auth.signUp({ email, password: pw, options: { data: profileMeta } });
   if (signUpErr) { msg.textContent = '✗ ' + signUpErr.message; msg.style.color = '#cc4444'; return; }
+  // §3 Onboarding: einmalig beim nächsten erfolgreichen loadApp() zeigen (auch wenn
+  // erst nach E-Mail-Bestätigung eingeloggt wird) – konsumiert sich selbst, siehe loadApp().
+  localStorage.setItem('liftlog_pending_onboarding', '1');
   const userId = signUpData.user?.id;
   if (!userId) {
     msg.textContent = '✓ Bestätigungsmail gesendet – bitte E-Mail prüfen.';
@@ -2906,10 +3969,12 @@ async function loadApp() {
   // Selects nach Restore befüllen, damit User-Kategorien und -Standorte geladen sind
   populateCategorySelects();
   populateLocationSelects();
+  calibrateProfile();    // §4.7 – no-op außer Fenster ist voll UND genug Logs vorhanden
   renderAll();
   initBodyDates();
   renderSyncPanel();
   renderProfileSection();
+  maybeOpenOnboarding(); // §3 – nur beim allerersten Laden ohne bestehendes Energie-Profil
 }
 
 // ── Profile edit ──────────────────────────────────────
@@ -2988,6 +4053,7 @@ async function saveEmailChange() {
 }
 
 function openPasswordChangeModal() {
+  document.getElementById('pw-change-current').value     = '';
   document.getElementById('pw-change-new').value         = '';
   document.getElementById('pw-change-confirm').value     = '';
   document.getElementById('pw-change-msg').textContent   = '';
@@ -2996,13 +4062,21 @@ function openPasswordChangeModal() {
 }
 
 async function savePasswordChange() {
+  const curPw  = document.getElementById('pw-change-current').value;
   const newPw  = document.getElementById('pw-change-new').value;
   const confPw = document.getElementById('pw-change-confirm').value;
   const msg    = document.getElementById('pw-change-msg');
+  if (!curPw) { msg.textContent = '✗ Bitte aktuelles Passwort eingeben.'; msg.style.color = '#cc4444'; return; }
   const pwErr  = validatePw(newPw);
   if (pwErr) { msg.textContent = pwErr; msg.style.color = '#cc4444'; return; }
   if (newPw !== confPw) { msg.textContent = '✗ Passwörter stimmen nicht überein.'; msg.style.color = '#cc4444'; return; }
-  msg.textContent = 'Speichern…'; msg.style.color = 'var(--muted2)';
+  msg.textContent = 'Prüfe…'; msg.style.color = 'var(--muted2)';
+  // Re-Auth: aktuelles Passwort verifizieren, bevor wir es ändern
+  const { data: { user } } = await _SB.auth.getUser();
+  if (!user?.email) { msg.textContent = '✗ Nicht angemeldet.'; msg.style.color = '#cc4444'; return; }
+  const { error: reauthErr } = await _SB.auth.signInWithPassword({ email: user.email, password: curPw });
+  if (reauthErr) { msg.textContent = '✗ Aktuelles Passwort ist falsch.'; msg.style.color = '#cc4444'; return; }
+  msg.textContent = 'Speichern…';
   const { error } = await _SB.auth.updateUser({ password: newPw });
   if (error) { msg.textContent = '✗ ' + error.message; msg.style.color = '#cc4444'; return; }
   msg.textContent = '✓ Passwort geändert.'; msg.style.color = 'var(--up)';

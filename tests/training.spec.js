@@ -125,8 +125,8 @@ test.describe('Training tracken', () => {
     // Modal geschlossen
     await expect(page.locator('#view-training')).not.toBeVisible();
 
-    // Session in der Sessions-Ansicht prüfen
-    await page.click('#nav-sessions');
+    // Session in der Sessions-Ansicht prüfen (Tab „Training" → Segment Sessions)
+    await page.click('#nav-train');
     // Mindestens eine Session-Karte sollte erscheinen
     await expect(page.locator('#session-list .s-card')).toHaveCount(1);
   });

@@ -277,7 +277,7 @@ const DEFAULT_PROFILE = {
   sex: null, birthYear: null, heightCm: null,
   goal: null, goalIntensity: null, dietType: null,
   activityBaseline: null, startWeight: null, startKfa: null,
-  startDate: null, calibrationFactor: 1.0,
+  startDate: null, calibrationFactor: 1.0, lastCalibrationDate: null,
 };
 
 const getCfg = () => {
@@ -406,6 +406,74 @@ function actualDailyExpenditure(date, profile = getProfile()) {
   const bmr = calcBMR(profile);
   if (bmr == null) return null;
   return bmr + getDayTrainingKcal(date).kcal;
+}
+
+function _addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+function _daysBetween(a, b) {
+  return Math.round((new Date(b + 'T12:00:00Z') - new Date(a + 'T12:00:00Z')) / 86400000);
+}
+// Linearer Trend (kg/Tag) über Gewichts-Log-Punkte – glättet Tagesrauschen (Wasser/Glykogen)
+// besser als ein reiner Erst-/Letzter-Wert-Vergleich (least-squares Steigung).
+function _weightTrendSlope(entries) {
+  const x0 = new Date(entries[0].date + 'T12:00:00Z').getTime();
+  const pts = entries.map(e => ({ x: (new Date(e.date + 'T12:00:00Z').getTime() - x0) / 86400000, y: e.kg }));
+  const n = pts.length;
+  const sumX  = pts.reduce((s, p) => s + p.x, 0);
+  const sumY  = pts.reduce((s, p) => s + p.y, 0);
+  const sumXY = pts.reduce((s, p) => s + p.x * p.y, 0);
+  const sumXX = pts.reduce((s, p) => s + p.x * p.x, 0);
+  const denom = n * sumXX - sumX * sumX;
+  return denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
+}
+
+// §4.7 Selbst-Kalibrierung: gleicht die erwartete (Bilanz-basierte) mit der tatsächlichen
+// (geglätteter Gewichts-Trend) KG-Änderung über ein rollendes Fenster ab und justiert
+// profile.calibrationFactor gedämpft (max. calibrationMaxStep pro Update). Läuft höchstens
+// 1x pro Fenster; braucht genug Gewichts- UND Ernährungs-Logs, sonst kein Update (null).
+function calibrateProfile(profile = getProfile()) {
+  const C = ENERGY_CONFIG;
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
+
+  if (profile.lastCalibrationDate && _daysBetween(profile.lastCalibrationDate, today) < C.calibrationWindowDays) {
+    return null; // Fenster noch nicht voll
+  }
+
+  const windowStart = _addDays(today, -C.calibrationWindowDays);
+
+  // Tatsächliche KG-Änderung: linearer Trend aus dem Gewichts-Log im Fenster
+  const entries = getWeightEntries()
+    .filter(e => e.date >= windowStart && e.date <= today && e.kg != null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (entries.length < 4) return null; // zu wenig Datenpunkte für einen stabilen Trend
+  const actualDeltaKg = _weightTrendSlope(entries) * C.calibrationWindowDays;
+
+  // Erwartete KG-Änderung: Σ Tagesbilanz im Fenster (nur Tage mit geloggter Zufuhr) / 7700
+  let bilanzSum = 0, loggedDays = 0;
+  for (let d = windowStart; d <= today; d = _addDays(d, 1)) {
+    const totals = getDayTotals(d);
+    if (totals.confidence == null) continue; // kein Meal-Log an dem Tag → überspringen
+    const verbrauch = actualDailyExpenditure(d, profile);
+    if (verbrauch == null) continue;
+    bilanzSum += (verbrauch - totals.kcal);
+    loggedDays++;
+  }
+  if (loggedDays < 7) return null; // zu wenig geloggte Tage für ein belastbares Signal
+  const expectedDeltaKg = -bilanzSum / C.kcalPerKg; // Bilanz positiv = Defizit → erwarteter Verlust
+
+  // Abweichung → relativer Korrekturschritt auf die unkalibrierte Baseline, gedämpft
+  const deviationKcalTotal = (actualDeltaKg - expectedDeltaKg) * C.kcalPerKg;
+  const baseExpend = calcBMR(profile) * (profile.activityBaseline || C.activityDefault);
+  if (!baseExpend) return null;
+  const relError = -(deviationKcalTotal / C.calibrationWindowDays) / baseExpend;
+  const step = Math.max(-C.calibrationMaxStep, Math.min(C.calibrationMaxStep, relError));
+  const newFactor = Math.max(0.7, Math.min(1.3, (profile.calibrationFactor || 1) * (1 + step)));
+
+  saveProfile({ calibrationFactor: Math.round(newFactor * 1000) / 1000, lastCalibrationDate: today });
+  return newFactor;
 }
 
 // §3 Startgewicht: schreibt sofort einen Weight-Eintrag (heute) UND legt es im Profil ab,
@@ -2156,8 +2224,9 @@ function renderBilanz() {
   setTxt('bz-bmr', bmr.toLocaleString('de-DE') + ' kcal');
   setTxt('bz-activity', '×' + act.toFixed(2).replace('.', ','));
   setTxt('bz-expend', expend.toLocaleString('de-DE') + ' kcal');
+  const lastCalibTxt = profile.lastCalibrationDate ? ` (zuletzt ${profile.lastCalibrationDate.split('-').reverse().join('.')})` : '';
   setTxt('bz-calib-note', (profile.calibrationFactor && profile.calibrationFactor !== 1)
-    ? `Kalibriert ×${profile.calibrationFactor.toFixed(2)} anhand deines Gewichtsverlaufs.`
+    ? `Kalibriert ×${profile.calibrationFactor.toFixed(2)} anhand deines Gewichtsverlaufs${lastCalibTxt}.`
     : 'Noch nicht kalibriert – Basis auf Formel + Aktivitätsfaktor.');
 
   setTxt('bz-target', target.toLocaleString('de-DE') + ' kcal');
@@ -3725,6 +3794,7 @@ async function loadApp() {
   // Selects nach Restore befüllen, damit User-Kategorien und -Standorte geladen sind
   populateCategorySelects();
   populateLocationSelects();
+  calibrateProfile();    // §4.7 – no-op außer Fenster ist voll UND genug Logs vorhanden
   renderAll();
   initBodyDates();
   renderSyncPanel();

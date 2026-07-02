@@ -3621,7 +3621,7 @@ function gateShowC() {
 let _regStep = 1;
 function regGotoStep(n) {
   _regStep = n;
-  [1, 2, 3].forEach(i => {
+  [1, 2].forEach(i => {
     const panel = document.getElementById('reg-step-' + i);
     const dot   = document.getElementById('reg-step-dot-' + i);
     const line  = document.getElementById('reg-step-line-' + i);
@@ -3829,33 +3829,26 @@ async function regStep2Next() {
   const { data } = await _SB.from('profiles').select('username').eq('username', username).maybeSingle();
   if (data) { msg.textContent = '✗ Username bereits vergeben.'; msg.style.color = '#cc4444'; return; }
   msg.textContent = '';
-  regGotoStep(3);
+  await regSubmit();
 }
 
+// Registrierung bleibt schlank: nur Konto (E-Mail/Passwort) + Social-Profil
+// (Username/Anzeigename/Bild). Energie-Profil-Fragen (Größe, Ziel, Aktivität, …)
+// laufen separat im Onboarding-Wizard direkt nach der Registrierung (Spec §3).
 async function regSubmit() {
-  const msg = document.getElementById('reg-msg-3');
+  const msg = document.getElementById('reg-msg-2');
   msg.textContent = 'Konto erstellen…'; msg.style.color = 'var(--muted2)';
   const email       = document.getElementById('reg-email').value.trim();
   const pw          = document.getElementById('reg-pw').value;
   const username    = document.getElementById('reg-username').value.trim().toLowerCase();
   const displayName = document.getElementById('reg-displayname').value.trim();
-  const goals       = document.getElementById('reg-goals').value.trim();
-  const hobbies     = document.getElementById('reg-hobbies').value.trim();
-  const lifestyle   = document.getElementById('reg-lifestyle').value.trim();
-  const heightCm    = document.getElementById('reg-height').value.trim();
-  const fitnessLvl  = document.getElementById('reg-fitness-level').value;
   const avatarFile  = _regAvatarFile;   // zugeschnittenes Bild aus dem Cropper
   // Profilfelder als Auth-Metadaten mitgeben → der DB-Trigger handle_new_user()
   // legt daraus die profiles-Zeile an. Funktioniert auch ohne Session (E-Mail-
   // Bestätigung aktiv), weil der Trigger serverseitig läuft.
   const profileMeta = {
     username,
-    display_name:  displayName || null,
-    goals:         goals     || null,
-    hobbies:       hobbies   || null,
-    lifestyle:     lifestyle || null,
-    height_cm:     heightCm ? parseInt(heightCm, 10) : null,
-    fitness_level: fitnessLvl || null,
+    display_name: displayName || null,
   };
   const { data: signUpData, error: signUpErr } = await _SB.auth.signUp({ email, password: pw, options: { data: profileMeta } });
   if (signUpErr) { msg.textContent = '✗ ' + signUpErr.message; msg.style.color = '#cc4444'; return; }

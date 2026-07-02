@@ -859,6 +859,100 @@ async function barcodeFound(code) {
     mealAddSelect(cacheOffFood(food).id);   // zurück ins Add-Modal, Menge wählen
   } catch (e) { if (status) status.textContent = 'Fehler bei der Abfrage.'; }
 }
+// ─── FOOD-DB VERWALTUNG (Spec §9: Liste, bearbeiten, Favoriten) ───────────────
+let _fooddbEditingId = null;
+
+function openFoodDbManager() {
+  const search = document.getElementById('fooddb-search');
+  if (search) search.value = '';
+  _fooddbEditingId = null;
+  renderFoodDbManager('');
+  openM('m-fooddb');
+}
+
+function renderFoodDbManager(query) {
+  const q   = (query ?? document.getElementById('fooddb-search')?.value ?? '').toLowerCase().trim();
+  const all = getFoodDb();
+  const list = all
+    .filter(f => !q || f.name.toLowerCase().includes(q) || (f.brand || '').toLowerCase().includes(q))
+    .sort((a, b) => (Number(b.favorite) - Number(a.favorite)) || a.name.localeCompare(b.name, 'de'));
+
+  const countEl = document.getElementById('fooddb-count-text');
+  if (countEl) countEl.textContent = all.length + (all.length === 1 ? ' Eintrag' : ' Einträge');
+
+  const host  = document.getElementById('fooddb-list');
+  const empty = document.getElementById('fooddb-empty');
+  if (!host) return;
+  if (!list.length) { host.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
+  if (empty) empty.style.display = 'none';
+
+  host.innerHTML = list.map(f => f.id === _fooddbEditingId ? _fooddbEditRow(f) : _fooddbViewRow(f)).join('');
+}
+
+function _fooddbViewRow(f) {
+  const src = f.source === 'off' ? 'Open Food Facts' : 'Manuell';
+  return `<div class="fooddb-row">
+    <button class="fooddb-fav ${f.favorite ? 'active' : ''}" data-act="toggleFoodDbFavorite" data-arg="${f.id}" aria-label="Favorit">★</button>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:.82rem;font-weight:600;color:var(--text)">${_escH(f.name)}${f.brand ? ' <span style="color:var(--muted2);font-weight:400">· ' + _escH(f.brand) + '</span>' : ''}</div>
+      <div style="font-size:.64rem;color:var(--muted2)">${f.per100.kcal} kcal · ${f.per100.protein}P ${f.per100.carbs}C ${f.per100.fat}F / 100g · ${src}</div>
+    </div>
+    <button class="fooddb-ic-btn" data-act="editFoodDbEntry" data-arg="${f.id}" aria-label="Bearbeiten">✎</button>
+    <button class="fooddb-ic-btn danger" data-act="deleteFoodDbEntry" data-arg="${f.id}" aria-label="Löschen">✕</button>
+  </div>`;
+}
+
+function _fooddbEditRow(f) {
+  return `<div class="fooddb-row fooddb-row-edit">
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+      <input type="text" id="fde-name" placeholder="Name" value="${_escH(f.name)}">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+        <input type="number" id="fde-kcal" placeholder="kcal" value="${f.per100.kcal}" min="0">
+        <input type="number" id="fde-p" placeholder="P g" value="${f.per100.protein}" min="0" step="0.1">
+        <input type="number" id="fde-c" placeholder="C g" value="${f.per100.carbs}" min="0" step="0.1">
+        <input type="number" id="fde-f" placeholder="F g" value="${f.per100.fat}" min="0" step="0.1">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:2px">
+        <button class="btn" data-act="cancelEditFoodDbEntry">Abbrechen</button>
+        <button class="btn-fill" data-act="saveFoodDbEntry" data-arg="${f.id}">Speichern</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleFoodDbFavorite(id) { toggleFoodFavorite(id); renderFoodDbManager(); }
+function editFoodDbEntry(id)      { _fooddbEditingId = id; renderFoodDbManager(); }
+function cancelEditFoodDbEntry()  { _fooddbEditingId = null; renderFoodDbManager(); }
+
+function saveFoodDbEntry(id) {
+  const f = getFood(id);
+  if (!f) return;
+  const name = document.getElementById('fde-name').value.trim();
+  if (!name) { toast('Name erforderlich', true); return; }
+  f.name = name;
+  f.per100 = {
+    kcal:    +document.getElementById('fde-kcal').value || 0,
+    protein: +document.getElementById('fde-p').value || 0,
+    carbs:   +document.getElementById('fde-c').value || 0,
+    fat:     +document.getElementById('fde-f').value || 0,
+  };
+  upsertFood(f);
+  _fooddbEditingId = null;
+  renderFoodDbManager();
+  toast('Gespeichert ✓');
+}
+
+// Löschen mit Undo statt Bestätigungs-Dialog (weniger Reibung, wie delSession).
+// Bereits geloggte Mahlzeiten sind unabhängig (Werte eingefroren, §2.2) – Löschen ist sicher.
+function deleteFoodDbEntry(id) {
+  const f = getFood(id);
+  if (!f) return;
+  deleteFood(id);
+  if (_fooddbEditingId === id) _fooddbEditingId = null;
+  renderFoodDbManager();
+  toastUndo('Lebensmittel gelöscht', () => { upsertFood(f); renderFoodDbManager(); });
+}
+
 const loadDB  = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || { sessions: [] }; } catch { return { sessions: [] }; } };
 const writeDB = db => { localStorage.setItem(DB_KEY, JSON.stringify(db)); syncAllUserData(); };
 

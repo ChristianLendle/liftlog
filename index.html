@@ -183,6 +183,16 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .intensity-seg { grid-template-columns: repeat(3, 1fr); }
 .ob-step-title { font-size: .78rem; font-weight: 700; color: var(--text); margin-bottom: 14px; }
 
+/* ─── FOOD-DB VERWALTUNG ────────────────────── */
+.fooddb-row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+.fooddb-row:last-child { border-bottom: none; }
+.fooddb-fav { background: none; border: none; color: var(--border2); font-size: 1.1rem; cursor: pointer; padding: 4px; flex-shrink: 0; line-height: 1; }
+.fooddb-fav.active { color: var(--cardio); }
+.fooddb-ic-btn { background: none; border: none; color: var(--muted2); font-size: .85rem; cursor: pointer; padding: 5px 7px; border-radius: 6px; flex-shrink: 0; }
+.fooddb-ic-btn:hover { background: var(--surface2); color: var(--text); }
+.fooddb-ic-btn.danger:hover { color: var(--down); }
+.fooddb-row-edit input { margin-bottom: 0; }
+
 /* ─── LOG EXERCISE CARDS ─────────────────── */
 .log-sep { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 .log-ex { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 13px 13px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(28,43,74,.04), 0 4px 12px rgba(28,43,74,.05); }
@@ -1154,6 +1164,9 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <div class="meal-daylabel" id="meal-day-label">Heute</div>
       <button class="meal-daynav" data-act="mealDayShift" data-argn="1" aria-label="Nächster Tag">›</button>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin:-6px 0 12px">
+      <button class="empty-cta" style="margin-top:0" data-act="openFoodDbManager">Lebensmittel verwalten</button>
+    </div>
     <div id="meal-log"></div>
   </div>
 </div>
@@ -1946,6 +1959,22 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <div style="flex:1"></div>
       <button class="btn-fill" id="ob-next-btn" data-act="obNext">Weiter →</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: FOOD-DB VERWALTEN (§9) ════════════════ -->
+<div class="overlay" id="m-fooddb">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hd">
+      <div class="modal-hd-col">
+        <div class="modal-title">Lebensmittel verwalten</div>
+        <div class="modal-ctx"><span class="ctx-dot" style="background:var(--accent)"></span><span id="fooddb-count-text">0 Einträge</span></div>
+      </div>
+      <button class="modal-x" data-act="closeM" data-arg="m-fooddb">✕</button>
+    </div>
+    <input type="text" id="fooddb-search" placeholder="Suchen…" data-input="renderFoodDbManager" data-pass="value" style="margin-bottom:10px" autocomplete="off">
+    <div id="fooddb-list" style="max-height:52vh;overflow-y:auto"></div>
+    <div id="fooddb-empty" class="chart-empty" style="display:none">Noch keine Lebensmittel angelegt</div>
   </div>
 </div>
 

@@ -709,15 +709,13 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       <div class="reg-step active" id="reg-step-dot-1">1</div>
       <div class="reg-step-line" id="reg-step-line-1"></div>
       <div class="reg-step" id="reg-step-dot-2">2</div>
-      <div class="reg-step-line" id="reg-step-line-2"></div>
-      <div class="reg-step" id="reg-step-dot-3">3</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px">
 
       <!-- Step 1: Auth credentials -->
       <div id="reg-step-1">
         <button data-act="gateShowA" aria-label="Zurück" style="background:var(--surface);border:1px solid #E7EBF3;border-radius:9px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 2px rgba(28,43,74,.04);margin-bottom:18px;color:var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-        <div style="font-size:0.58rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px">Schritt 1 von 3</div>
+        <div style="font-size:0.58rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px">Schritt 1 von 2</div>
         <div style="font-size:1.35rem;font-weight:700;letter-spacing:-0.02em;color:var(--text);margin-bottom:22px">Konto erstellen</div>
         <div class="field"><label>E-Mail</label><input type="email" id="reg-email" placeholder="deine@email.de" autocomplete="email"></div>
         <div class="field">
@@ -768,34 +766,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
         <div id="reg-msg-2" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
         <div style="display:flex;gap:8px">
           <button class="btn" style="flex:1;padding:11px;font-size:.75rem;display:flex;align-items:center;justify-content:center;gap:6px" data-act="regGotoStep" data-argn="1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Zurück</button>
-          <button class="btn-fill" style="flex:2;padding:12px;font-size:.78rem;display:flex;align-items:center;justify-content:center;gap:6px" data-act="regStep2Next">Weiter <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-        </div>
-      </div>
-
-      <!-- Step 3: Goals (optional) -->
-      <div id="reg-step-3" style="display:none">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:4px">Ziele &amp; Alltag · Schritt 3</div>
-        <div style="font-size:.68rem;color:var(--muted2);margin-bottom:8px">Alles optional — kann jederzeit geändert werden.</div>
-        <div style="font-size:.68rem;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:16px;line-height:1.5">
-          Diese Angaben helfen <strong style="color:var(--accent)">Gym Brah</strong>, deinem persönlichen Assistenten, dich gezielter zu unterstützen und Fragen genauer zu beantworten.
-        </div>
-        <div class="field"><label>Trainingsziele</label><input type="text" id="reg-goals" placeholder="z.B. Muskelaufbau, Kraft steigern"></div>
-        <div class="field"><label>Hobbys / Sport</label><input type="text" id="reg-hobbies" placeholder="z.B. Klettern, Radfahren"></div>
-        <div class="field"><label>Alltag / Job</label><input type="text" id="reg-lifestyle" placeholder="z.B. Bürojob, viel sitzen"></div>
-        <div class="field"><label>Körpergröße (cm)</label><input type="number" id="reg-height" placeholder="z.B. 180" min="100" max="250"></div>
-        <div class="field" style="margin-bottom:6px"><label>Fitness-Level</label>
-          <select id="reg-fitness-level">
-            <option value="">— wählen —</option>
-            <option value="Einsteiger">Einsteiger</option>
-            <option value="Aktiv">Aktiv</option>
-            <option value="Fit">Fit</option>
-            <option value="Sehr Fit">Sehr Fit</option>
-          </select>
-        </div>
-        <div id="reg-msg-3" style="font-size:.74rem;min-height:18px;margin-bottom:12px;color:#cc4444"></div>
-        <div style="display:flex;gap:8px">
-          <button class="btn" style="flex:1;padding:11px;font-size:.75rem;display:flex;align-items:center;justify-content:center;gap:6px" data-act="regGotoStep" data-argn="2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Zurück</button>
-          <button class="btn-fill" style="flex:2;padding:12px;font-size:.78rem" data-act="regSubmit">Registrieren</button>
+          <button class="btn-fill" style="flex:2;padding:12px;font-size:.78rem" data-act="regStep2Next">Registrieren</button>
         </div>
       </div>
 

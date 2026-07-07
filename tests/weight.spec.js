@@ -56,7 +56,6 @@ test.describe('Gewicht erfassen', () => {
 
     // Zur Körper-Ansicht wechseln
     await page.click('#nav-gesundheit');
-    await page.click('#health-seg [data-seg="body"]');
     await expect(page.locator('#wt-stat-current')).toHaveText('82.5 kg');
     await expect(page.locator('#wt-stat-kfa')).toHaveText('14.2 %');
   });
@@ -72,7 +71,6 @@ test.describe('Gewicht erfassen', () => {
     await page.locator('#m-weight').getByRole('button', { name: 'Speichern' }).click();
 
     await page.click('#nav-gesundheit');
-    await page.click('#health-seg [data-seg="body"]');
     await expect(page.locator('#wt-stat-current')).toHaveText('80 kg');
     await expect(page.locator('#wt-stat-kfa')).toHaveText('—');
   });
@@ -84,7 +82,6 @@ test.describe('Gewicht erfassen', () => {
 
     // Zur Körper-Ansicht wechseln damit der Eintrag geladen wird
     await page.click('#nav-gesundheit');
-    await page.click('#health-seg [data-seg="body"]');
     // Eintrag über JS-Funktion im Edit-Modus öffnen
     await page.evaluate((d) => window.editWeightEntry(d), TODAY);
 
@@ -100,7 +97,6 @@ test.describe('Gewicht erfassen', () => {
     });
 
     await page.click('#nav-gesundheit');
-    await page.click('#health-seg [data-seg="body"]');
     await expect(page.locator('#wt-stat-current')).toHaveText('83 kg');
 
     // Edit-Modal öffnen und löschen
@@ -124,7 +120,6 @@ test.describe('Gewicht erfassen', () => {
 
     // Kein Eintrag gespeichert
     await page.click('#nav-gesundheit');
-    await page.click('#health-seg [data-seg="body"]');
     await expect(page.locator('#wt-stat-current')).toHaveText('—');
   });
 

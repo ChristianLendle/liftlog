@@ -15,6 +15,69 @@ const PLANS_KEY = 'liftlog_plans_v1';
 const getPlans = () => { try { return JSON.parse(localStorage.getItem(PLANS_KEY)) || DEFAULT_PLANS; } catch { return DEFAULT_PLANS; } };
 const savePlansToStorage = p => { localStorage.setItem(PLANS_KEY, JSON.stringify(p)); syncAllUserData(); };
 
+// ─────────────────────────────────────────────────────
+//  TRAININGS-ROTATION (Reihenfolge der Kategorien)
+// ─────────────────────────────────────────────────────
+// { order: [catId, …], skip: n } — skip zählt manuell übersprungene Schritte
+// seit der letzten Rotation-Session (wird beim Speichern zurückgesetzt).
+const ROTATION_KEY = 'liftlog_rotation_v1';
+
+function getRotation() {
+  try {
+    const r = JSON.parse(localStorage.getItem(ROTATION_KEY));
+    if (r && Array.isArray(r.order)) return { order: r.order, skip: r.skip || 0 };
+  } catch {}
+  return { order: [], skip: 0 };
+}
+
+function saveRotation(r) { localStorage.setItem(ROTATION_KEY, JSON.stringify(r)); syncAllUserData(); }
+
+// Nächstes Training laut Rotation: die Kategorie nach der zuletzt geloggten
+// Rotation-Session — tagesunabhängig. Sessions außerhalb der Rotation rücken
+// den Zeiger nicht weiter.
+function nextRotationInfo(sessions = loadDB().sessions) {
+  const rot   = getRotation();
+  const cats  = getCategories();
+  const order = rot.order.filter(id => cats.some(c => c.id === id && c.enabled));
+  if (!order.length) return null;
+  const sorted = sessions.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  let lastIdx = -1;
+  for (const s of sorted) {
+    const i = order.indexOf(catIdByName(s.category));
+    if (i !== -1) { lastIdx = i; break; }
+  }
+  const nextIdx = (lastIdx + 1 + rot.skip) % order.length;
+  return { order, lastIdx, nextIdx, catId: order[nextIdx], name: catNameById(order[nextIdx]) };
+}
+
+function skipNextWorkout() {
+  const rot = getRotation();
+  if (!rot.order.length) return;
+  saveRotation({ ...rot, skip: (rot.skip + 1) % rot.order.length });
+  renderDashboardNext();
+}
+
+// Skip-Zähler zurücksetzen, sobald eine Rotation-Session geloggt wurde —
+// ab da zählt wieder die zuletzt geloggte Kategorie. (Ohne Sync: der Aufrufer
+// persistiert ohnehin via writeDB → syncAllUserData.)
+function resetRotationSkip(categoryName) {
+  const rot = getRotation();
+  if (!rot.skip) return;
+  if (!rot.order.includes(catIdByName(categoryName))) return;
+  localStorage.setItem(ROTATION_KEY, JSON.stringify({ ...rot, skip: 0 }));
+}
+
+function startNextWorkout() {
+  const nw = nextRotationInfo();
+  const hadActive = !!loadActive();
+  openLog();
+  if (!hadActive && nw && !editingId) {
+    const sel = document.getElementById('log-cat');
+    sel.value = nw.name;
+    onLogChange();
+  }
+}
+
 // LOC_LABEL is computed dynamically from stored locations (see buildLocLabel())
 // Static fallback for backward compat with old keys
 const LOC_LABEL_STATIC = { 'haidhof': 'Sportpark Haidhof', 'modern-coach': 'Modern Coach Deggendorf' };
@@ -967,6 +1030,7 @@ async function syncAllUserData() {
       sessions:   loadDB().sessions,
       weightLog:  getWeightEntries(),
       plans:      getPlans(),
+      rotation:   getRotation(),
       categories: getCategories(),
       locations:  getLocations(),
       cfg:        getCfg(),
@@ -1014,6 +1078,7 @@ function restoreFromRemote(remote) {
 
   // ── Konfiguration: Remote gewinnt direkt ──────────────
   if (remote.plans      !== undefined) localStorage.setItem(PLANS_KEY,      JSON.stringify(remote.plans));
+  if (remote.rotation   !== undefined) localStorage.setItem(ROTATION_KEY,   JSON.stringify(remote.rotation));
   if (remote.categories !== undefined) localStorage.setItem(CATEGORIES_KEY, JSON.stringify(remote.categories));
   if (remote.locations  !== undefined) localStorage.setItem(LOCATIONS_KEY,  JSON.stringify(remote.locations));
   if (remote.cfg        !== undefined) {
@@ -1836,6 +1901,7 @@ function saveLog() {
   if (burn) { session.burnedKcal = burn.kcal; session.burnConfidence = burn.confidence; }
 
   db.sessions.sort((a,b) => b.date.localeCompare(a.date));
+  resetRotationSkip(session.category);
   writeDB(db);
   // Detect PRs only for newly added (non-edited) strength sessions
   const newPRs = isEdit ? [] : detectNewPRs(session, db.sessions);
@@ -2182,116 +2248,92 @@ function renderPRs(sessions) {
   }).join('');
 }
 
-// ─── DASHBOARD: ENERGIE HEUTE (Spec §9) ──────────────────────────────
+// ─── DASHBOARD: KALORIEN HEUTE (kompakt) ─────────────────────────────
 function renderDashboardEnergy() {
-  const content = document.getElementById('dash-energy-content');
-  const empty   = document.getElementById('dash-energy-empty');
-  if (!content) return;
-
-  const profile = getProfile();
-  const target  = calcTargetKcal(profile);
-  const macros  = calcMacros(profile);
-  if (target == null || macros == null) {
-    content.style.display = 'none';
-    if (empty) empty.style.display = 'flex';
-    return;
-  }
-  content.style.display = '';
-  if (empty) empty.style.display = 'none';
+  const valEl = document.getElementById('dash-kcal-eaten');
+  const subEl = document.getElementById('dash-kcal-sub');
+  if (!valEl) return;
 
   const today  = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
   const totals = getDayTotals(today);
-  const expend = actualDailyExpenditure(today, profile) || expectedDailyExpenditure(profile) || target;
-  const rest   = target - totals.kcal;
-  const over   = rest < 0;
-  const pct    = Math.min(100, Math.round((totals.kcal / target) * 100));
+  const target = calcTargetKcal(getProfile());
+  valEl.textContent = totals.kcal.toLocaleString('de-DE');
 
-  const R = 52, CIRC = 2 * Math.PI * R;
-  const ring = document.getElementById('dash-ring-fg');
-  if (ring) {
-    ring.style.strokeDasharray  = CIRC;
-    ring.style.strokeDashoffset = CIRC * (1 - pct / 100);
-    ring.classList.toggle('over', over);
+  if (!subEl) return;
+  if (target == null) {
+    subEl.textContent = 'Kein Ziel — Profil vervollständigen';
+    subEl.className = 'dash-tile-delta neutral';
+    return;
   }
-  const eatenEl  = document.getElementById('dash-kcal-eaten');
-  if (eatenEl) eatenEl.textContent = totals.kcal.toLocaleString('de-DE');
-  const targetEl = document.getElementById('dash-kcal-target');
-  if (targetEl) targetEl.textContent = target.toLocaleString('de-DE');
-  const restEl = document.getElementById('dash-kcal-rest');
-  if (restEl) {
-    restEl.textContent = (over ? '' : '+') + rest.toLocaleString('de-DE') + ' kcal';
-    restEl.classList.toggle('over', over);
-  }
-
-  const balMax = Math.max(expend, totals.kcal, 1);
-  const balBar = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.style.width = Math.min(100, Math.round((val / balMax) * 100)) + '%';
-  };
-  balBar('dash-bal-verbrauch', expend);
-  balBar('dash-bal-zufuhr', totals.kcal);
-  const balVerbEl = document.getElementById('dash-bal-verbrauch-val');
-  if (balVerbEl) balVerbEl.textContent = expend.toLocaleString('de-DE') + ' kcal';
-  const balZufEl = document.getElementById('dash-bal-zufuhr-val');
-  if (balZufEl) balZufEl.textContent = totals.kcal.toLocaleString('de-DE') + ' kcal';
-
-  const macroHost = document.getElementById('dash-macros');
-  if (macroHost) {
-    const row = (name, val, max, col) => {
-      const pctM = max ? Math.min(100, Math.round((val / max) * 100)) : 0;
-      return `<div class="energy-macro-row"><span class="energy-macro-name">${name}</span><div class="energy-macro-bar"><i style="width:${pctM}%;background:${col}"></i></div><span class="energy-macro-val">${val}/${max} g</span></div>`;
-    };
-    macroHost.innerHTML =
-      row('Protein', totals.protein, macros.protein, 'var(--push)') +
-      row('Carbs',   totals.carbs,   macros.carbs,   'var(--pull)') +
-      row('Fett',    totals.fat,     macros.fat,      'var(--cardio)');
+  const rest = target - totals.kcal;
+  if (rest >= 0) {
+    subEl.textContent = `von ${target.toLocaleString('de-DE')} · ${rest.toLocaleString('de-DE')} übrig`;
+    subEl.className = 'dash-tile-delta neutral';
+  } else {
+    subEl.textContent = `von ${target.toLocaleString('de-DE')} · ${Math.abs(rest).toLocaleString('de-DE')} drüber`;
+    subEl.className = 'dash-tile-delta down';
   }
 }
 
-// ─── DASHBOARD: LETZTES TRAINING ──────────────────────────────────────
-function renderDashboardTraining(sessions) {
-  const host    = document.getElementById('dash-training-card');
-  const content = document.getElementById('dash-training-content');
+// ─── DASHBOARD: NÄCHSTES TRAINING (Rotation) ─────────────────────────
+function renderDashboardNext(sessions = loadDB().sessions) {
+  const content = document.getElementById('dash-next-content');
   if (!content) return;
-  const last = sessions.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
-  if (!last) {
-    if (host) { host.classList.remove('clickable'); delete host.dataset.act; delete host.dataset.arg; }
-    content.innerHTML = `<div class="dash-train-when" style="color:var(--muted2)">Noch kein Training</div><div class="dash-train-meta">Starte deine erste Session über den FAB.</div>`;
+  const nw = nextRotationInfo(sessions);
+  if (!nw) {
+    content.innerHTML = `<div class="dash-next-empty">Lege im Profil die Reihenfolge deiner Trainings fest — hier steht dann, was als Nächstes ansteht.</div>
+      <button class="empty-cta" data-act="openRotationSettings">Rotation festlegen →</button>`;
     return;
   }
-  if (host) { host.classList.add('clickable'); host.dataset.act = 'showDetail'; host.dataset.arg = last.id; }
-
-  const todayStr = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 10);
-  const y = new Date(todayStr + 'T12:00:00Z'); y.setUTCDate(y.getUTCDate() - 1);
-  const yesterdayStr = y.toISOString().slice(0, 10);
-  let when;
-  if (last.date === todayStr) when = 'Heute';
-  else if (last.date === yesterdayStr) when = 'Gestern';
-  else { const [yy, mo, dd] = last.date.split('-'); when = `${dd}.${mo}.`; }
-
-  const chip = typeChip(last);
-  const dur  = formatDurationHM(sessionDurationMinutes(last));
-  const exN  = (last.exercises || []).length;
-  const meta = [dur ? `⏱ ${dur}` : '', exN ? `${exN} Übungen` : ''].filter(Boolean).join(' · ');
-
-  content.innerHTML = `<span class="dash-train-cat" style="color:${chip.color};background:${chip.bg}">${last.category || ''}</span>
-    <div class="dash-train-when">${when}</div>
-    <div class="dash-train-meta">${meta}</div>`;
+  const pills = nw.order.map((id, i) => {
+    const isNext = i === nw.nextIdx;
+    const isLast = i === nw.lastIdx && nw.lastIdx !== nw.nextIdx;
+    const cls  = isNext ? ' active' : (isLast ? ' done' : '');
+    const tick = isLast ? '✓ ' : '';
+    return `<span class="rot-pill${cls}">${tick}${escapeHtml(catNameById(id))}</span>`;
+  }).join('<span class="rot-sep">›</span>');
+  content.innerHTML = `
+    <div class="dash-next-row">
+      <div class="dash-next-name">${escapeHtml(nw.name)}</div>
+      <div class="dash-next-actions">
+        <button class="btn" data-act="skipNextWorkout">Überspringen</button>
+        <button class="btn-fill" data-act="startNextWorkout">Starten</button>
+      </div>
+    </div>
+    <div class="rotation-pills">${pills}</div>`;
 }
 
-// ─── DASHBOARD: GEWICHTSTREND ─────────────────────────────────────────
+function openRotationSettings() {
+  switchView('settings');
+  // switchView() defers loadCfgUI() via setTimeout(…, 0), which always resets
+  // to settingsNav('hub'). Queue our nav after it so the deep-link wins.
+  setTimeout(() => settingsNav('rotation'), 0);
+}
+
+// ─── DASHBOARD: GEWICHT (zuletzt getrackt + 30-Tage-Trend) ────────────
 function renderDashboardTrend() {
-  const host = document.getElementById('dash-trend-content');
-  if (!host) return;
-  const d = calcWeightDelta30();
-  if (d === null) {
-    host.innerHTML = `<div class="dash-trend-val" style="color:var(--muted2)">—</div><div class="dash-trend-sub">keine Gewichtsdaten</div>`;
+  const valEl = document.getElementById('dash-weight-val');
+  const subEl = document.getElementById('dash-weight-sub');
+  if (!valEl) return;
+  const entries = getWeightEntries().slice().sort((a, b) => a.date.localeCompare(b.date));
+  if (!entries.length) {
+    valEl.textContent = '—';
+    if (subEl) { subEl.textContent = 'keine Gewichtsdaten'; subEl.className = 'dash-tile-delta neutral'; }
     return;
   }
-  const dir   = d.diff < 0 ? 'down' : (d.diff > 0 ? 'up' : '');
-  const arrow = d.diff < 0 ? '↓' : (d.diff > 0 ? '↑' : '→');
-  const diffTxt = (d.diff > 0 ? '+' : '') + d.diff + ' kg';
-  host.innerHTML = `<div class="dash-trend-val ${dir}">${arrow} ${d.latest} kg</div><div class="dash-trend-sub">${diffTxt} · letzte 30 Tage</div>`;
+  const latest = entries[entries.length - 1];
+  valEl.textContent = latest.kg.toLocaleString('de-DE') + ' kg';
+  if (!subEl) return;
+  const d = calcWeightDelta30();
+  if (d === null || d.diff === 0) {
+    const [yy, mo, dd] = latest.date.split('-');
+    subEl.textContent = `zuletzt ${dd}.${mo}.`;
+    subEl.className = 'dash-tile-delta neutral';
+  } else {
+    const arrow = d.diff < 0 ? '↓' : '↑';
+    subEl.textContent = `${arrow} ${(d.diff > 0 ? '+' : '') + d.diff.toLocaleString('de-DE')} kg · 30 Tage`;
+    subEl.className = 'dash-tile-delta ' + (d.diff < 0 ? 'up' : 'down');
+  }
 }
 
 // ─── GESUNDHEIT: BILANZ (Spec §9) ─────────────────────────────────────
@@ -2374,7 +2416,7 @@ function renderAll() {
     if (sub) sub.textContent = streak === 0 ? 'noch kein Streak' : (streak === 1 ? '1 Woche' : streak + ' Wochen') + ' (min. ' + minN + '/Woche)';
   }
   renderDashboardEnergy();
-  renderDashboardTraining(db.sessions);
+  renderDashboardNext(db.sessions);
   renderDashboardTrend();
 
   initHeatmapFilter(db.sessions);
@@ -2390,7 +2432,7 @@ function renderAll() {
 }
 
 // ─── VIEW SWITCHING ──────────────────────────────────
-const VIEWS = ['dashboard', 'progress', 'body', 'sessions', 'settings', 'training', 'ernaehrung', 'bilanz'];
+const VIEWS = ['dashboard', 'progress', 'sessions', 'settings', 'training', 'ernaehrung', 'gesundheit'];
 
 function switchView(name) {
   // Nav + FAB während Training ausblenden/einblenden
@@ -2422,28 +2464,18 @@ function switchView(name) {
     trainSeg.style.display = (inTrain && !isTraining) ? '' : 'none';
     trainSeg.querySelectorAll('[data-seg]').forEach(b => b.classList.toggle('active', b.dataset.seg === name));
   }
-  // "Gesundheit"-Gruppe: Bilanz + Gewicht&KFA teilen sich einen Tab via Segmented Control
-  const inHealth = (name === 'bilanz' || name === 'body');
-  ['nav-gesundheit', 'bnav-gesundheit'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('active', inHealth); });
-  const healthSeg = document.getElementById('health-seg');
-  if (healthSeg) {
-    healthSeg.style.display = inHealth ? '' : 'none';
-    healthSeg.querySelectorAll('[data-seg]').forEach(b => b.classList.toggle('active', b.dataset.seg === name));
-  }
-
   // Trigger chart renders on first visit
-  if (name === 'progress')  { renderDurChart(); init1RMSelect(); initProgressDefaults(); }
-  if (name === 'body')      { renderWeightChart(); }
-  if (name === 'bilanz')    { renderBilanz(); }
+  if (name === 'progress')  { initProgressDefaults(); }
+  if (name === 'gesundheit'){ initBodyDates(); renderWeightChart(); renderBilanz(); }
   if (name === 'settings')  { setTimeout(loadCfgUI, 0); }
   if (name === 'ernaehrung'){ renderMealLog(); }
-  if (name === 'dashboard'){ renderDashboardEnergy(); renderDashboardTraining(loadDB().sessions); renderDashboardTrend(); }
+  if (name === 'dashboard'){ renderDashboardEnergy(); renderDashboardNext(loadDB().sessions); renderDashboardTrend(); }
 
 }
 
 // Legacy compat – some event handlers still reference this
 function switchMobileTab(tab) {
-  const map = { progress: 'progress', sessions: 'sessions', body: 'body', dashboard: 'dashboard' };
+  const map = { progress: 'progress', sessions: 'sessions', body: 'gesundheit', dashboard: 'dashboard' };
   switchView(map[tab] || tab);
 }
 
@@ -2633,60 +2665,7 @@ function selectExByName(name) {
 }
 
 let progChart = null;
-let durChart  = null;
 let distChart = null;
-
-function switchChartTab(tab) {
-  ['prog','dur','1rm'].forEach(t => {
-    const btn = document.getElementById(`ctab-${t}`);
-    if (btn) btn.classList.toggle('active', tab === t);
-  });
-  document.getElementById('chart-prog-view').style.display = tab === 'prog' ? '' : 'none';
-  document.getElementById('chart-dur-view').style.display  = tab === 'dur'  ? '' : 'none';
-  document.getElementById('chart-1rm-view').style.display  = tab === '1rm'  ? '' : 'none';
-  if (tab === 'dur') renderDurChart();
-  if (tab === '1rm') init1RMSelect();
-}
-
-function renderDurChart() {
-  const sessions = loadDB().sessions
-    .slice().sort((a,b) => a.date.localeCompare(b.date));
-  const durEmpty = document.getElementById('dur-chart-empty');
-  const durWrap  = document.getElementById('dur-chart-wrap');
-  const pts = sessions.map(s => ({
-    label: s.dateDisplay || s.date,
-    val: sessionDurationMinutes(s)
-  })).filter(p => p.val !== null);
-  if (!pts.length) { durEmpty.style.display = 'flex'; durWrap.style.display = 'none'; return; }
-  durEmpty.style.display = 'none';
-  durWrap.style.display  = 'block';
-  const avg = Math.round(pts.reduce((a,b) => a + b.val, 0) / pts.length);
-  const ctx = document.getElementById('dur-chart').getContext('2d');
-  if (durChart) durChart.destroy();
-  durChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: pts.map(p => p.label),
-      datasets: [
-        { label: 'Dauer (min)', data: pts.map(p => p.val), backgroundColor: 'rgba(46,74,122,.18)', borderColor: '#2E4A7A', borderWidth: 1.5, borderRadius: 3 },
-        { label: `Ø ${avg} min`, data: pts.map(() => avg), type: 'line', borderColor: 'rgba(46,74,122,.4)', borderDash: [5,4], borderWidth: 1.5, pointRadius: 0, fill: false }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true, labels: { color: '#6070A0', font: { size: 10, family: 'Helvetica Neue' }, boxWidth: 12 } },
-        tooltip: { backgroundColor: '#ffffff', borderColor: '#DDE2EE', borderWidth: 1, titleColor: '#2E4A7A', bodyColor: '#1A2035',
-          callbacks: { label: c => c.dataset.label.startsWith('Ø') ? c.dataset.label : `${c.dataset.label}: ${c.parsed.y} min` }
-        }
-      },
-      scales: {
-        x: { ticks: { color: '#A8B4CC', font: { size: 10, family: 'Helvetica Neue' }, autoSkip: true, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false }, border: { color: '#EEF1F7' } },
-        y: { beginAtZero: true, ticks: { color: '#A8B4CC', font: { size: 11 }, callback: v => v + ' min' }, grid: { color: '#EEF1F7' }, border: { color: '#EEF1F7' } }
-      }
-    }
-  });
-}
 
 function renderDist(sessions) {
   const counts = { Push: 0, Pull: 0, Legs: 0, Cardio: 0, Andere: 0 };
@@ -2885,6 +2864,7 @@ function settingsNav(id) {
   if (id === 'locs')   loadLocEditor();
   if (id === 'plans')     loadPlanOverview();
   if (id === 'plan-edit') loadPlanEditor();
+  if (id === 'rotation')  loadRotationEditor();
   if (id === 'streak') { const c = getCfg(); const s = document.getElementById('cfg-streak-min'); if (s) s.value = c.streakMin || 3; }
   if (id === 'grunddaten') loadGrunddatenEditor();
   if (id === 'ziel')       loadZielEditor();
@@ -3151,7 +3131,7 @@ async function supabaseSignOut() {
   await _SB.auth.signOut();
   // Alle user-spezifischen Daten aus localStorage löschen
   // damit der nächste Nutzer auf diesem Gerät einen leeren Stand hat
-  [DB_KEY, WEIGHT_KEY, PLANS_KEY, CATEGORIES_KEY, LOCATIONS_KEY, CFG_KEY, ACTIVE_KEY]
+  [DB_KEY, WEIGHT_KEY, PLANS_KEY, ROTATION_KEY, CATEGORIES_KEY, LOCATIONS_KEY, CFG_KEY, ACTIVE_KEY]
     .forEach(k => localStorage.removeItem(k));
   showLoginGate();
 }
@@ -3423,12 +3403,65 @@ function deletePlan(catId, loc) {
   });
 }
 
+// ── Trainings-Rotation Editor ─────────────────────────
+function loadRotationEditor() {
+  const listEl = document.getElementById('rotation-list');
+  const addSel = document.getElementById('rotation-add-sel');
+  if (!listEl || !addSel) return;
+  const rot   = getRotation();
+  const inRot = new Set(rot.order);
+
+  listEl.innerHTML = rot.order.length
+    ? rot.order.map((id, i) => `
+      <div class="rot-row">
+        <span class="rot-row-num">${i + 1}</span>
+        <span class="rot-row-name">${escapeHtml(catNameById(id))}</span>
+        <button class="rot-btn" data-act="rotationMove" data-arg="${i}" data-arg2="-1"${i === 0 ? ' disabled' : ''} aria-label="Nach oben">↑</button>
+        <button class="rot-btn" data-act="rotationMove" data-arg="${i}" data-arg2="1"${i === rot.order.length - 1 ? ' disabled' : ''} aria-label="Nach unten">↓</button>
+        <button class="tr-del" data-act="rotationRemove" data-argn="${i}" aria-label="Entfernen">✕</button>
+      </div>`).join('')
+    : '<p style="font-size:.74rem;color:var(--muted2);padding:6px 4px;line-height:1.6">Noch keine Rotation. Füge unten Kategorien in der Reihenfolge hinzu, in der du trainieren willst.</p>';
+
+  const avail = getCategories().filter(c => c.enabled && !inRot.has(c.id));
+  addSel.innerHTML = '<option value="">— Kategorie wählen —</option>' +
+    avail.map(c => `<option value="${escAttr(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+}
+
+function rotationMove(iStr, deltaStr) {
+  const i = parseInt(iStr, 10), j = i + parseInt(deltaStr, 10);
+  const rot = getRotation();
+  if (i < 0 || i >= rot.order.length || j < 0 || j >= rot.order.length) return;
+  [rot.order[i], rot.order[j]] = [rot.order[j], rot.order[i]];
+  saveRotation(rot);
+  loadRotationEditor();
+  renderDashboardNext();
+}
+
+function rotationRemove(i) {
+  const rot = getRotation();
+  rot.order.splice(i, 1);
+  rot.skip = 0;
+  saveRotation(rot);
+  loadRotationEditor();
+  renderDashboardNext();
+}
+
+function rotationAdd() {
+  const sel = document.getElementById('rotation-add-sel');
+  if (!sel || !sel.value) return;
+  const rot = getRotation();
+  if (!rot.order.includes(sel.value)) rot.order.push(sel.value);
+  saveRotation(rot);
+  loadRotationEditor();
+  renderDashboardNext();
+}
+
 function showClearConfirm() {
   document.getElementById('m-clear').classList.add('open');
 }
 function confirmClearAll() {
   closeM('m-clear');
-  [DB_KEY, WEIGHT_KEY, PLANS_KEY, CATEGORIES_KEY, LOCATIONS_KEY, CFG_KEY, ACTIVE_KEY]
+  [DB_KEY, WEIGHT_KEY, PLANS_KEY, ROTATION_KEY, CATEGORIES_KEY, LOCATIONS_KEY, CFG_KEY, ACTIVE_KEY]
     .forEach(k => localStorage.removeItem(k));
   location.reload();
 }
@@ -4082,105 +4115,6 @@ _SB.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT') showLoginGate();
 });
 
-// ─── TOOLTIP (hover desktop / tap mobile) ────────────────────────────────────
-function toggleTooltip(e, id) {
-  e.stopPropagation();
-  const wrap = document.getElementById(id);
-  if (!wrap) return;
-  const isOpen = wrap.classList.contains('open');
-  // Close all open tooltips first
-  document.querySelectorAll('.tooltip-wrap.open').forEach(el => el.classList.remove('open'));
-  if (!isOpen) wrap.classList.add('open');
-}
-document.addEventListener('click', () => {
-  document.querySelectorAll('.tooltip-wrap.open').forEach(el => el.classList.remove('open'));
-});
-
-
-// ─── 1RM RECHNER ─────────────────────────────────────────────────────────────
-function init1RMSelect() {
-  const sel = document.getElementById('rm-ex-select');
-  if (!sel) return;
-  // Populate with all known exercise names from DB
-  const db = loadDB();
-  const names = [...new Set(
-    db.sessions.flatMap(s => (s.exercises || []).filter(e => e.type !== 'cardio').map(e => e.name))
-  )].sort((a,b) => a.localeCompare(b));
-  // Only rebuild if changed
-  const current = [...sel.options].slice(1).map(o => o.value);
-  if (JSON.stringify(current) === JSON.stringify(names)) return;
-  sel.innerHTML = '<option value="">— Übung auswählen —</option>';
-  names.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
-}
-
-function calc1RM() {
-  const ex      = document.getElementById('rm-ex-select').value;
-  const weight  = parseFloat(document.getElementById('rm-weight').value);
-  const reps    = parseInt(document.getElementById('rm-reps').value, 10);
-  const result  = document.getElementById('rm-result');
-  const empty   = document.getElementById('rm-empty');
-  const histEl  = document.getElementById('rm-history');
-
-  if (!weight || !reps || reps < 1) {
-    result.style.display = 'none';
-    empty.style.display  = 'block';
-    histEl.innerHTML     = '';
-    return;
-  }
-  empty.style.display = 'none';
-  result.style.display = 'block';
-
-  // Epley formula: 1RM = w × (1 + r/30)
-  const oneRM = Math.round(weight * (1 + reps / 30) * 2) / 2; // round to 0.5
-  document.getElementById('rm-result-val').textContent = oneRM + ' kg';
-
-  // Percentage table
-  const pcts = [95, 90, 85, 80, 75, 70];
-  document.getElementById('rm-pct-grid').innerHTML = pcts.map(p => {
-    const val = Math.round(oneRM * p / 100 * 2) / 2;
-    return `<div style="background:var(--surface);border-radius:8px;padding:10px;text-align:center">
-      <div style="font-size:1rem;font-weight:800">${val} kg</div>
-      <div style="font-size:.62rem;color:var(--muted);margin-top:2px">${p}%</div>
-    </div>`;
-  }).join('');
-
-  // Show best sets from history for this exercise
-  if (ex) {
-    const db = loadDB();
-    const best = [];
-    db.sessions.forEach(s => {
-      (s.exercises || []).filter(e => e.name === ex).forEach(e => {
-        (e.sets || []).forEach(set => {
-          if (set.weight && set.reps) {
-            const est = Math.round(set.weight * (1 + set.reps / 30) * 2) / 2;
-            best.push({ date: s.dateDisplay || s.date, weight: set.weight, reps: set.reps, est });
-          }
-        });
-      });
-    });
-    best.sort((a, b) => b.est - a.est);
-    const top5 = best.slice(0, 5);
-    if (top5.length) {
-      histEl.innerHTML = `<div class="sec-label" style="margin-bottom:8px">Beste Sätze — ${ex}</div>` +
-        top5.map((r, i) => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div style="font-size:.9rem;font-weight:800;color:var(--muted);min-width:18px">${i+1}</div>
-          <div style="flex:1">
-            <div style="font-size:.8rem;font-weight:700">${r.weight} kg × ${r.reps}</div>
-            <div style="font-size:.7rem;color:var(--muted2)">${r.date}</div>
-          </div>
-          <div style="font-size:.8rem;font-weight:700;color:var(--accent)">≈ ${r.est} kg</div>
-        </div>`).join('');
-    } else {
-      histEl.innerHTML = '';
-    }
-  } else {
-    histEl.innerHTML = '';
-  }
-}
-
-
-
-
 // Exercise (non-cardio) with the most logged sets — for sensible defaults (Item 09)
 function mostTrainedExercise() {
   const counts = {};
@@ -4214,32 +4148,6 @@ function initProgressDefaults() {
   } else if (_currentChartEx) {
     rechartProgression();
   }
-  init1RMDefault();
-}
-
-// Prefill the 1RM calculator with the most-trained exercise's heaviest set (Item 09)
-function init1RMDefault() {
-  const sel = document.getElementById('rm-ex-select');
-  const wEl = document.getElementById('rm-weight');
-  const rEl = document.getElementById('rm-reps');
-  if (!sel || !wEl || !rEl) return;
-  if (sel.value || wEl.value || rEl.value) return; // respect any user input
-  const pick = mostTrainedExercise();
-  if (!pick) return;
-  // Find the heaviest set for that exercise
-  let best = null;
-  loadDB().sessions.forEach(s => {
-    (s.exercises || []).filter(e => e.name === pick).forEach(e => {
-      (e.sets || []).forEach(st => {
-        if (st.weight && st.reps && (!best || st.weight > best.weight)) best = { weight: st.weight, reps: st.reps };
-      });
-    });
-  });
-  if (!best) return;
-  sel.value = pick;
-  wEl.value = best.weight;
-  rEl.value = best.reps;
-  calc1RM();
 }
 
 
@@ -4272,7 +4180,6 @@ function initBodyDates() {
 const SPECIAL_ACTIONS = {
   selectThis:             (el)     => el.select(),
   focusExSearch:          ()       => { const s = document.getElementById('ex-search'); if (s) s.focus(); },
-  tooltipRm:              (el, ev) => toggleTooltip(ev, 'rm-tooltip-wrap'),
   removeParentDirty:      (el)     => { el.parentElement.remove(); markPlanDirty(); },
   closeExDropdownDelayed: ()       => setTimeout(() => closeExDropdown(), 150),
 };
@@ -4292,8 +4199,7 @@ function runAction(name, el, ev) {
   return fn.call(el);
 }
 
-// Klick in der CAPTURE-Phase: läuft vor dem globalen "Tooltip schließen"-Listener,
-// damit toggleTooltip()'s stopPropagation() das Schließen weiterhin verhindern kann.
+// Klick in der CAPTURE-Phase (Delegation über data-act).
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (el) runAction(el.dataset.act, el, e);

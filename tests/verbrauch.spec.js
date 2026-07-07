@@ -174,13 +174,13 @@ test.describe('Verbrauch-Engine — UI-Integration', () => {
     await expect(page.locator('.set-done')).toHaveCount(0);
   });
 
-  test('Dashboard-Bilanz-Balken zeigt BMR + Training, nicht nur die Baseline', async ({ page }) => {
+  test('Gesundheit-Bilanz-Balken zeigt BMR + Training, nicht nur die Baseline', async ({ page }) => {
     const session = { id: 's1', date: TODAY, type: 'cardio', category: 'Cardio', cardio: { type: 'laufen', distance_km: 10 } };
     await setup(page, { profile: PROFILE, weight: [{ date: TODAY, kg: 80, kfa: null }], sessions: [session] });
 
     const bmr = await page.evaluate(() => window.calcBMR());
-    await page.click('#nav-dashboard');
-    const verbrauchTxt = await page.locator('#dash-bal-verbrauch-val').textContent();
+    await page.click('#nav-gesundheit');
+    const verbrauchTxt = await page.locator('#bz-bal-verbrauch-val').textContent();
     const verbrauch = parseInt(verbrauchTxt.replace(/\D/g, ''), 10);
     // BMR + 80kg*10km = BMR + 800, muss deutlich über dem reinen BMR liegen
     expect(verbrauch).toBeGreaterThanOrEqual(bmr + 800);

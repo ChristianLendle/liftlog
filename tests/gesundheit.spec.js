@@ -28,36 +28,25 @@ const PROFILE = {
   startDate: TODAY, calibrationFactor: 1.0,
 };
 
-test.describe('Gesundheit — Tab-Umbau (Bilanz | Gewicht & KFA)', () => {
+test.describe('Gesundheit — zusammengeführte Ansicht (Gewicht & KFA + Bilanz)', () => {
 
-  test('Nav heißt „Gesundheit", landet auf Bilanz, Segmented Control zeigt beide Segmente', async ({ page }) => {
+  test('Nav heißt „Gesundheit", zeigt Gewicht & KFA und Bilanz ohne Tab-Wechsel auf einer Seite', async ({ page }) => {
     await setup(page);
     await expect(page.locator('#nav-gesundheit')).toHaveText('Gesundheit');
     await page.click('#nav-gesundheit');
-    await expect(page.locator('#view-bilanz')).toHaveClass(/active/);
+    await expect(page.locator('#view-gesundheit')).toHaveClass(/active/);
     await expect(page.locator('#nav-gesundheit')).toHaveClass(/active/);
-    await expect(page.locator('#health-seg')).toBeVisible();
-    await expect(page.locator('#health-seg [data-seg="bilanz"]')).toHaveClass(/active/);
-    await expect(page.locator('#health-seg [data-seg="body"]')).toBeVisible();
+
+    await expect(page.locator('#view-gesundheit .sec-label').first()).toHaveText('Gewicht & KFA');
+    await expect(page.locator('#wt-stat-current')).toBeVisible();
   });
 
-  test('Segment-Wechsel zu "Gewicht & KFA" zeigt view-body, Bilanz-Segment bleibt erreichbar', async ({ page }) => {
-    await setup(page);
-    await page.click('#nav-gesundheit');
-    await page.click('#health-seg [data-seg="body"]');
-    await expect(page.locator('#view-body')).toHaveClass(/active/);
-    await expect(page.locator('#health-seg [data-seg="body"]')).toHaveClass(/active/);
-    await expect(page.locator('#nav-gesundheit')).toHaveClass(/active/); // Gruppe bleibt aktiv markiert
-
-    await page.click('#health-seg [data-seg="bilanz"]');
-    await expect(page.locator('#view-bilanz')).toHaveClass(/active/);
-  });
-
-  test('Ohne Profil: Empty-State statt Bilanz-Inhalt', async ({ page }) => {
+  test('Ohne Profil: Empty-State statt Bilanz-Inhalt, Gewicht & KFA bleibt unabhängig sichtbar', async ({ page }) => {
     await setup(page);
     await page.click('#nav-gesundheit');
     await expect(page.locator('#bilanz-empty')).toBeVisible();
     await expect(page.locator('#bilanz-content')).toBeHidden();
+    await expect(page.locator('#wt-stat-current')).toBeVisible();
   });
 
   test('Mit Profil + Meal: BMR, Tagesziel, Bilanz-Balken zeigen echte Werte', async ({ page }) => {

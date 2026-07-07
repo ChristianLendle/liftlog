@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  /* ───────── THEME TOKENS (theme-ready) ─────────
+     Light ist Default. Das spätere "Hardcore-Gym"-Dark-Theme
+     ist nur ein Override desselben Token-Satzes:
+       [data-theme="gym"]{ --ph:#0e1116; --surface:#161b22; --ink:#f2f5fa;
+         --line:#222a33; --line2:#222a33; --bd:#2c3540; --accent:#6E8BC0; ... }
+     Komponenten unten referenzieren ausschließlich var(--token). */
+  :root{
+    --bg:#eceef2; --ph:#fbfcfd; --surface:#fff;
+    --ink:#1C2B4A; --ink2:#56607a; --mut:#9aa3b5; --mut2:#aeb6c6;
+    --line:#eceef3; --line2:#E7EBF3; --bd:#d6dae3;
+    --accent:#2E4A7A; --accent2:#4A7ABF; --soft:rgba(46,74,122,.08); --soft2:rgba(46,74,122,.12);
+    --good:#1E7A4A; --goodbg:rgba(30,122,74,.12); --danger:#CC3333; --cardio:#D4860A;
+    --band:rgba(46,74,122,.16);
+    --r:12px; --font:'Helvetica Neue',Helvetica,Arial,sans-serif;
+  }
+  body{margin:0;background:var(--bg);font-family:var(--font)}
+  .dv-turn{padding:40px 44px 40px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+  .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--ink);color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 13px/1.2 var(--font);color:var(--ink)}
+  .dv-tsub{font:400 12px/1.6 var(--font);color:rgba(28,43,74,.62);max-width:760px;margin:0 0 8px}
+  .dv-tsub b{color:var(--ink);font-weight:700}
+  .dv-rowhd{font:700 10px var(--font);letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:32px 0 16px;padding-bottom:7px;border-bottom:1px solid #dfe3ea}
+  .dv-next{margin:34px 0 0;font:12px/1.7 var(--font);color:rgba(28,43,74,.5)}
+  .dv-next a{color:var(--accent);text-decoration:none;font-weight:600}
+
+  .flow{display:flex;flex-wrap:wrap;gap:30px 22px;align-items:flex-start}
+  .screen{display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+  .scap{display:flex;align-items:center;gap:7px}
+  .scid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--soft2);color:var(--accent);border-radius:5px;text-decoration:none}
+  .sctxt{font:700 10.5px var(--font);letter-spacing:.02em;color:var(--ink)}
+  .scsub{font:500 10px var(--font);color:var(--mut)}
+
+  .ph{width:300px;background:var(--ph);border:1.5px solid #c4c9d4;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 36px rgba(28,43,74,.12);position:relative}
+  .ph-status{height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font:600 9px var(--font);color:var(--mut);flex-shrink:0}
+  .ph-hd{padding:7px 16px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid var(--line)}
+  .ph-title{font:700 18px var(--font);color:var(--ink);letter-spacing:-.02em}
+  .ph-body{flex:1;overflow:hidden;padding:13px 14px;display:flex;flex-direction:column;gap:12px}
+  .ph-nav{height:54px;border-top:1px solid #e2e5ec;background:var(--surface);display:flex;flex-shrink:0}
+  .navi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font:700 7px/1 var(--font);letter-spacing:.05em;text-transform:uppercase;color:var(--mut2)}
+  .navi svg{width:18px;height:18px;stroke:var(--mut2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .navi.on{color:var(--accent)} .navi.on svg{stroke:var(--accent)}
+
+  .lbl{font:700 8.5px var(--font);letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+  .card{background:var(--surface);border:1px solid var(--line2);border-radius:var(--r);padding:13px;box-shadow:0 1px 2px rgba(28,43,74,.04),0 6px 16px rgba(28,43,74,.05)}
+  .seg{display:flex;background:#eceef3;border-radius:9px;padding:3px;gap:2px}
+  .seg span{flex:1;text-align:center;padding:7px 4px;border-radius:7px;font:700 9px var(--font);letter-spacing:.04em;color:var(--mut)}
+  .seg span.on{background:var(--surface);color:var(--accent);box-shadow:0 1px 2px rgba(28,43,74,.12)}
+  .pill{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:999px;font:700 8.5px var(--font);letter-spacing:.03em}
+  .dash{border:1.4px dashed #c4c9d4;border-radius:9px;background:repeating-linear-gradient(135deg,#f4f5f8 0 7px,#eceef3 7px 14px);display:flex;align-items:center;justify-content:center;font:600 9px var(--font);color:var(--mut);text-align:center}
+  .fld{height:30px;border:1px solid var(--bd);border-radius:7px;background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:0 10px;font:600 10.5px var(--font);color:var(--ink)}
+  .fld .pen{color:#c4c9d4}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .ava{width:44px;height:44px;border-radius:50%;border:1.5px dashed #c4c9d4;background:repeating-linear-gradient(135deg,#f4f5f8 0 6px,#eceef3 6px 12px);display:flex;align-items:center;justify-content:center;font:700 6.5px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--mut2);flex-shrink:0}
+  .sm-icon{width:30px;height:30px;border-radius:8px;border:1.4px solid #c4c9d4;background:#f4f5f8;flex-shrink:0}
+  .chev{font:700 13px var(--font);color:#c4c9d4}
+
+  /* keyfacts */
+  .kpi{font:700 26px/1 var(--font);color:var(--ink);letter-spacing:-.03em}
+  .unit{font:600 11px var(--font);color:var(--mut)}
+  .band{font:600 9px var(--font);color:var(--accent2)}      /* ± Fehlerband */
+  .bar{height:13px;border-radius:7px;background:#eceef3;position:relative;overflow:hidden}
+  .bar > i{position:absolute;top:0;bottom:0;left:0;border-radius:7px;background:var(--accent)}
+  .bar > .bnd{position:absolute;top:0;bottom:0;background:var(--band)}   /* Unsicherheitsband */
+  .mbar{height:6px;border-radius:4px;background:#eceef3;overflow:hidden;flex:1}
+  .mbar > i{display:block;height:100%;border-radius:4px}
+  .fabq{position:absolute;right:14px;bottom:66px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .fabq .qa{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line2);border-radius:999px;padding:6px 11px 6px 9px;box-shadow:0 4px 12px rgba(28,43,74,.14);font:700 9px var(--font);color:var(--ink)}
+  .fabq .qa .d{width:18px;height:18px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font:700 11px var(--font);color:var(--accent)}
+  .fab{width:50px;height:50px;border-radius:50%;background:linear-gradient(145deg,#3a5a92,#26406b);box-shadow:0 4px 14px rgba(46,74,122,.45);display:flex;align-items:center;justify-content:center;color:#fff;font:300 26px var(--font)}
+
+  .notes{width:232px;display:flex;flex-direction:column;gap:13px;padding-top:30px}
+  .note{font:400 11px/1.55 var(--font);color:var(--ink2)}
+  .note b{color:var(--ink);font-weight:700}
+  .note .k{font:700 8px ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);display:block;margin-bottom:3px}
+  .note.amber .k{color:#A8740A}
+  .note code{font:600 9px ui-monospace,Menlo,monospace;background:#e6e9ef;padding:1px 4px;border-radius:3px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t5">
+  <div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">Energy-Balance — 5-Tab-Struktur (Lo-Fi)</span></div>
+  <p class="dv-tsub">Erster Low-Fidelity-Wurf der neuen App-Struktur nach <b>ENERGY-BALANCE-SPEC §1/§9</b>. Fünf Tabs, flache <b>Segmented Controls</b> statt tiefer Unter-Nav, Detail/Edit als Drill-down. Grundsätze umgesetzt: <b>jede Zahl mit Unsicherheitsband</b> (±) statt nacktem Wert, <b>optionale Felder nie als Pflicht</b>, <b>minimale Klicks beim Loggen</b> (FAB-Quick-Actions). Theme: hell (Default) — Token-basiert, <b>Dark-„Gym"-Theme</b> später als reiner Override vorgesehen.</p>
+
+  <!-- ════════ ROW 1 · DIE 5 HAUPT-TABS ════════ -->
+  <div class="dv-rowhd">Reihe 1 · Die fünf Tabs (Top-Level)</div>
+  <div class="flow">
+
+    <!-- T1 · DASHBOARD -->
+    <div class="screen" id="5a">
+      <div class="scap"><a class="scid" href="#5a">T1</a><span class="sctxt">Dashboard</span><span class="scsub">— Heute-Blick, Keyfacts</span></div>
+      <div class="ph" style="height:720px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><span class="ph-title">Heute</span><div style="width:26px;height:26px;border-radius:50%;border:1.5px solid #c4c9d4"></div></div>
+        <div class="ph-body">
+          <!-- Kalorienziel-Ring -->
+          <div class="card" style="display:flex;align-items:center;gap:14px">
+            <svg width="78" height="78" viewBox="0 0 80 80" style="flex-shrink:0">
+              <circle cx="40" cy="40" r="33" fill="none" stroke="#eceef3" stroke-width="9"/>
+              <circle cx="40" cy="40" r="33" fill="none" stroke="#2E4A7A" stroke-width="9" stroke-linecap="round"
+                      stroke-dasharray="207.3" stroke-dashoffset="49" transform="rotate(-90 40 40)"/>
+              <text x="40" y="37" text-anchor="middle" style="font:700 15px Helvetica Neue;fill:#1C2B4A">1 450</text>
+              <text x="40" y="50" text-anchor="middle" style="font:600 8px Helvetica Neue;fill:#9aa3b5">/ 1 850</text>
+            </svg>
+            <div style="flex:1">
+              <div class="lbl">Restbudget</div>
+              <div class="kpi" style="margin:3px 0 1px">400 <span class="unit">kcal</span></div>
+              <div class="band">Ziel 1 850 ± 150 · Defizit-Modus</div>
+            </div>
+          </div>
+
+          <!-- Verbrauch vs Zufuhr mit Fehlerband -->
+          <div class="card">
+            <div class="row" style="margin-bottom:9px"><span class="lbl">Bilanz heute</span><span class="band">± 210 kcal</span></div>
+            <div class="row" style="font:600 9px Helvetica Neue;color:#9aa3b5;margin-bottom:4px"><span>Verbrauch 2 480</span><span>Zufuhr 1 450</span></div>
+            <div class="bar" style="margin-bottom:8px"><span class="bnd" style="left:54%;width:9%"></span><i style="width:58%"></i></div>
+            <div class="row"><span style="font:600 9px Helvetica Neue;color:#56607a">Defizit</span><span style="font:700 13px Helvetica Neue;color:#1E7A4A">−1 030 <span class="band">± 210</span></span></div>
+          </div>
+
+          <!-- Makro Mini-Bars -->
+          <div class="card" style="display:flex;flex-direction:column;gap:8px">
+            <div class="row"><span class="lbl">Makros</span><span style="font:600 9px Helvetica Neue;color:#9aa3b5">Rest · g</span></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 8.5px Helvetica Neue;color:#56607a;width:14px">P</span><div class="mbar"><i style="width:62%;background:#2E4A7A"></i></div><span style="font:600 8.5px Helvetica Neue;color:#9aa3b5;width:48px;text-align:right">96/155</span></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 8.5px Helvetica Neue;color:#56607a;width:14px">C</span><div class="mbar"><i style="width:45%;background:#4A7ABF"></i></div><span style="font:600 8.5px Helvetica Neue;color:#9aa3b5;width:48px;text-align:right">82/180</span></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 8.5px Helvetica Neue;color:#56607a;width:14px">F</span><div class="mbar"><i style="width:70%;background:#D4860A"></i></div><span style="font:600 8.5px Helvetica Neue;color:#9aa3b5;width:48px;text-align:right">44/62</span></div>
+          </div>
+
+          <!-- Gewichtstrend + heutiges Training -->
+          <div style="display:flex;gap:10px">
+            <div class="card" style="flex:1;padding:11px 12px"><div class="lbl">Gewicht</div><div style="font:700 16px Helvetica Neue;color:#1C2B4A;margin-top:3px">83,4 <span style="font:700 11px Helvetica Neue;color:#1E7A4A">↓</span></div><div style="font:600 8px Helvetica Neue;color:#9aa3b5">−0,6 / 30 T</div></div>
+            <div class="card" style="flex:1;padding:11px 12px"><div class="lbl">Training</div><div style="font:700 11px Helvetica Neue;color:#1C2B4A;margin-top:3px">Push ✓</div><div style="font:600 8px Helvetica Neue;color:#9aa3b5">heute · 312 kcal</div></div>
+          </div>
+        </div>
+        <!-- FAB Quick-Actions -->
+        <div class="fabq">
+          <div class="qa"><span class="d">＋</span>Gewicht</div>
+          <div class="qa"><span class="d">＋</span>Mahlzeit</div>
+          <div class="qa"><span class="d">＋</span>Training</div>
+        </div>
+        <div style="position:absolute;right:14px;bottom:64px"><div class="fab">×</div></div>
+        <div class="ph-nav">
+          <div class="navi on"><svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>Heute</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M4 19V5M9 19V9M14 19v-7M19 19v-4"/></svg>Training</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M5 3v8a3 3 0 006 0V3M8 11v10M16 3c-1.5 1-2 3-2 6s.5 5 2 6V3z"/></svg>Essen</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M20 8a4 4 0 00-8-1 4 4 0 00-8 1c0 5 8 10 8 10s8-5 8-10z"/></svg>Gesundheit</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Mehr</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- T2 · TRAINING (Sessions) -->
+    <div class="screen" id="5b">
+      <div class="scap"><a class="scid" href="#5b">T2</a><span class="sctxt">Training</span><span class="scsub">— Segment „Sessions"</span></div>
+      <div class="ph" style="height:720px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><span class="ph-title">Training</span><span class="chev" style="color:var(--accent);font-size:18px">⌕</span></div>
+        <div class="ph-body">
+          <div class="seg"><span class="on">Sessions</span><span>Fortschritt</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font:700 8.5px Helvetica Neue;letter-spacing:.08em;text-transform:uppercase;color:#aeb6c6;margin:2px 0">Diese Woche</div>
+            <div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 12px"><span style="width:6px;height:6px;border-radius:50%;background:#2E4A7A"></span><div style="flex:1"><div style="font:700 11.5px Helvetica Neue;color:#1C2B4A">Mo · Push</div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5">5 Übungen · Studio Nord</div></div><div style="text-align:right"><div style="font:600 9px Helvetica Neue;color:#56607a">52 min</div><div style="font:600 8px Helvetica Neue;color:#9aa3b5">312 kcal ± 60</div></div><span class="chev">›</span></div>
+            <div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 12px"><span style="width:6px;height:6px;border-radius:50%;background:#4A7ABF"></span><div style="flex:1"><div style="font:700 11.5px Helvetica Neue;color:#1C2B4A">Sa · Pull</div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5">6 Übungen · Studio Nord</div></div><div style="text-align:right"><div style="font:600 9px Helvetica Neue;color:#56607a">58 min</div><div style="font:600 8px Helvetica Neue;color:#9aa3b5">340 kcal ± 65</div></div><span class="chev">›</span></div>
+            <div style="font:700 8.5px Helvetica Neue;letter-spacing:.08em;text-transform:uppercase;color:#aeb6c6;margin:6px 0 0">Letzte Woche</div>
+            <div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 12px"><span style="width:6px;height:6px;border-radius:50%;background:#D4860A"></span><div style="flex:1"><div style="font:700 11.5px Helvetica Neue;color:#1C2B4A">Do · Cardio</div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5">Laufen 6,2 km · Home</div></div><div style="text-align:right"><div style="font:600 9px Helvetica Neue;color:#56607a">34 min</div><div style="font:600 8px Helvetica Neue;color:#9aa3b5">430 kcal ± 50</div></div><span class="chev">›</span></div>
+            <div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 12px"><span style="width:6px;height:6px;border-radius:50%;background:#2E4A7A"></span><div style="flex:1"><div style="font:700 11.5px Helvetica Neue;color:#1C2B4A">Di · Beine</div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5">4 Übungen · Home Gym</div></div><span class="chev">›</span></div>
+          </div>
+        </div>
+        <div style="position:absolute;right:14px;bottom:64px"><div class="fab">＋</div></div>
+        <div class="ph-nav">
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>Heute</div>
+          <div class="navi on"><svg viewBox="0 0 24 24"><path d="M4 19V5M9 19V9M14 19v-7M19 19v-4"/></svg>Training</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M5 3v8a3 3 0 006 0V3M8 11v10M16 3c-1.5 1-2 3-2 6s.5 5 2 6V3z"/></svg>Essen</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M20 8a4 4 0 00-8-1 4 4 0 00-8 1c0 5 8 10 8 10s8-5 8-10z"/></svg>Gesundheit</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Mehr</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- T3 · ERNÄHRUNG -->
+    <div class="screen" id="5c">
+      <div class="scap"><a class="scid" href="#5c">T3</a><span class="sctxt">Ernährung</span><span class="scsub">— Meal-Log (Tag)</span></div>
+      <div class="ph" style="height:720px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><span class="ph-title">Essen</span><span style="font:600 10px Helvetica Neue;color:#56607a">‹ Heute ›</span></div>
+        <div class="ph-body">
+          <!-- Tagessumme -->
+          <div class="card" style="display:flex;align-items:center;gap:12px">
+            <div style="flex:1"><div class="lbl">Heute gegessen</div><div class="kpi" style="margin:3px 0 1px">1 450 <span class="unit">kcal</span></div><div class="band">von 1 850 · ± 130</div></div>
+            <div style="display:flex;flex-direction:column;gap:5px;width:96px">
+              <div style="display:flex;align-items:center;gap:6px"><span style="font:700 7.5px Helvetica Neue;color:#56607a;width:9px">P</span><div class="mbar"><i style="width:62%;background:#2E4A7A"></i></div></div>
+              <div style="display:flex;align-items:center;gap:6px"><span style="font:700 7.5px Helvetica Neue;color:#56607a;width:9px">C</span><div class="mbar"><i style="width:45%;background:#4A7ABF"></i></div></div>
+              <div style="display:flex;align-items:center;gap:6px"><span style="font:700 7.5px Helvetica Neue;color:#56607a;width:9px">F</span><div class="mbar"><i style="width:70%;background:#D4860A"></i></div></div>
+            </div>
+          </div>
+          <!-- Mahlzeit-Gruppen -->
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div class="card" style="padding:0">
+              <div class="row" style="padding:10px 12px;border-bottom:1px solid var(--line)"><span style="font:700 10px Helvetica Neue;color:#1C2B4A">Frühstück</span><span style="font:600 9px Helvetica Neue;color:#9aa3b5">420 kcal</span></div>
+              <div class="row" style="padding:9px 12px"><div><div style="font:600 10px Helvetica Neue;color:#1C2B4A">Haferflocken · 80 g</div><div style="font:500 8px Helvetica Neue;color:#9aa3b5">298 kcal</div></div><span class="chev">›</span></div>
+            </div>
+            <div class="card" style="padding:0">
+              <div class="row" style="padding:10px 12px;border-bottom:1px solid var(--line)"><span style="font:700 10px Helvetica Neue;color:#1C2B4A">Mittag</span><span style="font:600 9px Helvetica Neue;color:#9aa3b5">680 kcal</span></div>
+              <div class="row" style="padding:9px 12px"><div><div style="font:600 10px Helvetica Neue;color:#1C2B4A">Hähnchen-Reis-Bowl</div><div style="font:500 8px Helvetica Neue;color:#9aa3b5">680 kcal · ± 90</div></div><span class="chev">›</span></div>
+            </div>
+            <div class="card" style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between"><span style="font:700 10px Helvetica Neue;color:#9aa3b5">Abend</span><span style="font:600 9px Helvetica Neue;color:#aeb6c6">leer</span></div>
+          </div>
+        </div>
+        <div style="position:absolute;right:14px;bottom:64px"><div class="fab">＋</div></div>
+        <div class="ph-nav">
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>Heute</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M4 19V5M9 19V9M14 19v-7M19 19v-4"/></svg>Training</div>
+          <div class="navi on"><svg viewBox="0 0 24 24"><path d="M5 3v8a3 3 0 006 0V3M8 11v10M16 3c-1.5 1-2 3-2 6s.5 5 2 6V3z"/></svg>Essen</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M20 8a4 4 0 00-8-1 4 4 0 00-8 1c0 5 8 10 8 10s8-5 8-10z"/></svg>Gesundheit</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Mehr</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- T4 · GESUNDHEIT (Bilanz) -->
+    <div class="screen" id="5d">
+      <div class="scap"><a class="scid" href="#5d">T4</a><span class="sctxt">Gesundheit</span><span class="scsub">— Segment „Bilanz"</span></div>
+      <div class="ph" style="height:720px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><span class="ph-title">Gesundheit</span><span style="width:18px"></span></div>
+        <div class="ph-body">
+          <div class="seg"><span class="on">Bilanz</span><span>Gewicht &amp; KFA</span><span>Bodymap</span></div>
+          <!-- Engine erklärt das WARUM -->
+          <div class="card" style="display:flex;gap:13px;align-items:center">
+            <div><div class="lbl">Grundumsatz</div><div style="font:700 19px/1 Helvetica Neue;color:#1C2B4A;margin:4px 0 2px">1 710<span class="unit"> kcal</span></div><div style="font:500 8px Helvetica Neue;color:#9aa3b5">Katch-McArdle</div></div>
+            <div style="width:1px;align-self:stretch;background:var(--line)"></div>
+            <div style="flex:1"><div class="lbl">Erw. Tagesverbrauch</div><div style="font:700 19px/1 Helvetica Neue;color:#1C2B4A;margin:4px 0 2px">2 380<span class="unit"> kcal</span></div><div class="band">× calibration 0,97</div></div>
+          </div>
+          <!-- Ziel + Offset -->
+          <div class="card">
+            <div class="row" style="margin-bottom:8px"><span class="lbl">Tagesziel</span><span class="pill" style="background:var(--soft);color:var(--accent)">Abnehmen · moderat</span></div>
+            <div class="row"><span style="font:700 22px Helvetica Neue;color:#2E4A7A">1 850<span class="unit"> kcal</span></span><span class="band">−20 % · ± 150</span></div>
+            <div style="font:500 8px Helvetica Neue;color:#9aa3b5;margin-top:5px">Floor BMR × 1,1 = 1 881 · Ziel respektiert Floor</div>
+          </div>
+          <!-- Verbrauch vs Zufuhr Band -->
+          <div class="card">
+            <div class="row" style="margin-bottom:9px"><span class="lbl">Verbrauch ↔ Zufuhr</span><span class="band">heute</span></div>
+            <div style="font:600 8.5px Helvetica Neue;color:#9aa3b5;margin-bottom:3px">Verbrauch 2 480 ± 140</div>
+            <div class="bar" style="margin-bottom:7px"><span class="bnd" style="right:0;width:11%"></span><i style="width:88%;background:#1E7A4A"></i></div>
+            <div style="font:600 8.5px Helvetica Neue;color:#9aa3b5;margin-bottom:3px">Zufuhr 1 450 ± 130</div>
+            <div class="bar"><span class="bnd" style="left:48%;width:8%"></span><i style="width:52%"></i></div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>Heute</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M4 19V5M9 19V9M14 19v-7M19 19v-4"/></svg>Training</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M5 3v8a3 3 0 006 0V3M8 11v10M16 3c-1.5 1-2 3-2 6s.5 5 2 6V3z"/></svg>Essen</div>
+          <div class="navi on"><svg viewBox="0 0 24 24"><path d="M20 8a4 4 0 00-8-1 4 4 0 00-8 1c0 5 8 10 8 10s8-5 8-10z"/></svg>Gesundheit</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Mehr</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- T5 · EINSTELLUNGEN -->
+    <div class="screen" id="5e">
+      <div class="scap"><a class="scid" href="#5e">T5</a><span class="sctxt">Einstellungen</span><span class="scsub">— deine Hierarchie</span></div>
+      <div class="ph" style="height:720px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><span class="ph-title">Einstellungen</span><span style="width:18px"></span></div>
+        <div class="ph-body">
+          <!-- 1) PROFIL = alle kundenbezogenen Daten -->
+          <div class="lbl">Profil</div>
+          <div class="card" style="padding:0;cursor:pointer;margin-top:-4px">
+            <div style="display:flex;align-items:center;gap:11px;padding:12px 13px">
+              <div class="ava">Foto</div>
+              <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="font:700 13px Helvetica Neue;color:#1C2B4A">Christian</span><span class="pill" style="background:var(--goodbg);color:var(--good)">✓ Sync</span></div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5;margin-top:1px">christian@…</div></div>
+              <span class="chev">›</span>
+            </div>
+            <div style="border-top:1px solid var(--line);padding:9px 13px;display:flex;flex-wrap:wrap;gap:4px 12px">
+              <span style="font:500 9px Helvetica Neue;color:#56607a">Abnehmen · moderat</span>
+              <span style="font:500 9px Helvetica Neue;color:#56607a">Omnivor</span>
+              <span style="font:500 9px Helvetica Neue;color:#56607a">182 cm · 1995</span>
+              <span style="font:500 9px Helvetica Neue;color:#1E7A4A">83,4 kg · KFA 21 %</span>
+            </div>
+          </div>
+          <div style="font:500 8px Helvetica Neue;color:#aeb6c6;margin:-5px 2px 0">Nutzerdaten, Ziel, Ernährung, Grunddaten &amp; Darstellung.</div>
+
+          <!-- 2) KONTO & LOGIN = Subseite -->
+          <div class="lbl" style="margin-top:4px">Konto</div>
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 13px;cursor:pointer;margin-top:-4px"><div><div style="font:600 10.5px Helvetica Neue;color:#1C2B4A">Konto &amp; Login</div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5;margin-top:1px">E-Mail · Passwort · Abmelden</div></div><span class="chev">›</span></div>
+
+          <!-- 3) STAMMDATEN / TRAINING -->
+          <div class="lbl" style="margin-top:4px">Training-Stammdaten</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:-4px">
+            <div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11px Helvetica Neue;color:#1C2B4A">Trainingspläne</div><div style="font:500 8px Helvetica Neue;color:#9aa3b5">Kategorie × Standort</div></div><span style="font:700 9px Helvetica Neue;color:#9aa3b5">4</span><span class="chev">›</span></div>
+            <div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11px Helvetica Neue;color:#1C2B4A">Standorte</div></div><span style="font:700 9px Helvetica Neue;color:#9aa3b5">2</span><span class="chev">›</span></div>
+            <div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11px Helvetica Neue;color:#1C2B4A">Kategorien</div></div><span style="font:700 9px Helvetica Neue;color:#9aa3b5">6</span><span class="chev">›</span></div>
+            <div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11px Helvetica Neue;color:#1C2B4A">Übungs-DB</div><div style="font:500 8px Helvetica Neue;color:#9aa3b5">Bodymap &amp; Autocomplete</div></div><span style="font:700 9px Helvetica Neue;color:#9aa3b5">128</span><span class="chev">›</span></div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>Heute</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M4 19V5M9 19V9M14 19v-7M19 19v-4"/></svg>Training</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M5 3v8a3 3 0 006 0V3M8 11v10M16 3c-1.5 1-2 3-2 6s.5 5 2 6V3z"/></svg>Essen</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M20 8a4 4 0 00-8-1 4 4 0 00-8 1c0 5 8 10 8 10s8-5 8-10z"/></svg>Gesundheit</div>
+          <div class="navi on"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Mehr</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note amber"><span class="k">Keyfacts statt Charts</span>T1 zeigt <b>Ring</b> (Ziel vs. gegessen), <b>Bilanz-Balken</b>, <b>Restbudget</b>, <b>Makro-Bars</b> &amp; <b>Trend</b> — keine großen Charts. Charts liegen bei Gesundheit/Training.</div>
+      <div class="note"><span class="k">Fehlerband überall</span>Jede Zahl trägt ein <code>± x</code> bzw. ein helles Band im Balken (<code>.bnd</code>) — nie der nackte Wert. Quelle: §4.5/§4.6.</div>
+      <div class="note"><span class="k">FAB Quick-Actions</span>T1 expandiert in <b>Training / Mahlzeit / Gewicht</b> — die drei Log-Wege in einem Tap. Minimale Klicks.</div>
+      <div class="note"><span class="k">Segmented, nicht tief</span>Training [Sessions|Fortschritt] &amp; Gesundheit [Bilanz|Gewicht&amp;KFA|Bodymap] als flacher Switch im Tab-Kopf.</div>
+      <div class="note amber"><span class="k">Einstellungen = deine Reihenfolge</span><b>Profil</b> (alle kundenbezogenen Daten) → <b>Konto &amp; Login</b> (Subseite) → <b>Training-Stammdaten</b>. Genau wie gewünscht.</div>
+      <div class="note"><span class="k">Nav-Labels provisorisch</span>„Mehr" = Einstellungen, „Essen" = Ernährung. Finale Wortwahl offen (siehe Fragen unten).</div>
+    </div>
+
+  </div>
+
+  <!-- ════════ ROW 2 · SEGMENTE & LOG-WEGE ════════ -->
+  <div class="dv-rowhd">Reihe 2 · Segment-Zustände &amp; Log-Wege</div>
+  <div class="flow">
+
+    <!-- Training · Fortschritt -->
+    <div class="screen" id="5f">
+      <div class="scap"><a class="scid" href="#5f">T2b</a><span class="sctxt">Training · Fortschritt</span><span class="scsub">— kein 1RM</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><span class="ph-title">Training</span><span style="width:18px"></span></div>
+        <div class="ph-body">
+          <div class="seg"><span>Sessions</span><span class="on">Fortschritt</span></div>
+          <div class="card"><div class="row" style="margin-bottom:8px"><span class="lbl">Volumen / Woche</span><span class="band">kg × Wdh</span></div><div style="display:flex;align-items:flex-end;gap:6px;height:70px">
+            <div style="flex:1;background:#dfe6f1;border-radius:3px;height:44%"></div><div style="flex:1;background:#dfe6f1;border-radius:3px;height:60%"></div><div style="flex:1;background:#dfe6f1;border-radius:3px;height:52%"></div><div style="flex:1;background:#dfe6f1;border-radius:3px;height:72%"></div><div style="flex:1;background:#2E4A7A;border-radius:3px;height:88%"></div></div></div>
+          <div><div class="lbl" style="margin-bottom:7px">Echte PRs</div><div style="display:flex;flex-direction:column;gap:7px">
+            <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px"><div style="font:700 10.5px Helvetica Neue;color:#1C2B4A">Bankdrücken</div><div style="font:700 11px Helvetica Neue;color:#2E4A7A">92,5 kg <span style="font:600 8px Helvetica Neue;color:#1E7A4A">+2,5</span></div></div>
+            <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px"><div style="font:700 10.5px Helvetica Neue;color:#1C2B4A">Kniebeuge</div><div style="font:700 11px Helvetica Neue;color:#2E4A7A">140 kg</div></div>
+            <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px"><div style="font:700 10.5px Helvetica Neue;color:#1C2B4A">Kreuzheben</div><div style="font:700 11px Helvetica Neue;color:#2E4A7A">175 kg <span style="font:600 8px Helvetica Neue;color:#1E7A4A">+5</span></div></div></div></div>
+          <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px"><div><div style="font:700 10px Helvetica Neue;color:#1C2B4A">Ø Dauer</div><div style="font:500 8px Helvetica Neue;color:#9aa3b5">letzte 30 T</div></div><div style="font:700 13px Helvetica Neue;color:#1C2B4A">54 min</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ernährung · Add-Sheet -->
+    <div class="screen" id="5g">
+      <div class="scap"><a class="scid" href="#5g">T3b</a><span class="sctxt">Mahlzeit hinzufügen</span><span class="scsub">— 3 Wege (Bottom-Sheet)</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div style="flex:1;background:rgba(28,43,74,.28);display:flex;flex-direction:column;justify-content:flex-end">
+          <div style="background:var(--ph);border-radius:22px 22px 0 0;padding:14px 16px 18px;display:flex;flex-direction:column;gap:12px">
+            <div style="width:36px;height:4px;border-radius:2px;background:#d6dae3;align-self:center"></div>
+            <div class="row"><span style="font:700 13px Helvetica Neue;color:#1C2B4A">Hinzufügen zu Mittag</span><span class="chev" style="font-size:15px">✕</span></div>
+            <!-- 3 Wege -->
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div class="card" style="display:flex;align-items:center;gap:11px;padding:13px"><div class="sm-icon" style="border-color:#2E4A7A;background:var(--soft)"></div><div style="flex:1"><div style="font:700 11px Helvetica Neue;color:#1C2B4A">Suchen</div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5">Open Food Facts + eigene DB</div></div><span class="chev">›</span></div>
+              <div class="card" style="display:flex;align-items:center;gap:11px;padding:13px"><div class="sm-icon" style="border-color:#2E4A7A;background:var(--soft)"></div><div style="flex:1"><div style="font:700 11px Helvetica Neue;color:#1C2B4A">Barcode scannen</div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5">Kamera · Confidence 0,9</div></div><span class="chev">›</span></div>
+              <div class="card" style="display:flex;align-items:center;gap:11px;padding:13px"><div class="sm-icon" style="border-color:#2E4A7A;background:var(--soft)"></div><div style="flex:1"><div style="font:700 11px Helvetica Neue;color:#1C2B4A">Manuell</div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5">kcal + Makros / 100 g</div></div><span class="chev">›</span></div>
+            </div>
+            <div style="font:500 8px Helvetica Neue;color:#aeb6c6;text-align:center">Treffer wird in deiner Food-DB gecacht → danach offline.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gesundheit · Gewicht & KFA -->
+    <div class="screen" id="5h">
+      <div class="scap"><a class="scid" href="#5h">T4b</a><span class="sctxt">Gewicht &amp; KFA</span><span class="scsub">— Segment 2</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><span class="ph-title">Gesundheit</span><span style="width:18px"></span></div>
+        <div class="ph-body">
+          <div class="seg"><span>Bilanz</span><span class="on">Gewicht &amp; KFA</span><span>Bodymap</span></div>
+          <div style="display:flex;gap:10px">
+            <div class="card" style="flex:1;padding:11px 12px"><div class="lbl">Aktuell</div><div style="font:700 18px Helvetica Neue;color:#1C2B4A;margin-top:3px">83,4<span class="unit"> kg</span></div></div>
+            <div class="card" style="flex:1;padding:11px 12px"><div class="lbl">Δ Start</div><div style="font:700 18px Helvetica Neue;color:#1E7A4A;margin-top:3px">−0,6</div><div style="font:500 8px Helvetica Neue;color:#9aa3b5">seit 30.06.</div></div>
+          </div>
+          <div class="card"><div class="row" style="margin-bottom:8px"><span class="lbl">Verlauf</span><span style="font:600 8.5px Helvetica Neue;color:#9aa3b5">Gewicht · KFA</span></div>
+            <svg width="100%" height="92" viewBox="0 0 240 92" preserveAspectRatio="none">
+              <polyline points="0,30 40,34 80,28 120,40 160,38 200,50 240,46" fill="none" stroke="#2E4A7A" stroke-width="2.5"/>
+              <polyline points="0,70 40,68 80,72 120,66 160,68 200,64 240,66" fill="none" stroke="#D4860A" stroke-width="2" stroke-dasharray="4 3"/>
+            </svg>
+          </div>
+          <div class="dash" style="height:38px">＋ Eintrag (Gewicht · KFA optional)</div>
+          <div style="font:500 8px Helvetica Neue;color:#aeb6c6;padding:0 2px">KFA optional — ohne Angabe rechnet BMR über Mifflin-St Jeor (§4.1).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gesundheit · Bodymap -->
+    <div class="screen" id="5i">
+      <div class="scap"><a class="scid" href="#5i">T4c</a><span class="sctxt">Bodymap</span><span class="scsub">— Segment 3</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><span class="ph-title">Gesundheit</span><span style="width:18px"></span></div>
+        <div class="ph-body">
+          <div class="seg"><span>Bilanz</span><span>Gewicht &amp; KFA</span><span class="on">Bodymap</span></div>
+          <div class="seg" style="background:var(--surface);border:1px solid var(--line2)"><span class="on" style="color:var(--accent)">7 Tage</span><span>30 Tage</span></div>
+          <div class="card" style="display:flex;justify-content:space-around;padding:14px 10px">
+            <!-- Front silhouette -->
+            <svg width="84" height="200" viewBox="0 0 84 200">
+              <circle cx="42" cy="16" r="11" fill="#eceef3"/>
+              <rect x="26" y="30" width="32" height="40" rx="9" fill="#2E4A7A" opacity=".85"/>            <!-- chest hot -->
+              <rect x="22" y="44" width="9" height="34" rx="4" fill="#4A7ABF" opacity=".7"/><rect x="53" y="44" width="9" height="34" rx="4" fill="#4A7ABF" opacity=".7"/> <!-- arms -->
+              <rect x="30" y="72" width="24" height="30" rx="6" fill="#cfd6e2"/>                            <!-- abs cool -->
+              <rect x="29" y="104" width="11" height="50" rx="5" fill="#9fb2d4" opacity=".6"/><rect x="44" y="104" width="11" height="50" rx="5" fill="#9fb2d4" opacity=".6"/>
+              <text x="42" y="196" text-anchor="middle" style="font:600 8px Helvetica Neue;fill:#9aa3b5">Vorderseite</text>
+            </svg>
+            <!-- Back silhouette -->
+            <svg width="84" height="200" viewBox="0 0 84 200">
+              <circle cx="42" cy="16" r="11" fill="#eceef3"/>
+              <rect x="26" y="30" width="32" height="44" rx="9" fill="#cfd6e2"/>                            <!-- back cool -->
+              <rect x="22" y="44" width="9" height="34" rx="4" fill="#2E4A7A" opacity=".8"/><rect x="53" y="44" width="9" height="34" rx="4" fill="#2E4A7A" opacity=".8"/> <!-- lats hot -->
+              <rect x="29" y="104" width="11" height="50" rx="5" fill="#4A7ABF" opacity=".7"/><rect x="44" y="104" width="11" height="50" rx="5" fill="#4A7ABF" opacity=".7"/>
+              <text x="42" y="196" text-anchor="middle" style="font:600 8px Helvetica Neue;fill:#9aa3b5">Rückseite</text>
+            </svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;justify-content:center"><span style="font:600 8px Helvetica Neue;color:#9aa3b5">wenig</span><div style="width:90px;height:7px;border-radius:4px;background:linear-gradient(90deg,#eceef3,#9fb2d4,#2E4A7A)"></div><span style="font:600 8px Helvetica Neue;color:#9aa3b5">viel Volumen</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick-Log Session -->
+    <div class="screen" id="5j">
+      <div class="scap"><a class="scid" href="#5j">QL</a><span class="sctxt">Session-Eingabe</span><span class="scsub">— schnell, kein Set-Haken</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><div style="display:flex;align-items:center;gap:8px"><span style="font:700 13px Helvetica Neue;color:#1C2B4A">Push</span><span class="pill" style="background:var(--soft);color:var(--accent)">⏱ 24:18</span></div><span style="font:700 9px Helvetica Neue;letter-spacing:.04em;color:#CC3333">✕</span></div>
+        <div class="ph-body">
+          <div class="card" style="padding:11px 12px">
+            <div class="row" style="margin-bottom:9px"><div style="display:flex;align-items:center;gap:7px"><span style="width:22px;height:22px;border-radius:50%;background:#2E4A7A;color:#fff;font:700 9px Helvetica Neue;display:flex;align-items:center;justify-content:center">1</span><span style="font:700 11px Helvetica Neue;color:#1C2B4A">Bankdrücken</span></div><span class="band" style="color:#9aa3b5">zuletzt 90×8</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;gap:6px"><div class="fld" style="flex:1;justify-content:center">92,5 kg</div><div class="fld" style="flex:1;justify-content:center">8 Wdh</div></div>
+              <div style="display:flex;gap:6px"><div class="fld" style="flex:1;justify-content:center">92,5 kg</div><div class="fld" style="flex:1;justify-content:center">7 Wdh</div></div>
+              <div class="dash" style="height:30px">＋ Satz</div>
+            </div>
+          </div>
+          <div class="dash" style="height:34px">＋ Übung</div>
+          <div style="flex:1"></div>
+          <!-- Gesamt-Intensität (1 Tap, optional) -->
+          <div><div class="row" style="margin-bottom:7px"><span class="lbl">Intensität</span><span style="font:500 8px Helvetica Neue;color:#aeb6c6">optional · sonst „moderat"</span></div>
+            <div class="seg"><span>Locker</span><span class="on">Moderat</span><span>Hart</span></div></div>
+          <div style="height:38px;border-radius:8px;background:#2E4A7A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px Helvetica Neue;letter-spacing:.06em;text-transform:uppercase">Abschließen · ~312 kcal ± 60</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note amber"><span class="k">Session-Log entschlackt</span>Kein Set-Häkchen mehr (§7). Übung + Sätze flott, <b>eine</b> Gesamt-Intensität am Ende, Dauer läuft per Timer. „zuletzt 90×8" als stiller Hinweis.</div>
+      <div class="note"><span class="k">Optional ≠ Pflicht</span>Intensität-Switch zeigt Default „Moderat" + Label „optional". KFA-Eintrag genauso. Nichts blockt das Speichern.</div>
+      <div class="note"><span class="k">Add-Sheet, 3 Wege</span>Mahlzeit als Bottom-Sheet: Suche / Barcode / Manuell — gleichrangig. Treffer landet in der Food-DB-Cache.</div>
+      <div class="note"><span class="k">Fortschritt ohne 1RM</span>Echte PRs, Volumen-Trend, Ø-Dauer. Der 1RM-Rechner entfällt laut Spec.</div>
+      <div class="note"><span class="k">Bodymap parallel</span>SVG Front/Back-Heatmap nach Volumen — eigenständig, nicht Teil der Kalorienmathematik (§6).</div>
+    </div>
+
+  </div>
+
+  <!-- ════════ ROW 3 · EINSTELLUNGEN-TIEFE ════════ -->
+  <div class="dv-rowhd">Reihe 3 · Einstellungen-Tiefe (Profil → Konto &amp; Login)</div>
+  <div class="flow">
+
+    <!-- Profil -->
+    <div class="screen" id="5k">
+      <div class="scap"><a class="scid" href="#5k">P1</a><span class="sctxt">Profil</span><span class="scsub">— kundenbezogene Daten</span></div>
+      <div class="ph" style="height:700px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><div style="display:flex;align-items:center;gap:9px"><span style="font:700 16px Helvetica Neue;color:#2E4A7A">‹</span><span style="font:700 13px Helvetica Neue;color:#1C2B4A">Profil</span></div><span style="width:18px"></span></div>
+        <div class="ph-body">
+          <div class="card" style="display:flex;align-items:center;gap:12px;padding:11px 13px;cursor:pointer"><div class="ava" style="width:48px;height:48px">Foto</div><div style="flex:1"><div style="font:700 13px Helvetica Neue;color:#1C2B4A">Christian</div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5;margin-top:2px">Bild &amp; Name bearbeiten</div></div><span class="chev">›</span></div>
+          <!-- Grunddaten mit Live-BMR -->
+          <div class="card" style="padding:0;cursor:pointer">
+            <div class="row" style="padding:12px 13px 11px"><span class="lbl">Grunddaten</span><span style="font:700 9px Helvetica Neue;color:#2E4A7A">Bearbeiten ›</span></div>
+            <div style="border-top:1px solid var(--line);padding:12px 13px;display:flex;gap:13px;align-items:center">
+              <div><div class="lbl">Grundumsatz</div><div style="font:700 19px/1 Helvetica Neue;color:#1C2B4A;margin:4px 0 2px">1 710<span class="unit"> kcal</span></div><div style="font:500 8px Helvetica Neue;color:#9aa3b5">Katch-McArdle</div></div>
+              <div style="width:1px;align-self:stretch;background:var(--line)"></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                <div class="row"><span style="font:500 9px Helvetica Neue;color:#9aa3b5">Geschlecht</span><span style="font:600 9px Helvetica Neue;color:#1C2B4A">Mann</span></div>
+                <div class="row"><span style="font:500 9px Helvetica Neue;color:#9aa3b5">Jahrgang · Größe</span><span style="font:600 9px Helvetica Neue;color:#1C2B4A">1995 · 182</span></div>
+                <div class="row"><span style="font:500 9px Helvetica Neue;color:#9aa3b5">Start</span><span style="font:600 9px Helvetica Neue;color:#1C2B4A">84,0 kg · 21 %</span></div>
+              </div>
+            </div>
+          </div>
+          <!-- Ziel & Ernährung -->
+          <div class="card" style="padding:0;cursor:pointer">
+            <div class="row" style="padding:12px 13px 11px"><span class="lbl">Ziel &amp; Ernährung</span><span style="font:700 9px Helvetica Neue;color:#2E4A7A">Bearbeiten ›</span></div>
+            <div style="border-top:1px solid var(--line);padding:11px 13px;display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+              <span class="pill" style="background:var(--soft);color:var(--accent)">Abnehmen</span>
+              <span style="font:500 9px Helvetica Neue;color:#56607a">moderat</span><span style="color:#d6dae3">·</span>
+              <span style="font:500 9px Helvetica Neue;color:#56607a">Omnivor</span><span style="color:#d6dae3">·</span>
+              <span style="font:500 9px Helvetica Neue;color:#56607a">Ziel 1 850 kcal</span>
+            </div>
+          </div>
+          <!-- Darstellung (Theme — Gym später) -->
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 13px;cursor:pointer"><div><div style="font:600 10.5px Helvetica Neue;color:#1C2B4A">Darstellung</div><div style="font:500 8.5px Helvetica Neue;color:#9aa3b5;margin-top:1px">Theme der App</div></div><div style="display:flex;align-items:center;gap:8px"><span class="pill" style="background:#eceef3;color:#56607a">Hell</span><span class="pill" style="background:#1C2B4A;color:#aeb6c6">Gym ·bald</span><span class="chev">›</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Konto & Login -->
+    <div class="screen" id="5l">
+      <div class="scap"><a class="scid" href="#5l">P2</a><span class="sctxt">Konto &amp; Login</span><span class="scsub">— Subseite, Sicherheit</span></div>
+      <div class="ph" style="height:700px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><div style="display:flex;align-items:center;gap:9px"><span style="font:700 16px Helvetica Neue;color:#2E4A7A">‹</span><span style="font:700 13px Helvetica Neue;color:#1C2B4A">Konto &amp; Login</span></div><span style="width:18px"></span></div>
+        <div class="ph-body">
+          <div class="card" style="display:flex;align-items:center;gap:12px"><div class="ava">Foto</div><div style="flex:1"><div style="font:600 8.5px Helvetica Neue;color:#1E7A4A">✓ Angemeldet</div><div style="font:700 11px Helvetica Neue;color:#1C2B4A;margin-top:1px">christian@…</div><div style="font:500 8px Helvetica Neue;color:#9aa3b5;margin-top:1px">Sync aktiv · zuletzt 9:32</div></div></div>
+          <div><div class="lbl" style="margin-bottom:6px">E-Mail</div><div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="fld">christian@…</div><div style="font:500 8px/1.4 Helvetica Neue;color:#9aa3b5">Neue Adresse braucht eine <b style="color:#56607a">Bestätigungsmail</b>.</div><div style="height:30px;border-radius:7px;border:1.5px solid #2E4A7A;color:#2E4A7A;display:flex;align-items:center;justify-content:center;font:700 8.5px Helvetica Neue;letter-spacing:.06em;text-transform:uppercase">E-Mail ändern</div></div></div>
+          <div><div class="lbl" style="margin-bottom:6px">Passwort ändern</div><div class="card" style="display:flex;flex-direction:column;gap:7px">
+            <div class="fld"><span style="color:#aeb6c6">Aktuelles Passwort</span><span style="color:#c4c9d4">◔</span></div>
+            <div class="fld"><span style="color:#aeb6c6">Neues Passwort</span><span style="color:#c4c9d4">◔</span></div>
+            <div style="font:500 7.5px Helvetica Neue;color:#aeb6c6">○ 10 Zeichen · Groß/Klein · Zahl · Sonderzeichen</div>
+            <div style="height:30px;border-radius:7px;background:#2E4A7A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 8.5px Helvetica Neue;letter-spacing:.06em;text-transform:uppercase;margin-top:2px">Speichern</div></div></div>
+          <div style="height:32px;border-radius:8px;border:1.5px solid #CC3333;color:#CC3333;display:flex;align-items:center;justify-content:center;font:700 9px Helvetica Neue;letter-spacing:.06em;text-transform:uppercase">Abmelden</div>
+          <div><div class="lbl" style="margin-bottom:6px;color:#CC3333">Gefahrenzone</div><div class="card" style="border-color:rgba(204,51,51,.25)"><div style="font:600 10px Helvetica Neue;color:#1C2B4A">Alle lokalen Daten löschen</div><div style="font:500 8px/1.4 Helvetica Neue;color:#9aa3b5;margin:3px 0 8px">Tippe <b style="color:#CC3333">LÖSCHEN</b> zur Bestätigung.</div><div style="display:flex;gap:7px"><div class="fld" style="flex:1;color:#aeb6c6;letter-spacing:.1em">LÖSCHEN</div><div style="width:74px;height:30px;border-radius:7px;background:#CC3333;opacity:.5;color:#fff;display:flex;align-items:center;justify-content:center;font:700 8px Helvetica Neue;text-transform:uppercase">Löschen</div></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note amber"><span class="k">Profil = alles Kundenbezogene</span>Identität, <b>Grunddaten</b> (mit Live-BMR), <b>Ziel &amp; Ernährung</b>, Darstellung — in einer kompakten Übersicht, Edits als Drill-down. Genau dein Wunsch-Aufbau.</div>
+      <div class="note"><span class="k">Login als Subseite darunter</span>Eigene Subseite für E-Mail/Passwort/Abmelden/Löschen. Sicherheit getrennt vom Profil.</div>
+      <div class="note amber"><span class="k">Security nachgeschärft</span>Gegenüber dem alten Entwurf: <b>aktuelles Passwort</b> nötig + Stärke-Regeln. Ein Danger-Rot (<code>#CC3333</code>) statt zwei.</div>
+      <div class="note"><span class="k">Theme-ready</span>„Darstellung" trägt schon den Slot für <b>Hell / Gym (dark)</b>. Tokens stehen — Dark-Theme = späterer Override, kein Umbau.</div>
+    </div>
+
+  </div>
+
+  <p class="dv-next">Sag mir z.B.: „<a href="#5a">T1</a> Ring größer, Bilanz-Balken kleiner" · „<a href="#5c">T3</a> Mahlzeiten anders gruppieren" · „<a href="#5e">T5</a> Reihenfolge passt" · „Nav-Labels: Heute/Training/Essen/Gesundheit/Mehr final" · oder „passt — auf Hi-Fi für <a href="#5a">Dashboard</a> gehen".</p>
+</section>
+</x-dc>
+</body>
+</html>

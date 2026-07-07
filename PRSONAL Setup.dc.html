@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body{margin:0;background:#eceef2;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
+  .dv-turn{padding:40px 44px 40px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+  .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1C2B4A;color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 13px/1.2 'Helvetica Neue',sans-serif;color:#1C2B4A}
+  .dv-tsub{font:400 12px/1.5 'Helvetica Neue',sans-serif;color:rgba(28,43,74,.6);max-width:720px;margin:0 0 26px}
+  .dv-tsub b{color:#1C2B4A;font-weight:700}
+  .dv-next{margin:30px 0 0;font:12px/1.7 'Helvetica Neue',sans-serif;color:rgba(28,43,74,.5)}
+  .dv-next a{color:#2E4A7A;text-decoration:none;font-weight:600}
+
+  .flow{display:flex;flex-wrap:wrap;gap:30px 22px;align-items:flex-start}
+  .screen{display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+  .scap{display:flex;align-items:center;gap:7px}
+  .scid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(28,43,74,.1);color:#1C2B4A;border-radius:5px;text-decoration:none}
+  .sctxt{font:700 10.5px 'Helvetica Neue',sans-serif;letter-spacing:.02em;color:#1C2B4A}
+  .scsub{font:500 10px 'Helvetica Neue',sans-serif;color:#9aa3b5}
+
+  .ph{width:300px;background:#fbfcfd;border:1.5px solid #c4c9d4;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 36px rgba(28,43,74,.12);position:relative}
+  .ph-status{height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font:600 9px 'Helvetica Neue',Helvetica,sans-serif;color:#9aa3b5;flex-shrink:0}
+  .ph-hd{padding:6px 16px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid #eceef3}
+  .ph-body{flex:1;overflow:hidden;padding:14px 14px 14px;display:flex;flex-direction:column;gap:12px}
+  .ph-nav{height:54px;border-top:1px solid #e2e5ec;background:#fff;display:flex;flex-shrink:0}
+  .navi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font:700 7.5px/1 'Helvetica Neue',Helvetica,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#aeb6c6}
+  .navi .ico{width:17px;height:17px;border:1.5px solid #c4c9d4;border-radius:5px}
+  .navi.on{color:#2E4A7A}
+  .navi.on .ico{border-color:#2E4A7A;background:rgba(46,74,122,.08)}
+
+  .lbl{font:700 8.5px 'Helvetica Neue',Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#9aa3b5}
+  .card{background:#fff;border:1px solid #E7EBF3;border-radius:12px;padding:13px;box-shadow:0 1px 2px rgba(28,43,74,.04),0 6px 16px rgba(28,43,74,.05)}
+  .seg{display:flex;background:#eceef3;border-radius:9px;padding:3px;gap:2px}
+  .seg span{flex:1;text-align:center;padding:6px 4px;border-radius:7px;font:700 9px 'Helvetica Neue',Helvetica,sans-serif;letter-spacing:.05em;text-transform:uppercase;color:#9aa3b5}
+  .seg span.on{background:#fff;color:#2E4A7A;box-shadow:0 1px 2px rgba(28,43,74,.12)}
+  .pill{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:999px;font:700 8.5px 'Helvetica Neue',Helvetica,sans-serif;letter-spacing:.03em}
+  .dash{border:1.4px dashed #c4c9d4;border-radius:9px;background:repeating-linear-gradient(135deg,#f4f5f8 0 7px,#eceef3 7px 14px);display:flex;align-items:center;justify-content:center;font:600 9px 'Helvetica Neue',Helvetica,sans-serif;color:#9aa3b5;text-align:center;letter-spacing:.02em}
+  .fld{height:28px;border:1px solid #d6dae3;border-radius:7px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 10px}
+  .fld span:first-child{font:600 11px 'Helvetica Neue';color:#1C2B4A}
+  .fld .pen{font:600 11px 'Helvetica Neue';color:#c4c9d4}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .ava{width:44px;height:44px;border-radius:50%;border:1.5px dashed #c4c9d4;background:repeating-linear-gradient(135deg,#f4f5f8 0 6px,#eceef3 6px 12px);display:flex;align-items:center;justify-content:center;font:700 6.5px 'Helvetica Neue';letter-spacing:.08em;text-transform:uppercase;color:#aeb6c6;flex-shrink:0}
+  .sm-icon{width:30px;height:30px;border-radius:8px;border:1.4px solid #c4c9d4;background:#f4f5f8;flex-shrink:0}
+
+  .notes{width:230px;display:flex;flex-direction:column;gap:13px;padding-top:30px}
+  .note{font:400 11px/1.5 'Helvetica Neue',sans-serif;color:#56607a}
+  .note b{color:#1C2B4A;font-weight:700}
+  .note .k{font:700 8px ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#9aa3b5;display:block;margin-bottom:3px}
+  .note.amber .k{color:#A8740A}
+  .note code{font:600 9px ui-monospace,Menlo,monospace}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t4">
+  <div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">Setup — Hub + Subseiten (Christians Umbau)</span></div>
+  <p class="dv-tsub">Umgesetzt nach Christians Kommentar: der Setup-Start ist jetzt eine <b>entschlackte Übersicht</b> — alles Persönliche steckt in <b>einem</b> Profil-Block, der Rest liegt in <b>Subseiten</b>. <b>Darstellung</b> ist ins Profil gewandert, und die <b>Stammdaten</b> stehen wieder präsent und gestapelt untereinander. Jeder Screen ist beschriftet.</p>
+
+  <div class="flow">
+
+    <!-- ░░░░░░░░ S1 · HUB ░░░░░░░░ -->
+    <div class="screen" id="4a">
+      <div class="scap"><a class="scid" href="#4a">S1</a><span class="sctxt">Hub · Übersicht</span><span class="scsub">— entschlackt</span></div>
+      <div class="ph" style="height:740px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg width="19" height="19" viewBox="0 0 96 96"><circle cx="48" cy="48" r="36" fill="none" stroke="#2E4A7A" stroke-width="6"/><circle cx="48" cy="48" r="23" fill="none" stroke="#2E4A7A" stroke-width="2" opacity=".35"/><circle cx="48" cy="48" r="4" fill="#2E4A7A"/></svg>
+            <span style="font:700 12px 'Helvetica Neue';letter-spacing:.08em;color:#1C2B4A">PRSON</span><span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1.5px solid #2E4A7A"><span style="font:700 6px 'Helvetica Neue';color:#2E4A7A;letter-spacing:.04em">AL</span></span>
+          </div>
+          <div style="width:26px;height:26px;border-radius:50%;border:1.5px solid #c4c9d4"></div>
+        </div>
+        <div class="ph-body">
+          <div style="font:700 19px 'Helvetica Neue';color:#1C2B4A;letter-spacing:-.02em">Einstellungen</div>
+
+          <!-- EIN persönlicher Block -> Profil -->
+          <div>
+            <div class="lbl" style="margin:0 0 6px">Konto &amp; Profil</div>
+            <div class="card" style="padding:0;cursor:pointer">
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 13px 12px">
+                <div class="ava">Foto</div>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:7px"><span style="font:700 13px 'Helvetica Neue';color:#1C2B4A">Christian</span><span class="pill" style="background:rgba(30,122,74,.12);color:#1E7A4A">✓ Sync</span></div>
+                  <div style="font:500 9px 'Helvetica Neue';color:#9aa3b5;margin-top:2px;overflow:hidden;text-overflow:ellipsis"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ed8e859f849e99848c83ad808c8481c38988">[email&#160;protected]</a></div>
+                </div>
+                <span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span>
+              </div>
+              <div style="border-top:1px solid #eceef3;padding:9px 13px;display:flex;flex-wrap:wrap;gap:4px 14px">
+                <span style="font:500 9px 'Helvetica Neue';color:#56607a">Mann · 1995</span>
+                <span style="font:500 9px 'Helvetica Neue';color:#56607a">182 cm</span>
+                <span style="font:500 9px 'Helvetica Neue';color:#56607a">Start 84,0 kg</span>
+                <span style="font:500 9px 'Helvetica Neue';color:#1E7A4A">aktuell 83,4 · KFA 21%</span>
+              </div>
+            </div>
+            <div style="font:500 8px 'Helvetica Neue';color:#aeb6c6;margin:5px 2px 0">Tippen öffnet das Profil — Bild, Name, Grunddaten, Ziel, Ernährung, Streak &amp; Darstellung.</div>
+          </div>
+
+          <!-- STAMMDATEN · präsent, gestapelt -->
+          <div>
+            <div class="lbl" style="margin:0 0 7px">Stammdaten</div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div class="card" style="display:flex;align-items:center;gap:11px;padding:12px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11.5px 'Helvetica Neue';color:#1C2B4A">Trainingspläne</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Kategorie × Standort</div></div><span style="font:700 9px 'Helvetica Neue';color:#9aa3b5">4</span><span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+              <div class="card" style="display:flex;align-items:center;gap:11px;padding:12px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11.5px 'Helvetica Neue';color:#1C2B4A">Standorte</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Wo du trainierst</div></div><span style="font:700 9px 'Helvetica Neue';color:#9aa3b5">2</span><span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+              <div class="card" style="display:flex;align-items:center;gap:11px;padding:12px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11.5px 'Helvetica Neue';color:#1C2B4A">Kategorien</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Push · Pull · Beine …</div></div><span style="font:700 9px 'Helvetica Neue';color:#9aa3b5">6</span><span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+              <div class="card" style="display:flex;align-items:center;gap:11px;padding:12px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11.5px 'Helvetica Neue';color:#1C2B4A">Übungs-DB</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Alle Übungen</div></div><span style="font:700 9px 'Helvetica Neue';color:#9aa3b5">128</span><span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+            </div>
+          </div>
+
+          <div style="flex:1"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:2px">
+            <span style="font:500 8px 'Helvetica Neue';color:#aeb6c6">PRSONAL · v0.9</span>
+            <span style="font:700 9px 'Helvetica Neue';letter-spacing:.04em;color:#B5462E">Abmelden</span>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div class="navi"><div class="ico"></div>Dash</div>
+          <div class="navi"><div class="ico"></div>Train</div>
+          <div class="navi"><div class="ico"></div>Essen</div>
+          <div class="navi"><div class="ico"></div>Health</div>
+          <div class="navi on"><div class="ico"></div>Setup</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ░░░░░░░░ S2 · PROFIL (kompakte Übersicht) ░░░░░░░░ -->
+    <div class="screen" id="4b">
+      <div class="scap"><a class="scid" href="#4b">S2</a><span class="sctxt">Profil</span><span class="scsub">— kompakte Übersicht</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd">
+          <div style="display:flex;align-items:center;gap:9px"><span style="font:700 16px 'Helvetica Neue';color:#2E4A7A">‹</span><span style="font:700 13px 'Helvetica Neue';color:#1C2B4A">Profil</span></div>
+          <div style="width:18px"></div>
+        </div>
+        <div class="ph-body">
+          <!-- Bild + Name -> bearbeiten -->
+          <div class="card" style="display:flex;align-items:center;gap:12px;padding:11px 13px;cursor:pointer">
+            <div class="ava" style="width:48px;height:48px">Foto</div>
+            <div style="flex:1;min-width:0"><div style="font:700 13px 'Helvetica Neue';color:#1C2B4A">Christian</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:2px;overflow:hidden;text-overflow:ellipsis"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="9efdf6ecf7edeaf7fff0def3fff7f2b0fafb">[email&#160;protected]</a></div></div>
+            <span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span>
+          </div>
+
+          <!-- Grunddaten · Übersicht -> S8 -->
+          <div class="card" style="padding:0;cursor:pointer">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 13px 11px"><span class="lbl">Grunddaten</span><span style="font:700 9px 'Helvetica Neue';color:#2E4A7A">Bearbeiten ›</span></div>
+            <div style="border-top:1px solid #eceef3;padding:12px 13px;display:flex;align-items:center;gap:13px">
+              <div><div class="lbl">Grundumsatz</div><div style="font:700 20px/1 'Helvetica Neue';color:#1C2B4A;margin:4px 0 2px">1 710<span style="font-size:10px;color:#9aa3b5"> kcal</span></div><div style="font:500 8px 'Helvetica Neue';color:#9aa3b5">Katch-McArdle</div></div>
+              <div style="width:1px;align-self:stretch;background:#eceef3"></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+                <div class="row"><span style="font:500 9px 'Helvetica Neue';color:#9aa3b5">Geschlecht</span><span style="font:600 9.5px 'Helvetica Neue';color:#1C2B4A">Mann</span></div>
+                <div class="row"><span style="font:500 9px 'Helvetica Neue';color:#9aa3b5">Jahrgang</span><span style="font:600 9.5px 'Helvetica Neue';color:#1C2B4A">1995</span></div>
+                <div class="row"><span style="font:500 9px 'Helvetica Neue';color:#9aa3b5">Größe</span><span style="font:600 9.5px 'Helvetica Neue';color:#1C2B4A">182 cm</span></div>
+                <div class="row"><span style="font:500 9px 'Helvetica Neue';color:#9aa3b5">Start</span><span style="font:600 9.5px 'Helvetica Neue';color:#1C2B4A">84,0 kg</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ziel & Ernährung · Übersicht -> S9 -->
+          <div class="card" style="padding:0;cursor:pointer">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 13px 11px"><span class="lbl">Ziel &amp; Ernährung</span><span style="font:700 9px 'Helvetica Neue';color:#2E4A7A">Bearbeiten ›</span></div>
+            <div style="border-top:1px solid #eceef3;padding:11px 13px;display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+              <span class="pill" style="background:rgba(46,74,122,.1);color:#2E4A7A">Halten</span>
+              <span style="font:500 9.5px 'Helvetica Neue';color:#56607a">moderat</span><span style="color:#d6dae3">·</span>
+              <span style="font:500 9.5px 'Helvetica Neue';color:#56607a">Omnivor</span><span style="color:#d6dae3">·</span>
+              <span style="font:500 9.5px 'Helvetica Neue';color:#56607a">Streak 3/Wo</span>
+            </div>
+          </div>
+
+          <!-- Darstellung · kompakt -> S? -->
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 13px;cursor:pointer"><div><div style="font:600 10.5px 'Helvetica Neue';color:#1C2B4A">Darstellung</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Theme der App</div></div><div style="display:flex;align-items:center;gap:8px"><span class="pill" style="background:#eceef3;color:#56607a">Hell</span><span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span></div></div>
+
+          <!-- Sicherheit -> Konto & Login Subseite -->
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 13px;cursor:pointer"><div><div style="font:600 10.5px 'Helvetica Neue';color:#1C2B4A">Konto &amp; Login</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">E-Mail · Passwort · Abmelden</div></div><span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ░░░░░░░░ S8 · GRUNDDATEN bearbeiten ░░░░░░░░ -->
+    <div class="screen" id="4h">
+      <div class="scap"><a class="scid" href="#4h">S8</a><span class="sctxt">Grunddaten · bearbeiten</span><span class="scsub">— aus S2</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd">
+          <div style="display:flex;align-items:center;gap:9px"><span style="font:700 16px 'Helvetica Neue';color:#2E4A7A">‹</span><span style="font:700 13px 'Helvetica Neue';color:#1C2B4A">Grunddaten</span></div>
+          <span style="font:700 9px 'Helvetica Neue';letter-spacing:.04em;color:#2E4A7A">Sichern</span>
+        </div>
+        <div class="ph-body">
+          <div style="background:rgba(46,74,122,.06);border-radius:10px;padding:11px 13px;display:flex;justify-content:space-between;align-items:center">
+            <div><div class="lbl">Grundumsatz (BMR)</div><div style="font:500 8px 'Helvetica Neue';color:#9aa3b5;margin-top:2px">rechnet live mit</div></div>
+            <div style="font:700 20px 'Helvetica Neue';color:#2E4A7A">1 710<span style="font-size:10px;color:#9aa3b5"> kcal</span></div>
+          </div>
+          <div class="card">
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <div class="row"><span style="font:600 10px 'Helvetica Neue';color:#56607a">Geschlecht</span><div class="seg" style="width:120px;padding:2px"><span class="on" style="padding:4px 6px">Mann</span><span style="padding:4px 6px">Frau</span></div></div>
+              <div class="row"><span style="font:600 10px 'Helvetica Neue';color:#56607a">Geburtsjahr</span><div class="fld" style="width:120px"><span>1995</span><span class="pen">✎</span></div></div>
+              <div class="row"><span style="font:600 10px 'Helvetica Neue';color:#56607a">Größe</span><div class="fld" style="width:120px"><span>182 cm</span><span class="pen">✎</span></div></div>
+              <div class="row"><span style="font:600 10px 'Helvetica Neue';color:#56607a">Startgewicht</span><div class="fld" style="width:120px"><span>84,0 kg</span><span class="pen">✎</span></div></div>
+              <div class="row"><span style="font:600 10px 'Helvetica Neue';color:#56607a">Körperfett</span><div class="fld" style="width:120px"><span>21 %</span><span class="pen">✎</span></div></div>
+            </div>
+            <div style="height:1px;background:#eceef3;margin:12px 0 9px"></div>
+            <div class="row"><span style="font:500 9px 'Helvetica Neue';color:#9aa3b5">Start · 30.06.</span><span style="font:600 9px 'Helvetica Neue';color:#1E7A4A">aktuell 83,4 · KFA 21%</span></div>
+          </div>
+          <div style="font:500 8.5px/1.5 'Helvetica Neue';color:#9aa3b5;padding:0 2px">Geschlecht, Jahrgang, Größe &amp; Gewicht füttern den <b style="color:#56607a">Grundumsatz</b> (§4.1) — Wert oben passt sich beim Tippen sofort an.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ░░░░░░░░ S9 · ZIEL & ERNÄHRUNG bearbeiten ░░░░░░░░ -->
+    <div class="screen" id="4i">
+      <div class="scap"><a class="scid" href="#4i">S9</a><span class="sctxt">Ziel &amp; Ernährung · bearbeiten</span><span class="scsub">— aus S2</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd">
+          <div style="display:flex;align-items:center;gap:9px"><span style="font:700 16px 'Helvetica Neue';color:#2E4A7A">‹</span><span style="font:700 13px 'Helvetica Neue';color:#1C2B4A">Ziel &amp; Ernährung</span></div>
+          <span style="font:700 9px 'Helvetica Neue';letter-spacing:.04em;color:#2E4A7A">Sichern</span>
+        </div>
+        <div class="ph-body">
+          <div>
+            <div class="lbl" style="margin-bottom:7px">Ziel</div>
+            <div class="seg" style="background:#eceef3"><span>Abnehmen</span><span class="on">Halten</span><span>Aufbau</span></div>
+          </div>
+          <div>
+            <div class="lbl" style="margin-bottom:7px">Intensität <span style="text-transform:none;letter-spacing:0;color:#9aa3b5">— advanced</span></div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="border:1.5px solid #2E4A7A;border-radius:8px;background:rgba(46,74,122,.06);padding:10px 12px;display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px 'Helvetica Neue';color:#2E4A7A">Moderat</span><span style="font:600 9px 'Helvetica Neue';color:#2E4A7A">±0 %</span></div>
+              <div style="border:1px solid #d6dae3;border-radius:8px;background:#fff;padding:10px 12px;display:flex;justify-content:space-between;align-items:center"><span style="font:600 10px 'Helvetica Neue';color:#1C2B4A">Aggressiv</span><span style="font:600 9px 'Helvetica Neue';color:#9aa3b5">stärkerer Offset</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="lbl" style="margin-bottom:7px">Ernährung</div>
+            <div class="seg" style="background:#eceef3"><span class="on">Omnivor</span><span>Vegetar.</span><span>Vegan</span></div>
+          </div>
+          <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:11px 13px">
+            <div><div style="font:600 10px 'Helvetica Neue';color:#1C2B4A">Wochen-Streak</div><div style="font:500 8px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Min. Sessions / Woche</div></div>
+            <div style="display:flex;align-items:center;border:1px solid #d6dae3;border-radius:7px;overflow:hidden"><span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font:600 14px 'Helvetica Neue';color:#9aa3b5;border-right:1px solid #eceef3">−</span><span style="width:26px;text-align:center;font:700 11px 'Helvetica Neue';color:#1C2B4A">3</span><span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font:600 14px 'Helvetica Neue';color:#2E4A7A;border-left:1px solid #eceef3">+</span></div>
+          </div>
+          <div style="font:500 8.5px/1.5 'Helvetica Neue';color:#9aa3b5;padding:0 2px">Ziel + Intensität setzen den <b style="color:#56607a">Kalorien-Offset</b>, Ernährung die Protein-Korrektur, der Streak das Wochen-Soll.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note amber"><span class="k">Profil = Übersicht</span>S2 zeigt nur noch komprimierte Werte — der <b>Grundumsatz</b> prominent, die Eingaben als ruhige Zeilen. Kein langes Scrollen mehr.</div>
+      <div class="note"><span class="k">Bearbeiten = Subseite</span>Jede Gruppe öffnet ihren eigenen Edit-Screen: <a href="#4h">Grunddaten (S8)</a> &amp; <a href="#4i">Ziel &amp; Ernährung (S9)</a>. Dort sitzen Segmente, Felder &amp; Stepper.</div>
+      <div class="note"><span class="k">Live-Grundumsatz</span>Im Grunddaten-Editor steht der BMR oben und aktualisiert sich beim Tippen — Wirkung sofort sichtbar.</div>
+      <div class="note amber"><span class="k">Darstellung kompakt</span>Nur eine Zeile mit aktuellem Theme; Theme-Vorschau &amp; -Wahl liegen hinter dem Drill-down.</div>
+      <div class="note"><span class="k">Sicherheit getrennt</span>E-Mail/Passwort/Abmelden/Löschen bleiben <a href="#4c">Konto &amp; Login (S3)</a>.</div>
+    </div>
+
+    <!-- ░░░░░░░░ S3 · KONTO & LOGIN ░░░░░░░░ -->
+    <div class="screen" id="4c">
+      <div class="scap"><a class="scid" href="#4c">S3</a><span class="sctxt">Konto &amp; Login</span><span class="scsub">— Sicherheit</span></div>
+      <div class="ph" style="height:700px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd">
+          <div style="display:flex;align-items:center;gap:9px"><span style="font:700 16px 'Helvetica Neue';color:#2E4A7A">‹</span><span style="font:700 13px 'Helvetica Neue';color:#1C2B4A">Konto &amp; Login</span></div>
+          <div style="width:18px"></div>
+        </div>
+        <div class="ph-body">
+          <div class="card" style="display:flex;align-items:center;gap:12px">
+            <div class="ava">Foto</div>
+            <div style="flex:1;min-width:0"><div style="font:600 8.5px 'Helvetica Neue';color:#1E7A4A">✓ Angemeldet als</div><div style="font:700 12px 'Helvetica Neue';color:#1C2B4A;margin-top:1px;overflow:hidden;text-overflow:ellipsis"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="680b001a011b1c0109062805090104460c0d">[email&#160;protected]</a></div><div style="font:500 8px 'Helvetica Neue';color:#9aa3b5;margin-top:2px">Sync aktiv · zuletzt 9:32</div></div>
+          </div>
+          <div>
+            <div class="lbl" style="margin-bottom:6px">E-Mail-Adresse</div>
+            <div class="card" style="display:flex;flex-direction:column;gap:8px">
+              <div class="fld" style="height:30px"><span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="25464d574c56514c444b6548444c490b4140">[email&#160;protected]</a></span></div>
+              <div style="font:500 8px/1.4 'Helvetica Neue';color:#9aa3b5">Neue Adresse erhält eine <b style="color:#56607a">Bestätigungsmail</b>, bevor sie aktiv wird.</div>
+              <div style="height:30px;border-radius:7px;border:1.5px solid #2E4A7A;color:#2E4A7A;display:flex;align-items:center;justify-content:center;font:700 8.5px 'Helvetica Neue';letter-spacing:.06em;text-transform:uppercase">E-Mail ändern</div>
+            </div>
+          </div>
+          <div>
+            <div class="lbl" style="margin-bottom:6px">Passwort ändern</div>
+            <div class="card" style="display:flex;flex-direction:column;gap:7px">
+              <div class="fld" style="height:30px;letter-spacing:.12em"><span style="letter-spacing:.12em">••••••••</span><span style="color:#c4c9d4">◔</span></div>
+              <div class="fld" style="height:30px"><span style="font:600 9px 'Helvetica Neue';color:#aeb6c6">Wiederholen</span></div>
+              <div style="height:30px;border-radius:7px;background:#2E4A7A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 8.5px 'Helvetica Neue';letter-spacing:.06em;text-transform:uppercase;margin-top:2px">Passwort speichern</div>
+            </div>
+          </div>
+          <div style="height:32px;border-radius:8px;border:1.5px solid #B5462E;color:#B5462E;display:flex;align-items:center;justify-content:center;font:700 9px 'Helvetica Neue';letter-spacing:.06em;text-transform:uppercase">Abmelden</div>
+          <div>
+            <div class="lbl" style="margin-bottom:6px;color:#B5462E">Gefahrenzone</div>
+            <div class="card" style="border-color:rgba(181,70,46,.25)">
+              <div style="font:600 10px 'Helvetica Neue';color:#1C2B4A">Alle lokalen Daten löschen</div>
+              <div style="font:500 8px/1.4 'Helvetica Neue';color:#9aa3b5;margin:3px 0 8px">Tippe <b style="color:#B5462E">LÖSCHEN</b> zur Bestätigung.</div>
+              <div style="display:flex;gap:7px">
+                <div style="flex:1;height:28px;border:1px solid #d6dae3;border-radius:7px;background:#fff;display:flex;align-items:center;padding:0 10px;font:600 9px 'Helvetica Neue';color:#aeb6c6;letter-spacing:.1em">LÖSCHEN</div>
+                <div style="width:74px;height:28px;border-radius:7px;background:#B5462E;opacity:.5;color:#fff;display:flex;align-items:center;justify-content:center;font:700 8px 'Helvetica Neue';letter-spacing:.06em;text-transform:uppercase">Löschen</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Zeile 2: Stammdaten-Subseiten ── -->
+  <div style="font:700 10px 'Helvetica Neue';letter-spacing:.1em;text-transform:uppercase;color:#9aa3b5;margin:34px 0 16px">Stammdaten-Subseiten · präsent &amp; gestapelt</div>
+  <div class="flow">
+
+    <!-- S4 · Trainingspläne -->
+    <div class="screen" id="4d">
+      <div class="scap"><a class="scid" href="#4d">S4</a><span class="sctxt">Trainingspläne</span><span class="scsub">— Liste, gestapelt</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd">
+          <div style="display:flex;align-items:center;gap:9px"><span style="font:700 16px 'Helvetica Neue';color:#2E4A7A">‹</span><span style="font:700 13px 'Helvetica Neue';color:#1C2B4A">Trainingspläne</span></div>
+          <span style="font:700 9px 'Helvetica Neue';color:#9aa3b5">4</span>
+        </div>
+        <div class="ph-body">
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div class="card" style="display:flex;align-items:center;gap:11px;padding:12px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11.5px 'Helvetica Neue';color:#1C2B4A">Push</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Brust · Schulter · Trizeps — Studio Nord</div></div><span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+            <div class="card" style="display:flex;align-items:center;gap:11px;padding:12px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11.5px 'Helvetica Neue';color:#1C2B4A">Pull</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Rücken · Bizeps — Studio Nord</div></div><span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+            <div class="card" style="display:flex;align-items:center;gap:11px;padding:12px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11.5px 'Helvetica Neue';color:#1C2B4A">Beine</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Quads · Hamstrings · Waden — Home Gym</div></div><span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+            <div class="card" style="display:flex;align-items:center;gap:11px;padding:12px 13px"><div class="sm-icon"></div><div style="flex:1"><div style="font:700 11.5px 'Helvetica Neue';color:#1C2B4A">Ganzkörper</div><div style="font:500 8.5px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Alle Gruppen — Home Gym</div></div><span style="font:700 13px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+          </div>
+          <div class="dash" style="height:36px">+ Neuer Plan</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S5 · Standorte -->
+    <div class="screen" id="4e">
+      <div class="scap"><a class="scid" href="#4e">S5</a><span class="sctxt">Standorte</span></div>
+      <div class="ph" style="width:240px;height:480px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><div style="display:flex;align-items:center;gap:8px"><span style="font:700 15px 'Helvetica Neue';color:#2E4A7A">‹</span><span style="font:700 12px 'Helvetica Neue';color:#1C2B4A">Standorte</span></div><span style="font:700 9px 'Helvetica Neue';color:#9aa3b5">2</span></div>
+        <div class="ph-body" style="padding:12px 12px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="card" style="display:flex;align-items:center;gap:9px;padding:11px"><div class="sm-icon" style="width:26px;height:26px"></div><div style="flex:1"><div style="font:700 11px 'Helvetica Neue';color:#1C2B4A">Studio Nord</div><div style="font:500 8px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Mitgliedschaft</div></div><span style="font:700 12px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+            <div class="card" style="display:flex;align-items:center;gap:9px;padding:11px"><div class="sm-icon" style="width:26px;height:26px"></div><div style="flex:1"><div style="font:700 11px 'Helvetica Neue';color:#1C2B4A">Home Gym</div><div style="font:500 8px 'Helvetica Neue';color:#9aa3b5;margin-top:1px">Zuhause</div></div><span style="font:700 12px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+          </div>
+          <div class="dash" style="height:34px">+ Standort</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S6 · Kategorien -->
+    <div class="screen" id="4f">
+      <div class="scap"><a class="scid" href="#4f">S6</a><span class="sctxt">Kategorien</span></div>
+      <div class="ph" style="width:240px;height:480px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><div style="display:flex;align-items:center;gap:8px"><span style="font:700 15px 'Helvetica Neue';color:#2E4A7A">‹</span><span style="font:700 12px 'Helvetica Neue';color:#1C2B4A">Kategorien</span></div><span style="font:700 9px 'Helvetica Neue';color:#9aa3b5">6</span></div>
+        <div class="ph-body" style="padding:12px 12px">
+          <div class="card" style="padding:0">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border-bottom:1px solid #eceef3"><span style="font:600 10.5px 'Helvetica Neue';color:#1C2B4A">Push</span><span style="font:700 11px 'Helvetica Neue';color:#c4c9d4">≡</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border-bottom:1px solid #eceef3"><span style="font:600 10.5px 'Helvetica Neue';color:#1C2B4A">Pull</span><span style="font:700 11px 'Helvetica Neue';color:#c4c9d4">≡</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border-bottom:1px solid #eceef3"><span style="font:600 10.5px 'Helvetica Neue';color:#1C2B4A">Beine</span><span style="font:700 11px 'Helvetica Neue';color:#c4c9d4">≡</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border-bottom:1px solid #eceef3"><span style="font:600 10.5px 'Helvetica Neue';color:#1C2B4A">Core</span><span style="font:700 11px 'Helvetica Neue';color:#c4c9d4">≡</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 12px"><span style="font:600 10.5px 'Helvetica Neue';color:#1C2B4A">Cardio</span><span style="font:700 11px 'Helvetica Neue';color:#c4c9d4">≡</span></div>
+          </div>
+          <div class="dash" style="height:34px;margin-top:9px">+ Kategorie</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S7 · Übungs-DB -->
+    <div class="screen" id="4g">
+      <div class="scap"><a class="scid" href="#4g">S7</a><span class="sctxt">Übungs-DB</span></div>
+      <div class="ph" style="width:240px;height:480px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><div style="display:flex;align-items:center;gap:8px"><span style="font:700 15px 'Helvetica Neue';color:#2E4A7A">‹</span><span style="font:700 12px 'Helvetica Neue';color:#1C2B4A">Übungs-DB</span></div><span style="font:700 9px 'Helvetica Neue';color:#9aa3b5">128</span></div>
+        <div class="ph-body" style="padding:12px 12px">
+          <div class="fld" style="height:30px;justify-content:flex-start;gap:7px"><span style="font:600 10px 'Helvetica Neue';color:#aeb6c6">Suchen …</span></div>
+          <div class="card" style="padding:0">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #eceef3"><div><div style="font:600 10.5px 'Helvetica Neue';color:#1C2B4A">Bankdrücken</div><div style="font:500 8px 'Helvetica Neue';color:#9aa3b5">Push</div></div><span style="font:700 12px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #eceef3"><div><div style="font:600 10.5px 'Helvetica Neue';color:#1C2B4A">Kreuzheben</div><div style="font:500 8px 'Helvetica Neue';color:#9aa3b5">Pull</div></div><span style="font:700 12px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px"><div><div style="font:600 10.5px 'Helvetica Neue';color:#1C2B4A">Kniebeuge</div><div style="font:500 8px 'Helvetica Neue';color:#9aa3b5">Beine</div></div><span style="font:700 12px 'Helvetica Neue';color:#c4c9d4">›</span></div>
+          </div>
+          <div class="dash" style="height:34px;margin-top:9px">+ Übung</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes" style="padding-top:30px">
+      <div class="note amber"><span class="k">Stammdaten präsent</span>Wieder gestapelt untereinander wie früher — volle Kartenzeilen mit Icon, Titel &amp; Anzahl statt der gedrängten Mini-Liste. Vom Hub jeweils eine eigene Subseite.</div>
+      <div class="note"><span class="k">Gleiches Muster</span>Jede Subseite = Back-Header + gestapelte Liste + „+ Neu". Trainingspläne tragen <b>Kategorie × Standort</b>, Kategorien sind per <code>≡</code> sortierbar.</div>
+      <div class="note"><span class="k">Drill-down frei</span>Jede Zeile öffnet ihren Detail-/Edit-Screen — hier nur die Listen-Ebene als Gerüst.</div>
+    </div>
+
+  </div>
+
+  <p class="dv-next">Sag mir z.B.: „<a href="#4a">S1</a> Stammdaten zuerst, Profil darunter" · „<a href="#4b">S2</a> Darstellung lieber doch eigene Subseite" · „Plan-Detail aus <a href="#4d">S4</a> aufklappen" · oder „passt — auf Hi-Fi für den Hub gehen".</p>
+</section>
+</x-dc>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>
+</html>

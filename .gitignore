@@ -1,3 +1,8 @@
 node_modules/
 .DS_Store
 *.local
+
+# Local tool state (Claude Code preview config, impeccable design skill, dc-runtime preview support)
+.claude/
+.impeccable/
+support.js

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  :root{
+    --bg:#eceef2; --ph:#fbfcfd; --surface:#fff;
+    --ink:#1C2B4A; --ink2:#56607a; --mut:#9aa3b5; --mut2:#aeb6c6;
+    --line:#eceef3; --line2:#E7EBF3; --bd:#d6dae3;
+    --accent:#2E4A7A; --accent2:#4A7ABF; --soft:rgba(46,74,122,.08); --soft2:rgba(46,74,122,.12);
+    --good:#1E7A4A; --goodbg:rgba(30,122,74,.12); --danger:#CC3333; --carb:#4A7ABF; --fat:#D4860A; --prot:#2E4A7A;
+    --band:rgba(46,74,122,.16);
+    --r:12px; --font:'Helvetica Neue',Helvetica,Arial,sans-serif;
+  }
+  body{margin:0;background:var(--bg);font-family:var(--font)}
+  .dv-turn{padding:40px 44px 40px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+  .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--ink);color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 13px/1.2 var(--font);color:var(--ink)}
+  .dv-tsub{font:400 12px/1.6 var(--font);color:rgba(28,43,74,.62);max-width:760px;margin:0 0 8px}
+  .dv-tsub b{color:var(--ink);font-weight:700}
+  .dv-rowhd{font:700 10px var(--font);letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:32px 0 16px;padding-bottom:7px;border-bottom:1px solid #dfe3ea}
+  .dv-next{margin:34px 0 0;font:12px/1.7 var(--font);color:rgba(28,43,74,.5)}
+  .dv-next a{color:var(--accent);text-decoration:none;font-weight:600}
+
+  .flow{display:flex;flex-wrap:wrap;gap:30px 22px;align-items:flex-start}
+  .screen{display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+  .scap{display:flex;align-items:center;gap:7px}
+  .scid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--soft2);color:var(--accent);border-radius:5px;text-decoration:none}
+  .sctxt{font:700 10.5px var(--font);letter-spacing:.02em;color:var(--ink)}
+  .scsub{font:500 10px var(--font);color:var(--mut)}
+
+  .ph{width:300px;background:var(--ph);border:1.5px solid #c4c9d4;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 36px rgba(28,43,74,.12);position:relative}
+  .ph-status{height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font:600 9px var(--font);color:var(--mut);flex-shrink:0}
+  .ph-hd{padding:7px 16px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid var(--line)}
+  .ph-title{font:700 18px var(--font);color:var(--ink);letter-spacing:-.02em}
+  .ph-body{flex:1;overflow:hidden;padding:13px 14px;display:flex;flex-direction:column;gap:11px}
+  .ph-nav{height:54px;border-top:1px solid #e2e5ec;background:var(--surface);display:flex;flex-shrink:0}
+  .navi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font:700 7px/1 var(--font);letter-spacing:.05em;text-transform:uppercase;color:var(--mut2)}
+  .navi svg{width:18px;height:18px;stroke:var(--mut2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .navi.on{color:var(--accent)} .navi.on svg{stroke:var(--accent)}
+
+  .lbl{font:700 8.5px var(--font);letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+  .card{background:var(--surface);border:1px solid var(--line2);border-radius:var(--r);box-shadow:0 1px 2px rgba(28,43,74,.04),0 6px 16px rgba(28,43,74,.05)}
+  .pad{padding:13px}
+  .seg{display:flex;background:#eceef3;border-radius:9px;padding:3px;gap:2px}
+  .seg span{flex:1;text-align:center;padding:6px 4px;border-radius:7px;font:700 8.5px var(--font);letter-spacing:.03em;color:var(--mut)}
+  .seg span.on{background:var(--surface);color:var(--accent);box-shadow:0 1px 2px rgba(28,43,74,.12)}
+  .pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;font:700 8px var(--font);letter-spacing:.03em}
+  .dash{border:1.4px dashed #c4c9d4;border-radius:9px;background:repeating-linear-gradient(135deg,#f4f5f8 0 7px,#eceef3 7px 14px);display:flex;align-items:center;justify-content:center;font:600 9px var(--font);color:var(--mut)}
+  .fld{height:30px;border:1px solid var(--bd);border-radius:7px;background:var(--surface);display:flex;align-items:center;gap:7px;padding:0 10px;font:600 10px var(--font);color:var(--ink)}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .chev{font:700 13px var(--font);color:#c4c9d4}
+  .kpi{font:700 24px/1 var(--font);color:var(--ink);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .unit{font:600 11px var(--font);color:var(--mut)}
+  .band{font:600 9px var(--font);color:var(--accent2)}
+  .mbar{height:6px;border-radius:4px;background:#eceef3;overflow:hidden;flex:1}
+  .mbar > i{display:block;height:100%;border-radius:4px}
+  .fab{position:absolute;right:14px;bottom:64px;width:50px;height:50px;border-radius:50%;background:linear-gradient(145deg,#3a5a92,#26406b);box-shadow:0 4px 14px rgba(46,74,122,.45);display:flex;align-items:center;justify-content:center;color:#fff;font:300 26px var(--font)}
+  .star{font-size:13px;color:var(--mut2)} .star.on{color:var(--fat)}
+  .src{font:700 7.5px var(--font);letter-spacing:.04em;padding:2px 5px;border-radius:4px}
+  .src.off{background:var(--goodbg);color:var(--good)} .src.man{background:#eceef3;color:var(--ink2)}
+  .cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+  .notes{width:232px;display:flex;flex-direction:column;gap:13px;padding-top:30px}
+  .note{font:400 11px/1.55 var(--font);color:var(--ink2)}
+  .note b{color:var(--ink);font-weight:700}
+  .note .k{font:700 8px ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);display:block;margin-bottom:3px}
+  .note.amber .k{color:#A8740A}
+  .note code{font:600 9px ui-monospace,Menlo,monospace;background:#e6e9ef;padding:1px 4px;border-radius:3px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t6">
+  <div class="dv-thd"><a class="dv-tid" href="#t6">6</a><span class="dv-tname">Ernährung — Meal-Log + Food-DB (Lo-Fi)</span></div>
+  <p class="dv-tsub">Die fehlende Hälfte der Energiebilanz: die <b>Zufuhr-Seite</b> (Spec §5/§9). Zwei Ebenen strikt getrennt — <b>Food-DB</b> (wiederverwendbare Lebensmittel) vs. <b>Meal-Log</b> (Tageseinträge, die Food-DB-Items referenzieren; Werte beim Loggen eingefroren). Grundsätze: <b>minimale Klicks</b> (Favoriten/Zuletzt zuerst), <b>jede Zahl mit ±-Band</b>, <b>drei Wege</b> zum Erfassen (Suche/Barcode/Manuell), offline-first (OFF-Treffer werden gecacht).</p>
+
+  <!-- ════════ ROW 1 · LOG + ADD ════════ -->
+  <div class="dv-rowhd">Reihe 1 · Tages-Log &amp; Erfassen</div>
+  <div class="flow">
+
+    <!-- E1 · MEAL-LOG (Tag) -->
+    <div class="screen" id="6a">
+      <div class="scap"><a class="scid" href="#6a">E1</a><span class="sctxt">Ernährung · Tag</span><span class="scsub">— Meal-Log</span></div>
+      <div class="ph" style="height:720px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><span class="ph-title">Essen</span><span style="font:600 10px var(--font);color:var(--ink2)">‹ Heute ›</span></div>
+        <div class="ph-body">
+          <!-- Tagessumme -->
+          <div class="card pad">
+            <div class="row" style="align-items:flex-end;margin-bottom:10px">
+              <div><div class="lbl">Gegessen</div><div class="kpi" style="margin-top:3px">1 450 <span class="unit">/ 1 850 kcal</span></div></div>
+              <div class="band">Rest 400 · ± 130</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:700 8px var(--font);color:var(--ink2);width:52px">Protein</span><div class="mbar"><i style="width:62%;background:var(--prot)"></i></div><span style="font:600 8px var(--font);color:var(--mut);width:52px;text-align:right">96/155 g</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:700 8px var(--font);color:var(--ink2);width:52px">Carbs</span><div class="mbar"><i style="width:45%;background:var(--carb)"></i></div><span style="font:600 8px var(--font);color:var(--mut);width:52px;text-align:right">82/180 g</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:700 8px var(--font);color:var(--ink2);width:52px">Fett</span><div class="mbar"><i style="width:70%;background:var(--fat)"></i></div><span style="font:600 8px var(--font);color:var(--mut);width:52px;text-align:right">44/62 g</span></div>
+            </div>
+          </div>
+
+          <!-- Frühstück -->
+          <div class="card">
+            <div class="row pad" style="padding-bottom:9px;border-bottom:1px solid var(--line)"><span style="font:700 10.5px var(--font);color:var(--ink)">Frühstück</span><span style="font:600 9px var(--font);color:var(--mut)">420 kcal</span></div>
+            <div class="row" style="padding:9px 13px"><div><div style="font:600 10px var(--font);color:var(--ink)">Haferflocken · 80 g</div><div style="font:500 8px var(--font);color:var(--mut)">298 kcal · 10,8P 47,2C 5,6F</div></div><span class="chev">›</span></div>
+            <div class="row" style="padding:9px 13px;border-top:1px solid var(--line)"><div><div style="font:600 10px var(--font);color:var(--ink)">Skyr · 150 g</div><div style="font:500 8px var(--font);color:var(--mut)">122 kcal</div></div><span class="chev">›</span></div>
+            <div style="padding:8px 13px;border-top:1px solid var(--line)"><span style="font:700 9px var(--font);color:var(--accent)">＋ hinzufügen</span></div>
+          </div>
+
+          <!-- Mittag -->
+          <div class="card">
+            <div class="row pad" style="padding-bottom:9px;border-bottom:1px solid var(--line)"><span style="font:700 10.5px var(--font);color:var(--ink)">Mittag</span><span style="font:600 9px var(--font);color:var(--mut)">680 kcal</span></div>
+            <div class="row" style="padding:9px 13px"><div><div style="font:600 10px var(--font);color:var(--ink)">Hähnchen-Reis-Bowl</div><div style="font:500 8px var(--font);color:var(--mut)">680 kcal · ± 90 <span class="pill man" style="margin-left:2px">manuell</span></div></div><span class="chev">›</span></div>
+            <div style="padding:8px 13px;border-top:1px solid var(--line)"><span style="font:700 9px var(--font);color:var(--accent)">＋ hinzufügen</span></div>
+          </div>
+
+          <!-- Abend / Snack (leer) -->
+          <div class="card pad row"><span style="font:700 10.5px var(--font);color:var(--mut)">Abend</span><span style="font:700 9px var(--font);color:var(--accent)">＋ hinzufügen</span></div>
+          <div class="card pad row"><span style="font:700 10.5px var(--font);color:var(--mut)">Snack</span><span style="font:700 9px var(--font);color:var(--accent)">＋ hinzufügen</span></div>
+        </div>
+        <div class="fab">＋</div>
+        <div class="ph-nav">
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>Heute</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M4 19V5M9 19V9M14 19v-7M19 19v-4"/></svg>Training</div>
+          <div class="navi on"><svg viewBox="0 0 24 24"><path d="M5 3v8a3 3 0 006 0V3M8 11v10M16 3c-1.5 1-2 3-2 6s.5 5 2 6V3z"/></svg>Essen</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M20 8a4 4 0 00-8-1 4 4 0 00-8 1c0 5 8 10 8 10s8-5 8-10z"/></svg>Gesundheit</div>
+          <div class="navi"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Profil</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- E2 · ADD-SHEET -->
+    <div class="screen" id="6b">
+      <div class="scap"><a class="scid" href="#6b">E2</a><span class="sctxt">Hinzufügen</span><span class="scsub">— Bottom-Sheet, 3 Wege</span></div>
+      <div class="ph" style="height:720px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div style="flex:1;background:rgba(28,43,74,.28);display:flex;flex-direction:column;justify-content:flex-end">
+          <div style="background:var(--ph);border-radius:22px 22px 0 0;padding:14px 16px 20px;display:flex;flex-direction:column;gap:12px">
+            <div style="width:36px;height:4px;border-radius:2px;background:#d6dae3;align-self:center"></div>
+            <div class="row"><span style="font:700 13px var(--font);color:var(--ink)">Hinzufügen</span><span class="chev" style="font-size:15px">✕</span></div>
+            <!-- Ziel-Mahlzeit -->
+            <div class="seg"><span>Frühstück</span><span class="on">Mittag</span><span>Abend</span><span>Snack</span></div>
+            <!-- 3 Wege -->
+            <div style="display:flex;gap:8px">
+              <div class="card pad" style="flex:1;text-align:center;padding:12px 6px"><div style="width:26px;height:26px;margin:0 auto 6px;border-radius:8px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px">⌕</div><div style="font:700 9px var(--font);color:var(--ink)">Suchen</div></div>
+              <div class="card pad" style="flex:1;text-align:center;padding:12px 6px"><div style="width:26px;height:26px;margin:0 auto 6px;border-radius:8px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px">▤</div><div style="font:700 9px var(--font);color:var(--ink)">Barcode</div></div>
+              <div class="card pad" style="flex:1;text-align:center;padding:12px 6px"><div style="width:26px;height:26px;margin:0 auto 6px;border-radius:8px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px">✎</div><div style="font:700 9px var(--font);color:var(--ink)">Manuell</div></div>
+            </div>
+            <!-- Schnellzugriff -->
+            <div class="lbl" style="margin-top:2px">Zuletzt &amp; Favoriten</div>
+            <div class="card">
+              <div class="row" style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><span class="star on">★</span><div><div style="font:600 10px var(--font);color:var(--ink)">Skyr Natur</div><div style="font:500 8px var(--font);color:var(--mut)">63 kcal / 100 g</div></div></div><span style="font:700 14px var(--font);color:var(--accent)">＋</span></div>
+              <div class="row" style="padding:10px 12px;border-top:1px solid var(--line)"><div style="display:flex;align-items:center;gap:8px"><span class="star on">★</span><div><div style="font:600 10px var(--font);color:var(--ink)">Haferflocken</div><div style="font:500 8px var(--font);color:var(--mut)">372 kcal / 100 g</div></div></div><span style="font:700 14px var(--font);color:var(--accent)">＋</span></div>
+              <div class="row" style="padding:10px 12px;border-top:1px solid var(--line)"><div style="display:flex;align-items:center;gap:8px"><span class="star">☆</span><div><div style="font:600 10px var(--font);color:var(--ink)">Banane</div><div style="font:500 8px var(--font);color:var(--mut)">89 kcal / 100 g</div></div></div><span style="font:700 14px var(--font);color:var(--accent)">＋</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- E3 · SUCHE -->
+    <div class="screen" id="6c">
+      <div class="scap"><a class="scid" href="#6c">E3</a><span class="sctxt">Suchen</span><span class="scsub">— eigene DB + Open Food Facts</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><div style="display:flex;align-items:center;gap:9px"><span style="font:700 16px var(--font);color:var(--accent)">‹</span><span style="font:700 13px var(--font);color:var(--ink)">Suchen</span></div><span style="width:18px"></span></div>
+        <div class="ph-body">
+          <div class="fld" style="height:34px"><span style="color:var(--accent)">⌕</span><span style="font:600 10px var(--font);color:var(--ink)">haferflocken</span></div>
+          <div class="lbl">Deine Food-DB</div>
+          <div class="card">
+            <div class="row" style="padding:10px 12px"><div style="flex:1"><div style="font:600 10px var(--font);color:var(--ink)">Haferflocken kernig</div><div style="font:500 8px var(--font);color:var(--mut)">372 kcal · 13,5P 59C 7F / 100 g</div></div><span class="src man">eigene</span><span class="chev" style="margin-left:8px">›</span></div>
+          </div>
+          <div class="lbl">Open Food Facts</div>
+          <div class="card">
+            <div class="row" style="padding:10px 12px"><div style="flex:1"><div style="font:600 10px var(--font);color:var(--ink)">Kölln Haferflocken</div><div style="font:500 8px var(--font);color:var(--mut)">Kölln · 370 kcal / 100 g</div></div><span class="cdot" style="background:var(--good)"></span><span class="src off" style="margin-left:6px">OFF</span><span class="chev" style="margin-left:6px">›</span></div>
+            <div class="row" style="padding:10px 12px;border-top:1px solid var(--line)"><div style="flex:1"><div style="font:600 10px var(--font);color:var(--ink)">Bio Haferflocken Feinblatt</div><div style="font:500 8px var(--font);color:var(--mut)">dm · 376 kcal / 100 g</div></div><span class="cdot" style="background:var(--good)"></span><span class="src off" style="margin-left:6px">OFF</span><span class="chev" style="margin-left:6px">›</span></div>
+          </div>
+          <div style="font:500 8px var(--font);color:var(--mut2);padding:0 2px">Grüner Punkt = Nährwerte vollständig. OFF-Treffer wird beim Übernehmen in deine Food-DB gecacht (Confidence 0,9).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- E4 · MENGE -->
+    <div class="screen" id="6d">
+      <div class="scap"><a class="scid" href="#6d">E4</a><span class="sctxt">Menge wählen</span><span class="scsub">— live berechnet</span></div>
+      <div class="ph" style="height:600px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><div style="display:flex;align-items:center;gap:9px"><span style="font:700 16px var(--font);color:var(--accent)">‹</span><span style="font:700 13px var(--font);color:var(--ink)">Haferflocken</span></div><span class="star on">★</span></div>
+        <div class="ph-body">
+          <div style="font:500 9px var(--font);color:var(--mut)">372 kcal · 13,5P 59C 7F / 100 g</div>
+          <!-- Menge -->
+          <div class="lbl">Menge</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="fld" style="flex:1;height:38px;justify-content:space-between"><span style="font:700 14px var(--font)">80</span><span style="color:var(--mut)">g</span></div>
+            <div style="display:flex;gap:6px"><span class="pill" style="background:var(--soft);color:var(--accent);padding:7px 10px">1 Portion · 40 g</span></div>
+          </div>
+          <!-- Live-Ergebnis -->
+          <div class="card pad" style="background:var(--soft)">
+            <div class="row" style="align-items:baseline;margin-bottom:10px"><span class="lbl">Für 80 g</span><span class="kpi" style="font-size:20px;color:var(--accent)">298 <span class="unit">kcal</span></span></div>
+            <div style="display:flex;gap:16px">
+              <div><div style="font:600 7.5px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)">Protein</div><div style="font:700 11px var(--font);color:var(--ink)">10,8 g</div></div>
+              <div><div style="font:600 7.5px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)">Carbs</div><div style="font:700 11px var(--font);color:var(--ink)">47,2 g</div></div>
+              <div><div style="font:600 7.5px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)">Fett</div><div style="font:700 11px var(--font);color:var(--ink)">5,6 g</div></div>
+            </div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="height:40px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px var(--font);letter-spacing:.05em;text-transform:uppercase">Zu Frühstück hinzufügen</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note amber"><span class="k">Zwei Ebenen getrennt</span><b>Food-DB</b> = wiederverwendbare Lebensmittel (pro 100 g). <b>Meal-Log</b> = Tageseintrag, der ein Food referenziert × Menge. Werte werden beim Loggen <b>eingefroren</b> — spätere DB-Änderungen verzerren alte Logs nicht.</div>
+      <div class="note"><span class="k">Minimale Klicks</span>Add-Sheet zeigt zuerst <b>Zuletzt &amp; Favoriten</b> mit direktem ＋ — häufige Lebensmittel in einem Tap. Suche/Barcode/Manuell sind die Wege für Neues.</div>
+      <div class="note"><span class="k">Confidence sichtbar</span>OFF-Treffer 0,9, manuell 0,7. Grüner Punkt = vollständige Nährwerte; unvollständige werden markiert und zum Ergänzen angeboten.</div>
+      <div class="note"><span class="k">Menge = live</span>Gramm oder Standardportion; kcal + Makros rechnen sofort mit. Der Log-Eintrag trägt die eingefrorenen Werte.</div>
+    </div>
+  </div>
+
+  <!-- ════════ ROW 2 · MANUELL + FOOD-DB ════════ -->
+  <div class="dv-rowhd">Reihe 2 · Manuell anlegen &amp; Food-DB verwalten</div>
+  <div class="flow">
+
+    <!-- E5 · MANUELL -->
+    <div class="screen" id="6e">
+      <div class="scap"><a class="scid" href="#6e">E5</a><span class="sctxt">Manuell anlegen</span><span class="scsub">— pro 100 g</span></div>
+      <div class="ph" style="height:640px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><div style="display:flex;align-items:center;gap:9px"><span style="font:700 16px var(--font);color:var(--accent)">‹</span><span style="font:700 13px var(--font);color:var(--ink)">Neues Lebensmittel</span></div><span style="font:700 9px var(--font);color:var(--accent)">Sichern</span></div>
+        <div class="ph-body">
+          <div><div class="lbl" style="margin-bottom:5px">Name</div><div class="fld"><span style="color:var(--ink)">Hähnchen-Reis-Bowl</span></div></div>
+          <div><div class="lbl" style="margin-bottom:5px">Marke <span style="text-transform:none;letter-spacing:0;color:var(--mut2);font-weight:500">— optional</span></div><div class="fld"><span style="color:var(--mut2)">optional</span></div></div>
+          <div class="lbl" style="margin-top:2px">Nährwerte / 100 g</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="fld" style="justify-content:space-between"><span style="color:var(--mut)">kcal</span><span style="font:700 11px var(--font)">130</span></div>
+            <div class="fld" style="justify-content:space-between"><span style="color:var(--mut)">Protein</span><span style="font:700 11px var(--font)">9 g</span></div>
+            <div class="fld" style="justify-content:space-between"><span style="color:var(--mut)">Carbs</span><span style="font:700 11px var(--font)">18 g</span></div>
+            <div class="fld" style="justify-content:space-between"><span style="color:var(--mut)">Fett</span><span style="font:700 11px var(--font)">2 g</span></div>
+          </div>
+          <div><div class="lbl" style="margin-bottom:5px">Standardportion <span style="text-transform:none;letter-spacing:0;color:var(--mut2);font-weight:500">— optional</span></div><div class="fld" style="justify-content:space-between"><span style="font:700 11px var(--font)">350</span><span style="color:var(--mut)">g</span></div></div>
+          <div style="font:500 8px var(--font);color:var(--mut2);padding:0 2px">Wird als <code style="font-size:8px">source: manual</code>, Confidence 0,7 in deiner Food-DB gespeichert und ist danach überall wählbar.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- E6 · FOOD-DB -->
+    <div class="screen" id="6f">
+      <div class="scap"><a class="scid" href="#6f">E6</a><span class="sctxt">Food-DB</span><span class="scsub">— Verwaltung</span></div>
+      <div class="ph" style="height:640px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><span class="ph-title" style="font-size:15px">Lebensmittel</span><span style="font:700 9px var(--font);color:var(--accent)">＋ Neu</span></div>
+        <div class="ph-body">
+          <div class="fld" style="height:32px"><span style="color:var(--accent)">⌕</span><span style="color:var(--mut2)">Suchen …</span></div>
+          <div class="seg"><span class="on">Alle</span><span>Favoriten</span></div>
+          <div class="card">
+            <div class="row" style="padding:10px 12px"><span class="star on">★</span><div style="flex:1;margin-left:8px"><div style="font:600 10px var(--font);color:var(--ink)">Haferflocken kernig</div><div style="font:500 8px var(--font);color:var(--mut)">372 kcal / 100 g</div></div><span class="src man">eigene</span><span class="chev" style="margin-left:6px">›</span></div>
+            <div class="row" style="padding:10px 12px;border-top:1px solid var(--line)"><span class="star on">★</span><div style="flex:1;margin-left:8px"><div style="font:600 10px var(--font);color:var(--ink)">Skyr Natur</div><div style="font:500 8px var(--font);color:var(--mut)">63 kcal / 100 g</div></div><span class="src off">OFF</span><span class="chev" style="margin-left:6px">›</span></div>
+            <div class="row" style="padding:10px 12px;border-top:1px solid var(--line)"><span class="star">☆</span><div style="flex:1;margin-left:8px"><div style="font:600 10px var(--font);color:var(--ink)">Kölln Haferflocken</div><div style="font:500 8px var(--font);color:var(--mut)">370 kcal / 100 g</div></div><span class="src off">OFF</span><span class="chev" style="margin-left:6px">›</span></div>
+            <div class="row" style="padding:10px 12px;border-top:1px solid var(--line)"><span class="star">☆</span><div style="flex:1;margin-left:8px"><div style="font:600 10px var(--font);color:var(--ink)">Hähnchen-Reis-Bowl</div><div style="font:500 8px var(--font);color:var(--mut)">130 kcal / 100 g</div></div><span class="src man">eigene</span><span class="chev" style="margin-left:6px">›</span></div>
+          </div>
+          <div style="font:500 8px var(--font);color:var(--mut2);padding:0 2px">Tap öffnet Bearbeiten (Nährwerte, Portion, Favorit). Gelöschte Foods bleiben in alten Logs erhalten (eingefrorene Werte).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- E7 · BARCODE -->
+    <div class="screen" id="6g">
+      <div class="scap"><a class="scid" href="#6g">E7</a><span class="sctxt">Barcode</span><span class="scsub">— Scan</span></div>
+      <div class="ph" style="width:240px;height:520px">
+        <div class="ph-status"><span>9:41</span><span>▮▮▮ ▮</span></div>
+        <div class="ph-hd"><div style="display:flex;align-items:center;gap:8px"><span style="font:700 15px var(--font);color:var(--accent)">‹</span><span style="font:700 12px var(--font);color:var(--ink)">Barcode scannen</span></div><span style="width:14px"></span></div>
+        <div class="ph-body" style="padding:0">
+          <div style="flex:1;background:#1C2B4A;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative">
+            <div style="width:150px;height:96px;border:2px solid rgba(255,255,255,.7);border-radius:10px;position:relative"><div style="position:absolute;left:8px;right:8px;top:50%;height:2px;background:#7ee0a6"></div></div>
+            <div style="font:600 9px var(--font);color:rgba(255,255,255,.7);text-align:center;padding:0 20px">Barcode ins Feld halten</div>
+          </div>
+          <div class="pad" style="text-align:center"><span style="font:600 9px var(--font);color:var(--mut)">Kein Scanner? </span><span style="font:700 9px var(--font);color:var(--accent)">Nummer eingeben</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note amber"><span class="k">Offline-first</span>Phase 1 = manuelle Food-DB (voll offline, kein Key). Phase 2 = Open Food Facts per Barcode/Suche, Treffer wird gecacht → danach offline. Beide fügen sich ins selbe <code>{best_estimate, confidence, source}</code>-Modell.</div>
+      <div class="note"><span class="k">Barcode im Browser</span>native <code>BarcodeDetector</code> (Android-Chrome), Fallback JS-Lib. Manuelle Nummer-Eingabe als Rückfall. Unvollständige Produkte → Nutzer ergänzt Nährwerte.</div>
+      <div class="note"><span class="k">Löschen ist sicher</span>Weil Log-Einträge die Werte eingefroren speichern, bricht das Löschen eines Food-DB-Eintrags keine Vergangenheit.</div>
+    </div>
+  </div>
+
+  <p class="dv-next">Sag mir z.B.: „<a href="#6a">E1</a> Tagessumme als Ring statt Balken" · „<a href="#6b">E2</a> Mahlzeit-Auswahl weglassen, aus Kontext ableiten" · „<a href="#6d">E4</a> Portions-Chips wichtiger" · „<a href="#6f">E6</a> Food-DB reicht so" · oder „passt — Backend meals/foodDb + E1/E2 bauen".</p>
+</section>
+</x-dc>
+</body>
+</html>

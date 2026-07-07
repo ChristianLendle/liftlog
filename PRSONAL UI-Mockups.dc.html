@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  html, body { margin: 0; padding: 0; background: #F0F2F7; }
+  body { -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+</style>
+</helmet>
+
+<div style="background:#F0F2F7; min-height:100vh; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#1C2B4A; padding:48px 24px 80px;">
+  <div style="max-width:940px; margin:0 auto; display:flex; flex-direction:column; gap:18px;">
+
+    <!-- HEADER -->
+    <div style="background:#FFFFFF; border:1px solid #DDE2EE; border-radius:8px; padding:30px 34px;">
+      <div style="display:flex; align-items:center; gap:11px; margin-bottom:22px;">
+        <svg width="28" height="28" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="48" cy="48" r="36" fill="none" stroke="#2E4A7A" stroke-width="6"/>
+          <circle cx="48" cy="48" r="23" fill="none" stroke="#2E4A7A" stroke-width="2" opacity="0.35"/>
+          <circle cx="48" cy="48" r="10" fill="none" stroke="#2E4A7A" stroke-width="1.5" opacity="0.15"/>
+          <circle cx="48" cy="48" r="4" fill="#2E4A7A"/>
+        </svg>
+        <span style="font-size:1.2rem; font-weight:700; letter-spacing:0.08em;">PRSON</span>
+        <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; border:2px solid #2E4A7A;"><span style="font-weight:700; font-size:8px; color:#2E4A7A; letter-spacing:0.05em;">AL</span></span>
+      </div>
+      <div style="font-size:0.6rem; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:#A8B4CC; margin-bottom:10px;">UI-Spur · Vorher / Nachher</div>
+      <h1 style="font-size:1.8rem; font-weight:700; letter-spacing:-0.02em; line-height:1.15; margin:0 0 12px;">Wie das neue UI aussieht</h1>
+      <p style="font-size:0.92rem; line-height:1.6; color:#6070A0; max-width:600px; margin:0;">Fünf Schlüssel-Komponenten links im aktuellen Zustand, rechts im Zielzustand. Die <strong style="color:#1C2B4A; font-weight:600;">Nachher-Spalte ist mit exakt dem CSS aus dem Review gebaut</strong> — Claude Code kann die Werte 1:1 übernehmen. Die graue Fläche entspricht dem App-Hintergrund, damit Tiefe und Schatten sichtbar werden.</p>
+    </div>
+
+    <!-- ════════ 1 · DASHBOARD-KACHELN ════════ -->
+    <div style="background:#FFFFFF; border:1px solid #DDE2EE; border-radius:8px; padding:26px 30px;">
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:6px;">
+        <span style="font-size:0.95rem; font-weight:700;">01 · Dashboard-Kacheln</span>
+        <span style="font-size:0.74rem; color:#A8B4CC;">Tiefe + lesbarere Labels + Delta als Pill</span>
+      </div>
+      <div style="display:flex; gap:20px; margin-top:18px; flex-wrap:wrap;">
+
+        <!-- VORHER -->
+        <sc-if value="{{ showBefore }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1; min-width:280px;">
+          <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#A8B4CC; margin-bottom:10px;">Vorher</div>
+          <div style="background:#F0F2F7; border-radius:10px; padding:20px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div style="background:#fff; border:1px solid #DDE2EE; border-radius:8px; padding:16px 18px;">
+                <div style="font-size:2rem; font-weight:700; color:#2E4A7A; letter-spacing:-0.04em; line-height:1;">11</div>
+                <div style="font-size:0.53rem; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:#A8B4CC; margin-top:5px;">Sessions diesen Monat</div>
+                <div style="font-size:0.68rem; font-weight:600; color:#ff6b35; margin-top:8px;">↓ -2 vs. letzten Monat</div>
+              </div>
+              <div style="background:#fff; border:1px solid rgba(212,134,10,.25); border-radius:8px; padding:16px 18px;">
+                <div style="font-size:2rem; font-weight:700; color:#D4860A; letter-spacing:-0.04em; line-height:1;">4</div>
+                <div style="font-size:0.53rem; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:#A8B4CC; margin-top:5px;">Wochen-Streak 🔥</div>
+                <div style="font-size:0.68rem; font-weight:600; color:#A8B4CC; margin-top:8px;">min. 3/Woche</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- NACHHER -->
+        <div style="flex:1; min-width:280px;">
+          <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#1E7A4A; margin-bottom:10px;">● Nachher</div>
+          <div style="background:#F0F2F7; border-radius:10px; padding:20px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div style="background:#fff; border:1px solid #E7EBF3; border-radius:10px; padding:18px 20px; box-shadow:0 1px 2px rgba(28,43,74,.04), 0 6px 16px rgba(28,43,74,.05);">
+                <div style="font-size:2.1rem; font-weight:700; color:#2E4A7A; letter-spacing:-0.04em; line-height:1;">11</div>
+                <div style="font-size:0.56rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#6070A0; margin-top:6px;">Sessions diesen Monat</div>
+                <div style="display:inline-flex; align-items:center; gap:3px; font-size:0.64rem; font-weight:700; color:#d9542b; background:rgba(255,107,53,.12); border-radius:999px; padding:3px 8px; margin-top:10px;">↓ 2 vs. Vormonat</div>
+              </div>
+              <div style="background:#fff; border:1px solid #E7EBF3; border-radius:10px; padding:18px 20px; box-shadow:0 1px 2px rgba(28,43,74,.04), 0 6px 16px rgba(168,116,10,.07); border-top:2px solid #D4860A;">
+                <div style="font-size:2.1rem; font-weight:700; color:#D4860A; letter-spacing:-0.04em; line-height:1;">4</div>
+                <div style="font-size:0.56rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#6070A0; margin-top:6px;">Wochen-Streak 🔥</div>
+                <div style="display:inline-flex; align-items:center; gap:3px; font-size:0.64rem; font-weight:700; color:#A8740A; background:rgba(212,134,10,.12); border-radius:999px; padding:3px 8px; margin-top:10px;">min. 3 / Woche</div>
+              </div>
+            </div>
+          </div>
+          <sc-if value="{{ showSpecs }}" hint-placeholder-val="{{ true }}">
+          <div style="font-family:ui-monospace,Menlo,monospace; font-size:0.66rem; line-height:1.55; color:#6070A0; margin-top:10px;">border:#E7EBF3 · radius:10px · box-shadow:0 1px 2px/.04, 0 6px 16px/.05 · label:#6070A0 .08em · delta→pill</div>
+          </sc-if>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════ 2 · SESSION-KARTEN ════════ -->
+    <div style="background:#FFFFFF; border:1px solid #DDE2EE; border-radius:8px; padding:26px 30px;">
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:6px;">
+        <span style="font-size:0.95rem; font-weight:700;">02 · Session-Karten</span>
+        <span style="font-size:0.74rem; color:#A8B4CC;">Kategorie-Farbe als Akzent · Meta ohne Umbruch · Hover-Lift</span>
+      </div>
+      <div style="display:flex; gap:20px; margin-top:18px; flex-wrap:wrap;">
+
+        <!-- VORHER -->
+        <sc-if value="{{ showBefore }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1; min-width:280px;">
+          <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#A8B4CC; margin-bottom:10px;">Vorher</div>
+          <div style="background:#F0F2F7; border-radius:10px; padding:20px; display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #DDE2EE; border-radius:8px; padding:10px 12px;">
+              <div style="width:5px; height:5px; border-radius:50%; background:#D4860A; flex-shrink:0;"></div>
+              <div style="flex:1; min-width:0;"><div style="font-size:0.82rem; font-weight:600;">20.06.26</div><div style="font-size:0.67rem; color:#A8B4CC; margin-top:1px;">Cardio · Modern Coach</div></div>
+              <div style="font-size:0.67rem; color:#6070A0; text-align:right; width:38px;">6,2 km · 49min</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #DDE2EE; border-radius:8px; padding:10px 12px;">
+              <div style="width:5px; height:5px; border-radius:50%; background:#4a7abf; flex-shrink:0;"></div>
+              <div style="flex:1; min-width:0;"><div style="font-size:0.82rem; font-weight:600;">22.06.26</div><div style="font-size:0.67rem; color:#A8B4CC; margin-top:1px;">Pull · Modern Coach</div></div>
+              <div style="font-size:0.67rem; color:#6070A0; text-align:right; width:38px;">3 Übungen</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #DDE2EE; border-radius:8px; padding:10px 12px;">
+              <div style="width:5px; height:5px; border-radius:50%; background:#2E4A7A; flex-shrink:0;"></div>
+              <div style="flex:1; min-width:0;"><div style="font-size:0.82rem; font-weight:600;">17.06.26</div><div style="font-size:0.67rem; color:#A8B4CC; margin-top:1px;">Push · Modern Coach</div></div>
+              <div style="font-size:0.67rem; color:#6070A0; text-align:right; width:38px;">3 Übungen</div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- NACHHER -->
+        <div style="flex:1; min-width:280px;">
+          <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#1E7A4A; margin-bottom:10px;">● Nachher</div>
+          <div style="background:#F0F2F7; border-radius:10px; padding:20px; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #E7EBF3; border-left:3px solid #D4860A; border-radius:10px; padding:12px 14px; box-shadow:0 1px 2px rgba(28,43,74,.04), 0 5px 14px rgba(28,43,74,.05); transition:transform .12s, box-shadow .12s;" style-hover="transform:translateY(-1px); box-shadow:0 2px 4px rgba(28,43,74,.06), 0 10px 24px rgba(28,43,74,.10);">
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:0.85rem; font-weight:600;">20.06.26</span><span style="font-size:0.55rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#A8740A; background:rgba(212,134,10,.12); border-radius:4px; padding:2px 6px;">Cardio</span></div>
+                <div style="font-size:0.7rem; color:#A8B4CC; margin-top:2px;">Modern Coach Deggendorf</div>
+              </div>
+              <div style="text-align:right; white-space:nowrap; flex-shrink:0;"><span style="font-size:0.92rem; font-weight:700; color:#1C2B4A;">6,2</span><span style="font-size:0.66rem; color:#A8B4CC;"> km · 49 min</span></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #E7EBF3; border-left:3px solid #4a7abf; border-radius:10px; padding:12px 14px; box-shadow:0 1px 2px rgba(28,43,74,.04), 0 5px 14px rgba(28,43,74,.05); transition:transform .12s, box-shadow .12s;" style-hover="transform:translateY(-1px); box-shadow:0 2px 4px rgba(28,43,74,.06), 0 10px 24px rgba(28,43,74,.10);">
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:0.85rem; font-weight:600;">22.06.26</span><span style="font-size:0.55rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#3a64a0; background:rgba(74,122,191,.14); border-radius:4px; padding:2px 6px;">Pull</span></div>
+                <div style="font-size:0.7rem; color:#A8B4CC; margin-top:2px;">Modern Coach Deggendorf</div>
+              </div>
+              <div style="text-align:right; white-space:nowrap; flex-shrink:0;"><span style="font-size:0.92rem; font-weight:700; color:#1C2B4A;">3</span><span style="font-size:0.66rem; color:#A8B4CC;"> Übungen</span></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #E7EBF3; border-left:3px solid #2E4A7A; border-radius:10px; padding:12px 14px; box-shadow:0 1px 2px rgba(28,43,74,.04), 0 5px 14px rgba(28,43,74,.05); transition:transform .12s, box-shadow .12s;" style-hover="transform:translateY(-1px); box-shadow:0 2px 4px rgba(28,43,74,.06), 0 10px 24px rgba(28,43,74,.10);">
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:0.85rem; font-weight:600;">17.06.26</span><span style="font-size:0.55rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#2E4A7A; background:rgba(46,74,122,.10); border-radius:4px; padding:2px 6px;">Push</span></div>
+                <div style="font-size:0.7rem; color:#A8B4CC; margin-top:2px;">Modern Coach Deggendorf</div>
+              </div>
+              <div style="text-align:right; white-space:nowrap; flex-shrink:0;"><span style="font-size:0.92rem; font-weight:700; color:#1C2B4A;">3</span><span style="font-size:0.66rem; color:#A8B4CC;"> Übungen</span></div>
+            </div>
+          </div>
+          <sc-if value="{{ showSpecs }}" hint-placeholder-val="{{ true }}">
+          <div style="font-family:ui-monospace,Menlo,monospace; font-size:0.66rem; line-height:1.55; color:#6070A0; margin-top:10px;">border-left:3px solid typeColor(s) · Kategorie-Chip · .s-right white-space:nowrap · :hover translateY(-1px)</div>
+          </sc-if>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════ 3 · BUTTON-HIERARCHIE ════════ -->
+    <div style="background:#FFFFFF; border:1px solid #DDE2EE; border-radius:8px; padding:26px 30px;">
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:6px;">
+        <span style="font-size:0.95rem; font-weight:700;">03 · Button-Hierarchie</span>
+        <span style="font-size:0.74rem; color:#A8B4CC;">Primär / Sekundär / Ghost klar unterscheidbar</span>
+      </div>
+      <div style="display:flex; gap:20px; margin-top:18px; flex-wrap:wrap;">
+
+        <!-- VORHER -->
+        <sc-if value="{{ showBefore }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1; min-width:280px;">
+          <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#A8B4CC; margin-bottom:10px;">Vorher</div>
+          <div style="background:#F0F2F7; border-radius:10px; padding:24px 20px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button style="background:none; border:1px solid #DDE2EE; color:#A8B4CC; border-radius:5px; padding:6px 12px; font-size:0.68rem; font-weight:500; letter-spacing:.06em; text-transform:uppercase; font-family:inherit;">Bearbeiten</button>
+            <button style="background:none; border:1px solid #DDE2EE; color:#A8B4CC; border-radius:5px; padding:6px 12px; font-size:0.68rem; font-weight:500; letter-spacing:.06em; text-transform:uppercase; font-family:inherit;">Abbrechen</button>
+            <button style="background:#2E4A7A; color:#fff; border:none; border-radius:5px; padding:8px 16px; font-size:0.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-family:inherit;">Speichern</button>
+          </div>
+          <sc-if value="{{ showSpecs }}" hint-placeholder-val="{{ true }}">
+          <div style="font-family:ui-monospace,Menlo,monospace; font-size:0.66rem; line-height:1.55; color:#A8B4CC; margin-top:10px;">Outline-Buttons in #A8B4CC → wirken deaktiviert · uneinheitliche Höhe</div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <!-- NACHHER -->
+        <div style="flex:1; min-width:280px;">
+          <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#1E7A4A; margin-bottom:10px;">● Nachher</div>
+          <div style="background:#F0F2F7; border-radius:10px; padding:24px 20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <button style="height:36px; background:#2E4A7A; color:#fff; border:none; border-radius:6px; padding:0 16px; font-size:0.7rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; font-family:inherit; box-shadow:0 1px 2px rgba(46,74,122,.25);">Speichern</button>
+            <button style="height:36px; background:#fff; color:#2E4A7A; border:1px solid #C8D0E0; border-radius:6px; padding:0 16px; font-size:0.7rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; font-family:inherit;">Bearbeiten</button>
+            <button style="height:36px; background:none; color:#2E4A7A; border:none; border-radius:6px; padding:0 12px; font-size:0.7rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; font-family:inherit;">Abbrechen</button>
+          </div>
+          <sc-if value="{{ showSpecs }}" hint-placeholder-val="{{ true }}">
+          <div style="font-family:ui-monospace,Menlo,monospace; font-size:0.66rem; line-height:1.55; color:#6070A0; margin-top:10px;">.btn-fill (Primär) · .btn outline #C8D0E0/#2E4A7A (Sekundär) · .btn-ghost text (Tertiär) · height:36px</div>
+          </sc-if>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════ 4 · LEERZUSTAND ════════ -->
+    <div style="background:#FFFFFF; border:1px solid #DDE2EE; border-radius:8px; padding:26px 30px;">
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:6px;">
+        <span style="font-size:0.95rem; font-weight:700;">04 · Leerzustand</span>
+        <span style="font-size:0.74rem; color:#A8B4CC;">Vom toten Kasten zum hilfreichen nächsten Schritt</span>
+      </div>
+      <div style="display:flex; gap:20px; margin-top:18px; flex-wrap:wrap;">
+
+        <!-- VORHER -->
+        <sc-if value="{{ showBefore }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1; min-width:280px;">
+          <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#A8B4CC; margin-bottom:10px;">Vorher</div>
+          <div style="background:#F0F2F7; border-radius:10px; padding:20px;">
+            <div style="height:150px; display:flex; align-items:center; justify-content:center; border:1px dashed #DDE2EE; border-radius:8px; color:#6070A0; font-size:0.72rem; letter-spacing:.08em; text-transform:uppercase; background:#fff;">Übung auswählen</div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- NACHHER -->
+        <div style="flex:1; min-width:280px;">
+          <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#1E7A4A; margin-bottom:10px;">● Nachher</div>
+          <div style="background:#F0F2F7; border-radius:10px; padding:20px;">
+            <div style="height:150px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border-radius:10px; background:#FAFBFD; border:1px solid #EEF1F7;">
+              <svg width="32" height="32" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="opacity:.5; margin-bottom:4px;">
+                <circle cx="48" cy="48" r="36" fill="none" stroke="#A8B4CC" stroke-width="6"/>
+                <circle cx="48" cy="48" r="23" fill="none" stroke="#A8B4CC" stroke-width="2" opacity="0.5"/>
+                <circle cx="48" cy="48" r="4" fill="#A8B4CC"/>
+              </svg>
+              <div style="font-size:0.82rem; font-weight:600; color:#1C2B4A;">Noch keine Auswertung</div>
+              <div style="font-size:0.72rem; color:#A8B4CC;">Wähle eine Übung, um deinen Verlauf zu sehen.</div>
+              <button style="margin-top:8px; background:none; color:#2E4A7A; border:none; font-size:0.7rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; font-family:inherit; cursor:pointer;">Übung wählen →</button>
+            </div>
+          </div>
+          <sc-if value="{{ showSpecs }}" hint-placeholder-val="{{ true }}">
+          <div style="font-family:ui-monospace,Menlo,monospace; font-size:0.66rem; line-height:1.55; color:#6070A0; margin-top:10px;">.chart-empty: bg #FAFBFD · Mark-Icon (--muted2) · Titel + Untertitel + Ghost-CTA</div>
+          </sc-if>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════ 5 · TYPOGRAFIE ════════ -->
+    <div style="background:#FFFFFF; border:1px solid #DDE2EE; border-radius:8px; padding:26px 30px;">
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:6px;">
+        <span style="font-size:0.95rem; font-weight:700;">05 · Typografie &amp; Sektionstitel</span>
+        <span style="font-size:0.74rem; color:#A8B4CC;">Uppercase nur als Overline · Titel in Sentence-Case</span>
+      </div>
+      <div style="display:flex; gap:20px; margin-top:18px; flex-wrap:wrap;">
+
+        <!-- VORHER -->
+        <sc-if value="{{ showBefore }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1; min-width:280px;">
+          <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#A8B4CC; margin-bottom:10px;">Vorher</div>
+          <div style="background:#F0F2F7; border-radius:10px; padding:24px;">
+            <div style="background:#fff; border:1px solid #DDE2EE; border-radius:8px; padding:20px;">
+              <div style="font-size:0.57rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:#2E4A7A; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #DDE2EE;">Personal Records</div>
+              <div style="font-size:0.6rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#A8B4CC; margin-bottom:6px;">Bankdrücken</div>
+              <div style="font-size:1.4rem; font-weight:800; color:#2E4A7A;">70,6 kg</div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- NACHHER -->
+        <div style="flex:1; min-width:280px;">
+          <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#1E7A4A; margin-bottom:10px;">● Nachher</div>
+          <div style="background:#F0F2F7; border-radius:10px; padding:24px;">
+            <div style="background:#fff; border:1px solid #E7EBF3; border-radius:10px; padding:20px; box-shadow:0 1px 2px rgba(28,43,74,.04), 0 6px 16px rgba(28,43,74,.05);">
+              <div style="font-size:0.55rem; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:#A8B4CC; margin-bottom:3px;">Übersicht</div>
+              <div style="font-size:1.05rem; font-weight:600; letter-spacing:-0.01em; color:#1C2B4A; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #EEF1F7;">Personal Records</div>
+              <div style="font-size:0.7rem; font-weight:500; color:#6070A0; margin-bottom:4px;">Bankdrücken</div>
+              <div style="font-size:1.5rem; font-weight:700; color:#2E4A7A; letter-spacing:-0.02em;">70,6 <span style="font-size:0.9rem; font-weight:600; color:#A8B4CC;">kg</span></div>
+            </div>
+          </div>
+          <sc-if value="{{ showSpecs }}" hint-placeholder-val="{{ true }}">
+          <div style="font-family:ui-monospace,Menlo,monospace; font-size:0.66rem; line-height:1.55; color:#6070A0; margin-top:10px;">Overline .16em + Titel 1.05rem/600 sentence-case · Einheit kleiner & gedimmt</div>
+          </sc-if>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="text-align:center; padding:24px 0 0; font-size:0.72rem; color:#A8B4CC; line-height:1.7;">
+      Die Nachher-Spalte nutzt ausschließlich die Farben &amp; Tokens deiner App — keine neuen erfunden.<br>Tipp: Über die Tweaks lässt sich die Vorher-Spalte ausblenden, um nur den Zielzustand zu präsentieren.
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 960, &quot;height&quot;: 1500 },
+  &quot;showBefore&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; },
+  &quot;showSpecs&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; }
+}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      showBefore: this.props.showBefore ?? true,
+      showSpecs:  this.props.showSpecs ?? true,
+    };
+  }
+}
+</script>
+</body>
+</html>

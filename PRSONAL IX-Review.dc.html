@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  html, body { margin: 0; padding: 0; background: #F0F2F7; }
+  body { -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+</style>
+</helmet>
+
+<div style="background:#F0F2F7; min-height:100vh; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#1C2B4A; padding:48px 24px 80px;">
+  <div style="max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:18px;">
+
+    <!-- ── HEADER ── -->
+    <div style="background:#FFFFFF; border:1px solid #DDE2EE; border-radius:8px; padding:32px 34px;">
+      <div style="display:flex; align-items:center; gap:11px; margin-bottom:24px;">
+        <svg width="30" height="30" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="48" cy="48" r="36" fill="none" stroke="#2E4A7A" stroke-width="6"/>
+          <circle cx="48" cy="48" r="23" fill="none" stroke="#2E4A7A" stroke-width="2" opacity="0.35"/>
+          <circle cx="48" cy="48" r="10" fill="none" stroke="#2E4A7A" stroke-width="1.5" opacity="0.15"/>
+          <circle cx="48" cy="48" r="4" fill="#2E4A7A"/>
+        </svg>
+        <span style="font-size:1.3rem; font-weight:700; letter-spacing:0.08em;">PRSON</span>
+        <span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; border:2px solid #2E4A7A;"><span style="font-weight:700; font-size:9px; color:#2E4A7A; letter-spacing:0.05em;">AL</span></span>
+      </div>
+      <div style="font-size:0.6rem; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:#A8B4CC; margin-bottom:10px;">UI · UX Review</div>
+      <h1 style="font-size:2rem; font-weight:700; letter-spacing:-0.02em; line-height:1.15; margin:0 0 12px;">Oberfläche &amp; Bedienung verfeinern</h1>
+      <p style="font-size:0.95rem; line-height:1.6; color:#6070A0; max-width:580px; margin:0 0 22px;">Achtzehn umsetzungsfertige Verbesserungen — eine <strong style="color:#1C2B4A; font-weight:600;">UX-Spur</strong> (Bedienung, Stufen 1–3) und eine <strong style="color:#1C2B4A; font-weight:600;">UI-Spur</strong> (visuelle Gestaltung). Jede ist gegen deinen echten Code geprüft, mit exakter Datei-, Funktions- oder CSS-Stelle, damit Claude Code sie ohne Rätselraten umsetzen kann.</p>
+      <div style="display:flex; gap:28px; padding-top:20px; border-top:1px solid #DDE2EE;">
+        <div><div style="font-size:1.5rem; font-weight:700; color:#2E4A7A; letter-spacing:-0.03em; line-height:1;">18</div><div style="font-size:0.55rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:#A8B4CC; margin-top:5px;">Vorschläge</div></div>
+        <div><div style="font-size:1.5rem; font-weight:700; color:#2E4A7A; letter-spacing:-0.03em; line-height:1;">4</div><div style="font-size:0.55rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:#A8B4CC; margin-top:5px;">Gruppen</div></div>
+        <div><div style="font-size:1.5rem; font-weight:700; color:#1E7A4A; letter-spacing:-0.03em; line-height:1;">10×S</div><div style="font-size:0.55rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:#A8B4CC; margin-top:5px;">Quick Wins</div></div>
+      </div>
+    </div>
+
+    <!-- ── HOW TO READ ── -->
+    <div style="background:#FFFFFF; border:1px solid #DDE2EE; border-radius:8px; padding:26px 30px;">
+      <div style="font-size:0.6rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:#2E4A7A; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #DDE2EE;">So liest du dieses Dokument</div>
+      <div style="display:flex; flex-direction:column; gap:9px; font-size:0.85rem; line-height:1.6; color:#1C2B4A;">
+        <div style="display:flex; gap:10px;"><span style="color:#A8B4CC; font-weight:700; min-width:64px; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase; padding-top:2px;">Problem</span><span style="color:#6070A0;">Was heute reibt — beschrieben am konkreten Screen.</span></div>
+        <div style="display:flex; gap:10px;"><span style="color:#A8B4CC; font-weight:700; min-width:64px; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase; padding-top:2px;">Lösung</span><span style="color:#6070A0;">Die Verbesserung in einem Satz — was sich für die Nutzung ändert.</span></div>
+        <div style="display:flex; gap:10px;"><span style="color:#2E4A7A; font-weight:700; min-width:64px; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase; padding-top:2px;">Für CC</span><span style="color:#6070A0;">Die exakte Stelle im Code für Claude Code — Funktion, Element-ID, CSS-Regel.</span></div>
+      </div>
+      <div style="margin-top:20px; padding:14px 16px; background:#F0F2F7; border-radius:8px; border-left:3px solid #1E7A4A;">
+        <div style="font-size:0.62rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#1E7A4A; margin-bottom:6px;">Bewusst nicht aufgeführt</div>
+        <div style="font-size:0.82rem; line-height:1.6; color:#6070A0;">Funktioniert bereits und wurde nicht angetastet: der Kalender springt korrekt auf den aktuellen Monat, das Log-Datum ist auf heute vorbelegt, und Trainingspläne laden ihre Übungen automatisch beim Wählen von Kategorie + Standort.</div>
+      </div>
+    </div>
+
+    <!-- ── ROWS (tier headers + cards) ── -->
+    <sc-for list="{{ rows }}" as="row" hint-placeholder-count="8">
+
+      <!-- tier header -->
+      <sc-if value="{{ row.isTier }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:flex-end; gap:14px; margin-top:26px; margin-bottom:2px; padding:0 4px;">
+          <div style="width:34px; height:34px; border-radius:8px; background:{{ row.color }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span style="color:#fff; font-size:0.95rem; font-weight:800;">{{ row.stage }}</span>
+          </div>
+          <div>
+            <div style="font-size:1.05rem; font-weight:700; letter-spacing:-0.01em; line-height:1.2;">{{ row.tierTitle }}</div>
+            <div style="font-size:0.74rem; color:#A8B4CC; margin-top:2px;">{{ row.tierSub }}</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- suggestion card -->
+      <sc-if value="{{ row.isItem }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#FFFFFF; border:1px solid #DDE2EE; border-left:3px solid {{ row.color }}; border-radius:8px; padding:22px 26px;">
+
+          <div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:16px;">
+            <span style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; border-radius:7px; background:{{ row.color }}; color:#fff; font-size:0.82rem; font-weight:800; font-variant-numeric:tabular-nums; flex-shrink:0;">{{ row.n }}</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:1.02rem; font-weight:700; letter-spacing:-0.01em; line-height:1.3;">{{ row.title }}</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:9px;">
+                <span style="font-size:0.6rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#6070A0; background:#F0F2F7; border-radius:4px; padding:3px 8px;">{{ row.screen }}</span>
+                <sc-if value="{{ showMeta }}" hint-placeholder-val="{{ true }}">
+                  <span style="display:inline-flex; gap:5px; align-items:center; font-size:0.6rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; border:1px solid #DDE2EE; border-radius:4px; padding:3px 8px;"><span style="color:#A8B4CC;">Impact</span><span style="color:#1C2B4A;">{{ row.impact }}</span></span>
+                  <span style="display:inline-flex; gap:5px; align-items:center; font-size:0.6rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; border:1px solid #DDE2EE; border-radius:4px; padding:3px 8px;"><span style="color:#A8B4CC;">Aufwand</span><span style="color:#1C2B4A;">{{ row.effort }}</span></span>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; gap:12px;">
+              <span style="color:#A8B4CC; font-weight:700; min-width:52px; font-size:0.62rem; letter-spacing:0.1em; text-transform:uppercase; padding-top:3px; flex-shrink:0;">Problem</span>
+              <p style="margin:0; font-size:0.88rem; line-height:1.6; color:#6070A0; text-wrap:pretty;">{{ row.problem }}</p>
+            </div>
+            <div style="display:flex; gap:12px;">
+              <span style="color:#2E4A7A; font-weight:700; min-width:52px; font-size:0.62rem; letter-spacing:0.1em; text-transform:uppercase; padding-top:3px; flex-shrink:0;">Lösung</span>
+              <p style="margin:0; font-size:0.88rem; line-height:1.6; color:#1C2B4A; text-wrap:pretty;">{{ row.solution }}</p>
+            </div>
+          </div>
+
+          <sc-if value="{{ showCode }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:16px; background:#1C2B4A; border-radius:8px; overflow:hidden;">
+              <div style="font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#A8B4CC; padding:11px 16px 9px; border-bottom:1px solid rgba(255,255,255,0.08);">▸ Für Claude Code</div>
+              <pre style="margin:0; padding:14px 16px; font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:0.74rem; line-height:1.65; color:#D4E0F5; white-space:pre-wrap; word-break:break-word;">{{ row.code }}</pre>
+            </div>
+          </sc-if>
+
+        </div>
+      </sc-if>
+
+    </sc-for>
+
+    <!-- ── FOOTER ── -->
+    <div style="text-align:center; padding:24px 0 0; font-size:0.72rem; color:#A8B4CC; line-height:1.7;">
+      Reihenfolge = Vorschlag für die Umsetzung: erst Stufe 1 (kleiner Aufwand, sofort spürbar), dann Komfort, dann Politur.<br>Jeder „Für Claude Code"-Block verweist auf reale Stellen in <span style="font-family:ui-monospace,Menlo,monospace; color:#6070A0;">index.html</span>.
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 960, &quot;height&quot;: 1500 },
+  &quot;showCode&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; },
+  &quot;showMeta&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; }
+}">
+class Component extends DCLogic {
+  renderVals() {
+    const NAVY = '#2E4A7A', BLUE = '#4a7abf', SLATE = '#6070A0', GOLD = '#A8740A';
+
+    const tier1 = [
+      {
+        n: '01', title: 'Datums-Picker im hellen Theme sichtbar machen',
+        screen: 'Log · Fortschritt · Körper', impact: 'Hoch', effort: 'S',
+        problem: 'Die Datumsfelder erben color-scheme: dark, obwohl die App ein helles Theme ist. Das native Kalender-Icon und der Picker werden dunkel gerendert und sind auf dem hellen Feld kaum zu erkennen.',
+        solution: 'color-scheme auf light stellen — der native Picker passt sich der hellen Oberfläche an, das Icon wird wieder klar sichtbar. Einzeiler, keine Layout-Folgen.',
+        code: 'CSS-Regel im <style>-Block:\n\n  input[type="date"] { color-scheme: dark; }\n\nÄndern zu:\n\n  input[type="date"] { color-scheme: light; }'
+      },
+      {
+        n: '02', title: 'Buttons im Log-Modal nicht umbrechen lassen',
+        screen: 'Training loggen', impact: 'Mittel', effort: 'S',
+        problem: 'Im Log-Modal brechen die Footer-Buttons „Training abschließen“ und „Training abbrechen“ auf zwei Zeilen um. Durch Großbuchstaben + Letter-Spacing wirken sie wie ein Fehler statt wie eine klare Primäraktion.',
+        solution: 'Labels kürzen, Umbruch verbieten und das Letter-Spacing der Footer-Buttons reduzieren. Die Aktion bleibt eindeutig und sitzt sauber auf einer Zeile.',
+        code: '#m-log Footer (Z. ~1115–1118):\n  #btn-abort  → "Abbrechen"\n  saveLog()-Button → "Abschließen"\n\n.btn, .btn-fill {\n  white-space: nowrap;\n}\nFooter-Buttons: letter-spacing auf .04em reduzieren.'
+      },
+      {
+        n: '03', title: 'Filter wirken aktiv statt ausgegraut',
+        screen: 'Sessions', impact: 'Mittel', effort: 'S',
+        problem: 'Die Filter über der Sessions-Liste sind in --muted2 (#A8B4CC) gesetzt — derselbe blasse Ton wie deaktivierte Elemente. Sie wirken ausgegraut, obwohl sie bedienbar sind.',
+        solution: 'Ausgewählten Text in der normalen Textfarbe zeigen, nur den Leer-/Platzhalter-Zustand muted lassen. Die Filter wirken sofort anklickbar.',
+        code: '.filter-bar select {\n  color: var(--muted2);   /* → var(--text) */\n}\n/* Platzhalter weiterhin gedimmt: */\n.filter-bar select:has(option[value=""]:checked) {\n  color: var(--muted2);\n}'
+      },
+      {
+        n: '04', title: 'Header-Kennzahlen auf Mobile lesbar machen',
+        screen: 'Header (Mobile)', impact: 'Mittel', effort: 'S',
+        problem: 'Im Mobile-Breakpoint schrumpfen die Kennzahlen-Labels auf ~6,5 px. „Sessions / Übungen / Tonnen Volumen“ sind kaum lesbar — die wichtigste Übersicht der App verpufft.',
+        solution: 'Label- und Wertgröße im Mobile-Breakpoint anheben. Die Kennzahlen bleiben kompakt, werden aber wieder lesbar.',
+        code: '@media (max-width: 680px) {\n  .stat-lbl { font-size: .41rem; }  /* → .52rem */\n  .stat-val { font-size: 1.0rem; }  /* → 1.2rem */\n}'
+      },
+      {
+        n: '05', title: 'Touch-Ziele auf 44 px vergrößern',
+        screen: 'Global', impact: 'Hoch', effort: 'S',
+        problem: 'Mehrere Icon-Buttons (Info-„i“, Satz-Löschen „✕“, Modal-Schließen) sind nur ~16 px groß — deutlich unter dem 44-px-Richtwert für Touch. Auf dem Handy schwer zu treffen.',
+        solution: 'Optische Größe beibehalten, aber die klickbare Fläche per Padding / min-height auf 44 px vergrößern. Mehr Treffsicherheit ohne sichtbare Änderung.',
+        code: '.info-btn, .set-rm, .modal-x {\n  min-width: 44px;\n  min-height: 44px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n}\n/* Icon-Glyph optisch klein halten (font-size unverändert). */'
+      }
+    ];
+
+    const tier2 = [
+      {
+        n: '06', title: 'Sätze mit den letzten Werten vorbelegen',
+        screen: 'Training loggen', impact: 'Hoch', effort: 'M',
+        problem: 'Beim „+ Satz“ startet jede Zeile leer (Platzhalter „0“). Bei 4–5 fast identischen Sätzen pro Übung ist das viel Wiederholtipperei — der größte Reibungspunkt beim Loggen.',
+        solution: 'Neue Sätze mit den Werten des vorherigen Satzes vorbelegen; bei plangeladenen Übungen den ersten Satz aus der letzten Session derselben Übung füllen. Ein Tap statt voller Eingabe.',
+        code: 'function addLogSet(rowsId) — erzeugt aktuell immer leere Felder.\n\n→ Vor dem Anhängen die letzte .sets-grid in rowsId lesen und\n  die neuen .set-w / .set-r mit deren .value vorbelegen.\n\nBonus: loadPlan() lädt Übungen per Name. Beim ersten Satz die\n  Werte der jüngsten Session mit gleichem ex.name aus\n  loadDB().sessions übernehmen.'
+      },
+      {
+        n: '07', title: 'Übungsname mit Autovervollständigung',
+        screen: 'Training loggen', impact: 'Hoch', effort: 'M',
+        problem: 'Der Übungsname ist ein freies Textfeld (.log-ex-name). Kleine Abweichungen („Bankdrücken“ vs. „Bankdrücken “) erzeugen für die Charts zwei verschiedene Übungen — die Auswertung zersplittert unbemerkt.',
+        solution: 'Vorschläge aus den bereits geloggten Übungsnamen anbieten. Das #ex-dropdown / onExSearch-Pattern aus „Fortschritt“ existiert schon und lässt sich wiederverwenden. Verhindert Duplikate an der Quelle.',
+        code: '.log-ex-name (in addLogEx) → <datalist> anbinden\n  oder das vorhandene #ex-dropdown + onExSearch() wiederverwenden.\n\nQuelle: distinct ex.name über alle loadDB().sessions:\n  [...new Set(sessions.flatMap(s => s.exercises.map(e => e.name)))]'
+      },
+      {
+        n: '08', title: 'Aktives Training als Resume-Banner zeigen',
+        screen: 'Global', impact: 'Mittel', effort: 'M',
+        problem: 'Ein pausiertes Training erkennt man nur an einem kleinen Punkt am FAB. Wer die App neu öffnet, übersieht leicht, dass noch eine offene Session existiert.',
+        solution: 'Einen schmalen Sticky-Streifen unter der Top-Nav einblenden: „● Training läuft · N Übungen · Fortsetzen“. Macht den Zustand sichtbar und ist ein Ein-Tap-Wiedereinstieg.',
+        code: 'updateStartBtn() kennt den active-State (loadActive()).\n\n→ Dort ein #resume-bar ein-/ausblenden.\n  Klick → openLog() (restoreActiveSession läuft bereits).\n  Mobile: über der .bottom-nav platzieren.'
+      },
+      {
+        n: '09', title: 'Fortschritt & 1RM mit sinnvoller Vorauswahl',
+        screen: 'Fortschritt', impact: 'Mittel', effort: 'M',
+        problem: 'Progression und 1RM-Rechner starten leer („Übung auswählen“). Der erste Eindruck der wichtigsten Analyse-Seite ist ein leeres Diagramm.',
+        solution: 'Beim Öffnen die meist-trainierte Übung vorauswählen und Chart / 1RM-Wert direkt rechnen. Sofort sichtbarer Mehrwert statt Leerzustand.',
+        code: 'Nach Daten-Load häufigste ex.name ermitteln und\n  #ex-search bzw. #rm-ex-select vorbelegen, dann einmal\n  rechartProgression() / calc1RM() triggern.'
+      }
+    ];
+
+    const tier3 = [
+      {
+        n: '10', title: 'Session-Meta nicht umbrechen lassen',
+        screen: 'Sessions', impact: 'Niedrig', effort: 'S',
+        problem: 'In der Sessions-Liste bricht die rechte Meta-Angabe um: aus „3 Übungen“ wird gestapelt „3 / Übungen“. Wirkt unsauber und stört den Scan-Rhythmus der Liste.',
+        solution: 'Umbruch verbieten bzw. Zahl und Label bewusst nebeneinander setzen. Jede Zeile bleibt einzeilig und ruhig.',
+        code: '.s-right {\n  white-space: nowrap;\n}\n/* alternativ Zahl + Label inline: */\n/* display:flex; gap:4px; align-items:baseline; */'
+      },
+      {
+        n: '11', title: 'Bestätigungen vereinheitlichen + Undo',
+        screen: 'Global', impact: 'Mittel', effort: 'M',
+        problem: '„Training abbrechen“ nutzt das native confirm()-Fenster des Browsers (Z. ~1747) — es bricht die Designsprache. Sätze und Einträge löschen sich zudem sofort ohne Rückversicherung.',
+        solution: 'Natives confirm() durch ein Overlay-Modal im Stil von „Daten löschen“ (#m-clear) ersetzen. Bei Sofort-Löschungen einen „Rückgängig“-Link in den Toast legen.',
+        code: 'abortTraining(): confirm(...) → #m-clear-artiges Overlay.\n\nremoveLogSet() / Session-Löschen: gelöschtes Objekt kurz\n  puffern und #toast um einen "Rückgängig"-Link erweitern\n  (Toast-Element existiert bereits).'
+      },
+      {
+        n: '12', title: 'Sichtbarer Tastatur-Fokus',
+        screen: 'Global', impact: 'Mittel', effort: 'S',
+        problem: 'Buttons und Karten haben Hover-Zustände, aber keinen sichtbaren Tastatur-Fokus. Navigation per Tab ist unsichtbar — schlecht für Barrierefreiheit und Power-User.',
+        solution: 'Eine globale :focus-visible-Regel mit accent-Outline ergänzt alle interaktiven Elemente auf einen Schlag.',
+        code: ':focus-visible {\n  outline: 2px solid var(--accent);\n  outline-offset: 2px;\n  border-radius: inherit;\n}'
+      }
+    ];
+
+    const rows = [];
+    const pushTier = (stage, color, title, sub, items) => {
+      rows.push({ isTier: true, isItem: false, stage, color, tierTitle: title, tierSub: sub });
+      items.forEach(it => rows.push({ isTier: false, isItem: true, color, ...it }));
+    };
+    const tierUI = [
+      {
+        n: '13', title: 'Tiefe statt nur Rahmen',
+        screen: 'Global · Karten', impact: 'Hoch', effort: 'M',
+        problem: 'Fast alles ist eine 1-px-Linie (#DDE2EE) auf hellem Grau — Karten, Tiles, Listenzeilen. Dadurch wirkt die Oberfläche flach und kontrastarm, nichts tritt hervor.',
+        solution: 'Ein abgestuftes Schatten-System ergänzen: Karten leicht angehoben, interaktive Elemente heben sich beim Hover. Rahmen heller, die Tiefe übernimmt die Hierarchie — wertiger und besser scanbar.',
+        code: '.panel, .dash-tile, .s-card {\n  border-color: #E7EBF3;\n  box-shadow: 0 1px 2px rgba(28,43,74,.04),\n              0 6px 16px rgba(28,43,74,.05);\n}\n.s-card:hover {\n  box-shadow: 0 2px 4px rgba(28,43,74,.06),\n              0 10px 24px rgba(28,43,74,.10);\n  transform: translateY(-1px);\n}'
+      },
+      {
+        n: '14', title: 'Typo-Skala beruhigen',
+        screen: 'Global', impact: 'Mittel', effort: 'M',
+        problem: 'Winzige Uppercase-Labels mit 0,14–0,2 em Letter-Spacing sind überall — als Sektionstitel, Tile-Label und Button. Das wirkt monoton, ist anstrengend zu lesen und gibt kaum Hierarchie.',
+        solution: 'Uppercase + Spacing nur für echte Overlines reservieren. Inhaltsüberschriften in Sentence-Case mit Gewicht 600 statt All-Caps. Eine klare 4-Stufen-Skala bringt Ruhe und Hierarchie.',
+        code: 'Overlines (sec-label, stat-lbl): letter-spacing max .12em.\nInhaltstitel: neue Klasse statt Uppercase —\n  font-size:1rem; font-weight:600;\n  letter-spacing:-.01em; text-transform:none;\nKonsistente Skala: 1.85 / 1.1 / .95 / .82 / .62 rem.'
+      },
+      {
+        n: '15', title: 'Button-Hierarchie schärfen',
+        screen: 'Global', impact: 'Mittel', effort: 'S',
+        problem: 'Viele Buttons sehen fast gleich aus (uppercase, micro, outline). Primär-, Sekundär- und Ghost-Aktion sind schwer zu unterscheiden — der Blick findet die Hauptaktion nicht sofort.',
+        solution: 'Drei klare Stufen: Primär gefüllt (Navy), Sekundär als Outline, Ghost als reiner Text. Einheitliche Höhe, dezenteres Caps/Spacing. Die jeweils wichtigste Aktion sticht heraus.',
+        code: '.btn-fill  = Primär (gefüllt, weiß).\n.btn       = Sekundär (Outline).\n+ .btn-ghost { border:none; background:none;\n               color:var(--accent); }\nEinheitlich: height:36px; padding:0 14px;\n            letter-spacing:.06em.'
+      },
+      {
+        n: '16', title: 'Kategorie-Farben als System nutzen',
+        screen: 'Sessions · Detail · Verteilung', impact: 'Mittel', effort: 'M',
+        problem: 'Navy dominiert die gesamte UI. Die ausdrucksstarken Kategorie-Farben (Push/Pull/Cardio/Sonstige) leben nur im Kalender — ungenutztes Orientierungspotenzial.',
+        solution: 'Dieselben Farben konsequent dort einsetzen, wo Kategorie eine Rolle spielt: Session-Dot, Detail-Kopf, Filter-Chips. Schnellere Orientierung, lebendigeres Bild — ohne neue Farben zu erfinden.',
+        code: 'typeColor(s) existiert bereits.\n→ .s-dot: background = typeColor(s) (statt einheitlich).\n→ Session-Detail-Kopf: farbiger Akzent je Kategorie.\n→ Kategorie-Filter als farbige Chips statt grauem <select>.'
+      },
+      {
+        n: '17', title: 'Charts ins Designsystem holen',
+        screen: 'Fortschritt · Körper', impact: 'Mittel', effort: 'S',
+        problem: 'Die Diagramme laufen mit Chart.js-Defaults: gedrängte, um 90° gedrehte X-Achsen-Datumslabels, harte Gridlines und System-Font. Sie wirken wie ein Fremdkörper in der sonst ruhigen UI.',
+        solution: 'Globale Chart-Defaults setzen: weniger Ticks (autoSkip), dünne Gridlines in der Rahmenfarbe, Achsentext in --muted2, Helvetica. Die Charts fügen sich nahtlos ein.',
+        code: "Chart.defaults.font.family =\n  \"'Helvetica Neue',Helvetica,Arial,sans-serif\";\nChart.defaults.color = '#A8B4CC';\n// pro Chart:\nscales.x.ticks = { autoSkip:true, maxTicksLimit:6,\n                   maxRotation:0 };\nscales.x.grid.display = false;\nscales.y.grid.color   = '#EEF1F7';"
+      },
+      {
+        n: '18', title: 'Leerzustände gestalten',
+        screen: 'Global', impact: 'Niedrig', effort: 'S',
+        problem: 'Leerzustände (.chart-empty, .empty) sind nur dünn umrandete Boxen mit einer Textzeile. Sie wirken wie tote Flächen statt wie ein hilfreicher Hinweis.',
+        solution: 'Ein dezentes Mark-Icon + Hinweistext + optional ein Aktions-Link machen aus leeren Boxen einen klaren nächsten Schritt (z. B. „Erstes Training loggen“).',
+        code: '.chart-empty / .empty:\n  zentriertes Concentric-Mark (--muted2)\n  + Titelzeile + Untertitel + optionaler <a>-CTA.\n  Hintergrund #FAFBFD statt nur gestricheltem Rahmen.'
+      }
+    ];
+
+    pushTier('1', NAVY,  'Reibung & Lesbarkeit', 'UX-Spur · Quick Wins — kleiner Aufwand, sofort spürbar', tier1);
+    pushTier('2', BLUE,  'Komfort beim Loggen',  'UX-Spur · Spürbar schneller & sicherer eintragen',       tier2);
+    pushTier('3', SLATE, 'Politur',              'UX-Spur · Konsistenz & Vertrauen',                        tier3);
+    pushTier('UI', GOLD, 'Visuelle Gestaltung',  'UI-Spur · Look, Tiefe & Hierarchie — systemweit',         tierUI);
+
+    return {
+      rows,
+      showCode: this.props.showCode ?? true,
+      showMeta: this.props.showMeta ?? true,
+    };
+  }
+}
+</script>
+</body>
+</html>
